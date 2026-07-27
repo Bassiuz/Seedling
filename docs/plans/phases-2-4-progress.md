@@ -22,6 +22,22 @@ piece lands. Branch `phase-1`.
 - Verify against the real macOS app when a change is worth seeing; test account
   `test@sdevaan.nl` / `123456`.
 
+## Verified end to end (2026-07-27)
+
+Signed in as the test account through the Identity Toolkit REST API, wrote a
+task with logged time under that uid, read it back, and confirmed reading
+another user's subtree returns `PERMISSION_DENIED`. That exercises auth, the
+deployed rules, and the data model — the three things that were broken before.
+GUI automation of the macOS app proved unreliable (AppleScript keystrokes land
+in the wrong field), so behaviour is covered by widget tests and the REST check
+rather than by driving the real window.
+
+## Still to do
+
+- Automatic debounced vault mirroring (export is manual from Settings today).
+- The Xcode Widget Extension target — `docs/ios-widget-setup.md` has the steps.
+- Run on the BigMe and check e-ink mode on real hardware.
+
 ## Notes for whoever picks this up
 
 - Firestore rules are in `firestore.rules`; deploy with
