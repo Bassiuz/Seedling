@@ -61,7 +61,7 @@ Widget _blocks({required bool filled}) => Scaffold(
                 shownDay: _today,
                 onToggle: (_) {},
                 onMenu: (_) {},
-                onAdd: (_) {},
+                onAdd: (_, {tagId, time}) {},
               ),
               const SizedBox(height: 28),
               NoteBlock(
@@ -110,7 +110,8 @@ void main() {
       (tester) async {
     final added = <String>[];
     await tester.pumpWidget(
-      wrapApp(Scaffold(body: AddTaskField(onAdd: added.add))),
+      wrapApp(Scaffold(
+          body: AddTaskField(onAdd: (t, {tagId, time}) => added.add(t)))),
     );
 
     await tester.enterText(find.byType(TextField), 'Water the plants');
@@ -124,7 +125,8 @@ void main() {
   testWidgets('the add field ignores blank input', (tester) async {
     final added = <String>[];
     await tester.pumpWidget(
-      wrapApp(Scaffold(body: AddTaskField(onAdd: added.add))),
+      wrapApp(Scaffold(
+          body: AddTaskField(onAdd: (t, {tagId, time}) => added.add(t)))),
     );
 
     await tester.enterText(find.byType(TextField), '   ');
@@ -132,6 +134,42 @@ void main() {
     await tester.pump();
 
     expect(added, isEmpty);
+  });
+
+  testWidgets('a picked tag rides along with the new task and then resets',
+      (tester) async {
+    final adds = <(String, String?)>[];
+    await tester.pumpWidget(wrapApp(Scaffold(
+      body: AddTaskField(
+        tags: _tags.values.toList(),
+        onAdd: (title, {tagId, time}) => adds.add((title, tagId)),
+      ),
+    )));
+
+    await tester.tap(find.byTooltip('Pick a tag'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Moxify'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Record voiceover');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(adds, [('Record voiceover', 'moxify')]);
+    // The chip is gone again, so the next task does not silently inherit it.
+    expect(find.byTooltip('Pick a tag'), findsOneWidget);
+  });
+
+  testWidgets('the tag button does nothing when there are no tags yet',
+      (tester) async {
+    await tester.pumpWidget(wrapApp(
+      Scaffold(body: AddTaskField(onAdd: (_, {tagId, time}) {})),
+    ));
+
+    await tester.tap(find.byTooltip('Pick a tag'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ListTile), findsNothing);
   });
 
   testWidgets('the note reports every keystroke', (tester) async {

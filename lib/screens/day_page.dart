@@ -11,6 +11,7 @@ import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
 import '../widgets/tasks_block.dart';
 import '../widgets/timed_block.dart';
+import 'tags_screen.dart';
 
 /// One day, laid out for whatever screen it lands on. Purely presentational so
 /// every layout can be golden-tested without Firebase.
@@ -27,6 +28,7 @@ class DayView extends StatelessWidget {
     required this.onMenu,
     required this.onAdd,
     required this.onNoteChanged,
+    this.onOpenTags,
   });
 
   /// Already filtered and sorted for this day by `tasksForDay`.
@@ -38,8 +40,9 @@ class DayView extends StatelessWidget {
   final void Function(int deltaFromToday) onJump;
   final void Function(Task) onToggle;
   final void Function(Task) onMenu;
-  final void Function(String title) onAdd;
+  final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
+  final VoidCallback? onOpenTags;
 
   /// Below this the blocks stack; above it they sit side by side.
   static const double twoColumnWidth = 600;
@@ -58,7 +61,12 @@ class DayView extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DayHeader(dayKey: dayKey, today: today, onJump: onJump),
+            DayHeader(
+              dayKey: dayKey,
+              today: today,
+              onJump: onJump,
+              onOpenTags: onOpenTags,
+            ),
             Expanded(
               child: width >= threeColumnWidth
                   ? _columns([_timed(timed), _tasks(untimed), _note()])
@@ -247,9 +255,14 @@ class _DayPageState extends State<DayPage> {
                         onJump: _jumpTo,
                         onToggle: (task) => _toggle(task, day),
                         onMenu: _openMenu,
-                        onAdd: (title) =>
-                            widget.repo.addTask(title, date: day),
+                        onAdd: (title, {tagId, time}) => widget.repo
+                            .addTask(title, date: day, tagId: tagId, time: time),
                         onNoteChanged: (text) => _saveNote(day, text),
+                        onOpenTags: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => TagsScreen(repo: widget.repo),
+                          ),
+                        ),
                       ),
                     );
                   },

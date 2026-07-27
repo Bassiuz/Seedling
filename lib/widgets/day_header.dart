@@ -12,6 +12,7 @@ class DayHeader extends StatelessWidget {
     required this.dayKey,
     required this.today,
     required this.onJump,
+    this.onOpenTags,
   });
 
   /// The day being shown.
@@ -23,6 +24,10 @@ class DayHeader extends StatelessWidget {
   /// Called with the offset from [today] of the day to jump to.
   final void Function(int deltaFromToday) onJump;
 
+  /// Null hides the tags button, which is what golden tests of the bare header
+  /// want.
+  final VoidCallback? onOpenTags;
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -33,29 +38,45 @@ class DayHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: SeedlingPalette.paperLine,
-                borderRadius: BorderRadius.circular(999),
+          Row(
+            children: [
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: SeedlingPalette.paperLine,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final (label, delta) in const [
+                      ('Yesterday', -1),
+                      ('Today', 0),
+                      ('Tomorrow', 1),
+                    ])
+                      DayShortcut(
+                        label: label,
+                        selected: dayKey == addDays(today, delta),
+                        onTap: () => onJump(delta),
+                      ),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final (label, delta) in const [
-                    ('Yesterday', -1),
-                    ('Today', 0),
-                    ('Tomorrow', 1),
-                  ])
-                    DayShortcut(
-                      label: label,
-                      selected: dayKey == addDays(today, delta),
-                      onTap: () => onJump(delta),
-                    ),
-                ],
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: onOpenTags == null
+                      ? const SizedBox.shrink()
+                      : IconButton(
+                          onPressed: onOpenTags,
+                          tooltip: 'Tags',
+                          icon: const Icon(Icons.label_outline,
+                              color: SeedlingPalette.grayDark),
+                        ),
+                ),
               ),
-            ),
+            ],
           ),
           const SizedBox(height: 20),
           Text(DateFormat('EEEE', 'en_US').format(date),
