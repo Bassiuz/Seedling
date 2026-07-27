@@ -6,6 +6,7 @@ import 'data/seedling_repo.dart';
 import 'screens/day_page.dart';
 import 'screens/sign_in_screen.dart';
 import 'theme/seedling_theme.dart';
+import 'widgets/dismiss_keyboard.dart';
 
 /// Signed out you get the sign-in form; signed in you get your days.
 class SeedlingApp extends StatelessWidget {
@@ -20,6 +21,7 @@ class SeedlingApp extends StatelessWidget {
       title: 'Seedling',
       debugShowCheckedModeBanner: false,
       theme: SeedlingTheme.light(),
+      builder: (context, child) => DismissKeyboard(child: child!),
       // Firebase restores a persisted session while initializeApp() runs, so
       // currentUser is already authoritative on the first frame. Seeding it
       // avoids a blank frame on every launch — sign-in itself persists on its

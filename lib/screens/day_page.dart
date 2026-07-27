@@ -13,36 +13,31 @@ import '../widgets/tasks_block.dart';
 import '../widgets/timed_block.dart';
 import 'tags_screen.dart';
 
-/// One day, laid out for whatever screen it lands on. Purely presentational so
-/// every layout can be golden-tested without Firebase.
-class DayView extends StatelessWidget {
-  const DayView({
+/// The blocks of one day, laid out for whatever width they are given. This is
+/// the part that slides when you page between days — the header above it stays
+/// put.
+class DayContent extends StatelessWidget {
+  const DayContent({
     super.key,
     required this.dayKey,
-    required this.today,
     required this.tasks,
     required this.tags,
     required this.note,
-    required this.onJump,
     required this.onToggle,
     required this.onMenu,
     required this.onAdd,
     required this.onNoteChanged,
-    this.onOpenTags,
   });
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
   final Map<String, Tag> tags;
   final String dayKey;
-  final String today;
   final String note;
-  final void Function(int deltaFromToday) onJump;
   final void Function(Task) onToggle;
   final void Function(Task) onMenu;
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
-  final VoidCallback? onOpenTags;
 
   /// Below this the blocks stack; above it they sit side by side.
   static const double twoColumnWidth = 600;
@@ -58,27 +53,16 @@ class DayView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DayHeader(
-              dayKey: dayKey,
-              today: today,
-              onJump: onJump,
-              onOpenTags: onOpenTags,
-            ),
-            Expanded(
-              child: width >= threeColumnWidth
-                  ? _columns([_timed(timed), _tasks(untimed), _note()])
-                  : width >= twoColumnWidth
-                      ? _columns([
-                          _stack([_timed(timed), _tasks(untimed)]),
-                          _note(),
-                        ])
-                      : _stack([_timed(timed), _tasks(untimed), _note()]),
-            ),
-          ],
-        );
+        if (width >= threeColumnWidth) {
+          return _columns([_timed(timed), _tasks(untimed), _note()]);
+        }
+        if (width >= twoColumnWidth) {
+          return _columns([
+            _stack([_timed(timed), _tasks(untimed)]),
+            _note(),
+          ]);
+        }
+        return _stack([_timed(timed), _tasks(untimed), _note()]);
       },
     );
   }
@@ -132,8 +116,64 @@ class DayView extends StatelessWidget {
       );
 }
 
+/// A whole day: the pinned header with the content under it. Golden tests
+/// render this, so every layout can be checked without Firebase.
+class DayView extends StatelessWidget {
+  const DayView({
+    super.key,
+    required this.dayKey,
+    required this.today,
+    required this.tasks,
+    required this.tags,
+    required this.note,
+    required this.onJump,
+    required this.onToggle,
+    required this.onMenu,
+    required this.onAdd,
+    required this.onNoteChanged,
+    this.onOpenTags,
+  });
+
+  final List<Task> tasks;
+  final Map<String, Tag> tags;
+  final String dayKey;
+  final String today;
+  final String note;
+  final void Function(int deltaFromToday) onJump;
+  final void Function(Task) onToggle;
+  final void Function(Task) onMenu;
+  final void Function(String title, {String? tagId, String? time}) onAdd;
+  final void Function(String) onNoteChanged;
+  final VoidCallback? onOpenTags;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DayHeader(
+            dayKey: dayKey,
+            today: today,
+            onJump: onJump,
+            onOpenTags: onOpenTags,
+          ),
+          Expanded(
+            child: DayContent(
+              dayKey: dayKey,
+              tasks: tasks,
+              tags: tags,
+              note: note,
+              onToggle: onToggle,
+              onMenu: onMenu,
+              onAdd: onAdd,
+              onNoteChanged: onNoteChanged,
+            ),
+          ),
+        ],
+      );
+}
+
 /// The day page proper: swipe left and right through days, with everything
-/// wired to Firestore.
+/// wired to Firestore. The header does not move with the pages.
 class DayPage extends StatefulWidget {
   const DayPage({super.key, required this.repo});
 
@@ -150,6 +190,10 @@ class _DayPageState extends State<DayPage> {
 
   final String _today = todayKey();
   final PageController _controller = PageController(initialPage: _anchor);
+
+  /// Which page the header is describing. Kept in step with the PageView so
+  /// the pinned header follows both swipes and shortcut taps.
+  int _index = _anchor;
   Timer? _noteDebounce;
 
   @override
@@ -167,14 +211,27 @@ class _DayPageState extends State<DayPage> {
         curve: Curves.easeOut,
       );
 
+  /// Every write goes through here: a failure has to be visible, or a rejected
+  /// save looks exactly like a successful one.
+  Future<void> _write(Future<void> Function() action, String what) async {
+    try {
+      await action();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not $what: $error')),
+      );
+    }
+  }
+
   /// Checking off records *this* day; unchecking only works on the day it was
   /// checked, so history stays where it happened.
   void _toggle(Task task, String day) {
     switch (checkStateOn(task, day)) {
       case TaskCheckState.open:
-        widget.repo.setCompleted(task, day);
+        _write(() => widget.repo.setCompleted(task, day), 'check that off');
       case TaskCheckState.checkedHere:
-        widget.repo.setCompleted(task, null);
+        _write(() => widget.repo.setCompleted(task, null), 'uncheck that');
       case TaskCheckState.doneLater:
         break;
     }
@@ -185,7 +242,7 @@ class _DayPageState extends State<DayPage> {
     _noteDebounce?.cancel();
     _noteDebounce = Timer(
       const Duration(milliseconds: 500),
-      () => widget.repo.saveNote(day, text),
+      () => _write(() => widget.repo.saveNote(day, text), 'save the note'),
     );
   }
 
@@ -213,7 +270,7 @@ class _DayPageState extends State<DayPage> {
     if (!mounted || action == null) return;
 
     if (action == 'delete') {
-      await widget.repo.deleteTask(task);
+      await _write(() => widget.repo.deleteTask(task), 'delete that');
       return;
     }
 
@@ -223,7 +280,10 @@ class _DayPageState extends State<DayPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (picked != null) await widget.repo.snooze(task, dayKeyOf(picked));
+    if (picked != null) {
+      await _write(
+          () => widget.repo.snooze(task, dayKeyOf(picked)), 'snooze that');
+    }
   }
 
   @override
@@ -240,32 +300,47 @@ class _DayPageState extends State<DayPage> {
               stream: widget.repo.watchTasks(),
               builder: (context, taskSnap) {
                 final all = taskSnap.data ?? const <Task>[];
-                return PageView.builder(
-                  controller: _controller,
-                  itemBuilder: (context, index) {
-                    final day = _dayForPage(index);
-                    return StreamBuilder<String>(
-                      stream: widget.repo.watchNote(day),
-                      builder: (context, noteSnap) => DayView(
-                        dayKey: day,
-                        today: _today,
-                        tasks: tasksForDay(all, day, _today),
-                        tags: tags,
-                        note: noteSnap.data ?? '',
-                        onJump: _jumpTo,
-                        onToggle: (task) => _toggle(task, day),
-                        onMenu: _openMenu,
-                        onAdd: (title, {tagId, time}) => widget.repo
-                            .addTask(title, date: day, tagId: tagId, time: time),
-                        onNoteChanged: (text) => _saveNote(day, text),
-                        onOpenTags: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => TagsScreen(repo: widget.repo),
-                          ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DayHeader(
+                      dayKey: _dayForPage(_index),
+                      today: _today,
+                      onJump: _jumpTo,
+                      onOpenTags: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => TagsScreen(repo: widget.repo),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _controller,
+                        onPageChanged: (index) =>
+                            setState(() => _index = index),
+                        itemBuilder: (context, index) {
+                          final day = _dayForPage(index);
+                          return StreamBuilder<String>(
+                            stream: widget.repo.watchNote(day),
+                            builder: (context, noteSnap) => DayContent(
+                              dayKey: day,
+                              tasks: tasksForDay(all, day, _today),
+                              tags: tags,
+                              note: noteSnap.data ?? '',
+                              onToggle: (task) => _toggle(task, day),
+                              onMenu: _openMenu,
+                              onAdd: (title, {tagId, time}) => _write(
+                                () => widget.repo.addTask(title,
+                                    date: day, tagId: tagId, time: time),
+                                'add that task',
+                              ),
+                              onNoteChanged: (text) => _saveNote(day, text),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
             );

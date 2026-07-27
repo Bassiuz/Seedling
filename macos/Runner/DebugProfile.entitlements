@@ -2,8 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- The sandbox is off on macOS. Firebase Auth keeps the signed-in session
+	     in the keychain, and a sandboxed app can only reach it with a
+	     keychain-access-groups entitlement, which in turn needs a real
+	     development certificate and a provisioning profile for
+	     dev.bassiuz.seedling. Seedling is a personal tool run locally, so
+	     ad-hoc signing without the sandbox is the cheaper trade.
+	     To ship through the Mac App Store: turn the sandbox back on, add
+	     keychain-access-groups, and set up signing in Xcode. -->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 	<key>com.apple.security.cs.allow-jit</key>
 	<true/>
 	<key>com.apple.security.network.server</key>

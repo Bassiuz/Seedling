@@ -21,6 +21,19 @@
 - macOS needs `com.apple.security.network.client` in **both**
   `macos/Runner/*.entitlements`, or Firestore silently fails to reach the
   network in the sandbox.
+- **The macOS app sandbox is off.** Firebase Auth stores the session in the
+  keychain, which a sandboxed app can only reach with a `keychain-access-groups`
+  entitlement — and that needs a development certificate plus a provisioning
+  profile for `dev.bassiuz.seedling`, which does not exist for macOS. Without
+  it, signing in fails with "An error occurred when accessing the keychain".
+  Turning the sandbox off keeps ad-hoc signing working with no certificate
+  management. To ship via the Mac App Store, re-enable the sandbox, add
+  `keychain-access-groups`, and set up signing in Xcode.
+- **Firestore rules live in `firestore.rules`** and are deployed with
+  `firebase deploy --only firestore:rules`. The project shipped with the
+  production default (`allow read, write: if false`), which silently rejected
+  every save. `fake_cloud_firestore` has no rules engine, so no test can catch
+  this — check the console or deploy the rules after creating a database.
 - iOS is pinned to deployment target **15.0** (`ios/Podfile` and all three
   `IPHONEOS_DEPLOYMENT_TARGET` entries in `Runner.xcodeproj`) because
   `cloud_firestore` requires it. Flutter's default of 13.0 fails at

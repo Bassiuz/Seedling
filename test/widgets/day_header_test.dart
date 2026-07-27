@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/widgets/day_header.dart';
 
 import '../util/golden/golden_utils.dart';
+import '../util/shortcut_finder.dart';
 
 Widget _header({required String dayKey, void Function(int)? onJump}) => Scaffold(
       body: SafeArea(
@@ -64,16 +65,4 @@ void main() {
 
     expect(selectedShortcutLabel(tester), isNull);
   });
-}
-
-/// The label of the shortcut currently drawn as selected, or null if none is.
-String? selectedShortcutLabel(WidgetTester tester) {
-  for (final label in ['Yesterday', 'Today', 'Tomorrow']) {
-    final finder = find.ancestor(
-      of: find.text(label),
-      matching: find.byType(DayShortcut),
-    );
-    if (tester.widget<DayShortcut>(finder).selected) return label;
-  }
-  return null;
 }

@@ -7,9 +7,11 @@ import 'package:seedling/logic/rollover.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/screens/day_page.dart';
+import 'package:seedling/widgets/day_header.dart';
 import 'package:seedling/widgets/task_tile.dart';
 
 import '../util/golden/golden_utils.dart';
+import '../util/shortcut_finder.dart';
 
 const _today = '2026-07-15';
 
@@ -60,6 +62,15 @@ Widget _day({List<Task>? tasks, String note = ''}) => Scaffold(
         ),
       ),
     );
+
+/// Swipes near the top of the day content. Not at the centre: on a phone the
+/// note's TextField sits there and claims horizontal drags for text selection.
+Future<void> swipeToNextDay(WidgetTester tester) async {
+  final page = tester.getRect(find.byType(PageView));
+  await tester.flingFrom(
+      Offset(page.center.dx, page.top + 30), const Offset(-400, 0), 1000);
+  await tester.pumpAndSettle();
+}
 
 void main() {
   goldenForSizes(
@@ -153,6 +164,58 @@ void main() {
       await tester.pumpAndSettle();
 
       expect((await repo.watchTasks().first).single.completedOnDate, isNull);
+    });
+
+    testWidgets('the header stays put while the days slide under it',
+        (tester) async {
+      configureSize(tester, GoldenSize.phone);
+      await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
+      await tester.pumpAndSettle();
+
+      final before = tester.getTopLeft(find.byType(DayHeader));
+
+      await swipeToNextDay(tester);
+
+      expect(tester.getTopLeft(find.byType(DayHeader)), before);
+      expect(find.byType(DayHeader), findsOneWidget);
+    });
+
+    testWidgets('the pinned header follows a swipe to the next day',
+        (tester) async {
+      configureSize(tester, GoldenSize.phone);
+      await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
+      await tester.pumpAndSettle();
+
+      expect(selectedShortcutLabel(tester), 'Today');
+
+      await swipeToNextDay(tester);
+
+      expect(selectedShortcutLabel(tester), isNot('Today'));
+    });
+
+    testWidgets('going back from tomorrow to today slides towards the left',
+        (tester) async {
+      configureSize(tester, GoldenSize.phone);
+      await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tomorrow'));
+      await tester.pumpAndSettle();
+      expect(selectedShortcutLabel(tester), 'Tomorrow');
+
+      final controller =
+          tester.widget<PageView>(find.byType(PageView)).controller!;
+      final from = controller.page!;
+
+      await tester.tap(find.text('Today'));
+      await tester.pump(); // let the animation start ticking
+      await tester.pump(const Duration(milliseconds: 120));
+
+      // Mid-animation the page must be heading down towards today, not up.
+      expect(controller.page, lessThan(from));
+
+      await tester.pumpAndSettle();
+      expect(selectedShortcutLabel(tester), 'Today');
     });
 
     testWidgets('typing a task adds it to the day on screen', (tester) async {
