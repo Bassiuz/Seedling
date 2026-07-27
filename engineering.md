@@ -10,21 +10,23 @@
 
 ## Firebase
 
-- Firebase project: `seedling-461b0`
-- Packages: `firebase_core`, `firebase_auth`, `cloud_firestore`
+- Firebase project: `seedling-461b0`. Config in `lib/firebase_options.dart`,
+  regenerate with `flutterfire configure --project=seedling-461b0` (needs
+  `~/.pub-cache/bin` and the fvm SDK's `bin` on PATH).
+- Packages: `firebase_core`, `firebase_auth`, `cloud_firestore`.
+- **Firebase Authentication must be enabled in the console** (Build →
+  Authentication → Get started → Email/Password). Without it the app builds and
+  runs but sign-in fails with `CONFIGURATION_NOT_FOUND`. Enabling it through the
+  Identity Platform API instead requires billing; the console toggle does not.
+- macOS needs `com.apple.security.network.client` in **both**
+  `macos/Runner/*.entitlements`, or Firestore silently fails to reach the
+  network in the sandbox.
 
-## Planned `lib/` layout
+## `lib/` layout
 
-```
-lib/
-  models/    # plain data classes (plants, entries, ...)
-  logic/     # pure business logic, no Flutter/Firebase imports
-  data/      # Firestore repositories and auth service
-  theme/     # colors, typography, ThemeData
-  screens/   # one file per screen
-  widgets/   # shared/reusable widgets
-  main.dart
-```
+See `lib/README.md`. Dependencies only point downward:
+`screens/` → `widgets/` → `theme/`, with `data/` → `models/` and `logic/` →
+`models/`. Nothing outside `data/` imports Firestore.
 
 ## Testing
 
@@ -38,3 +40,14 @@ lib/
   ```
 
   Review the regenerated PNGs in the diff before committing.
+
+- Goldens are rendered at four canonical sizes (`test/util/golden/golden_utils.dart`):
+  `phone`, `eink` (BigMe B7), `macNarrow` and `mac`. Widgets with several visual
+  states are captured as one gallery image rather than one file per state, so a
+  change is reviewed in a single picture.
+
+## Smoke-running the macOS app
+
+`fvm flutter run -d macos` normally. To screenshot a running build without
+screen-recording permission, connect to its Dart VM service and call
+`_flutter.screenshot` — the service URI is printed on stdout at launch.
