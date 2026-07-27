@@ -36,9 +36,26 @@ const _neutrals = <Color>[
 ];
 
 void main() {
-  test('tagColors are the 11 accents, no neutrals and no duplicates', () {
-    expect(SeedlingPalette.tagColors, hasLength(11));
-    expect(SeedlingPalette.tagColors.toSet(), hasLength(11));
+  test('tagColors are the 11 accents in a stable persisted order', () {
+    // `Tag.colorIndex` is persisted to Firestore, so this list is a storage
+    // contract: reordering or substituting an entry repaints existing tags.
+    // Assert the exact sequence, not just its shape.
+    expect(
+      SeedlingPalette.tagColors,
+      orderedEquals(<Color>[
+        SeedlingPalette.red,
+        SeedlingPalette.green,
+        SeedlingPalette.blue,
+        SeedlingPalette.cyan,
+        SeedlingPalette.orange,
+        SeedlingPalette.yellow,
+        SeedlingPalette.greenDeep,
+        SeedlingPalette.purple,
+        SeedlingPalette.azure,
+        SeedlingPalette.crimson,
+        SeedlingPalette.magenta,
+      ]),
+    );
     for (final neutral in _neutrals) {
       expect(SeedlingPalette.tagColors, isNot(contains(neutral)));
     }
