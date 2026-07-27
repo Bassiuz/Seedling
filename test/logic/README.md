@@ -10,3 +10,5 @@ Tests for the pure logic helpers in `lib/logic/`.
   bounds, and which week a review belongs to.
 - `markdown_test.dart` — front matter, checkboxes, task annotations, the agenda,
   answered questions, verbatim notes, reviews, and the file paths.
+- `widget_payload_test.dart` — which item counts as "next", completed tasks
+  being left off, the overflow count, and the JSON shape the widget reads.

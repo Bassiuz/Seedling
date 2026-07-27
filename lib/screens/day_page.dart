@@ -7,10 +7,12 @@ import '../data/seedling_repo.dart';
 import '../data/calendar_source.dart';
 import '../data/settings_store.dart';
 import '../data/vault_service.dart';
+import '../data/widget_publisher.dart';
 import '../logic/day_key.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
 import '../logic/week_key.dart';
+import '../logic/widget_payload.dart';
 import '../models/tag.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
@@ -338,6 +340,25 @@ class _DayPageState extends State<DayPage> {
 
   String _dayForPage(int index) => addDays(_today, index - _anchor);
 
+  final _widget = const WidgetPublisher();
+  String? _lastPublished;
+
+  /// Pushes today to the home-screen widget, but only when it actually changed
+  /// — this runs inside build, and updating a widget is not free.
+  void _publishWidget(
+      List<Task> tasks, Map<String, Tag> tags, Set<String> hidden) {
+    final payload = buildWidgetPayload(
+      dayKey: _today,
+      tasks: tasks,
+      events: visibleEvents(_events[_today] ?? const [], hidden),
+      tags: tags,
+    );
+    final json = payload.toJson();
+    if (json == _lastPublished) return;
+    _lastPublished = json;
+    _widget.publish(payload);
+  }
+
   /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
   void _toggleReveal() => setState(() => _revealing = !_revealing);
 
@@ -575,6 +596,10 @@ class _DayPageState extends State<DayPage> {
                             setState(() => _index = index),
                         itemBuilder: (context, index) {
                           final day = _dayForPage(index);
+                        if (day == _today) {
+                          _publishWidget(
+                              tasksForDay(all, day, _today), tags, hidden);
+                        }
                           return StreamBuilder<Map<String, String>>(
                             stream: widget.repo.watchAnswers(day),
                             builder: (context, answerSnap) =>

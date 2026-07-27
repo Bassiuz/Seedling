@@ -8,3 +8,5 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   review written on a given day belongs to.
 - `markdown.dart` — renders days, reviews, someday lists and tags as Markdown
   for the vault, plus the paths each file belongs at.
+- `widget_payload.dart` — builds what the home-screen widget shows: the next
+  timed thing and the first few open tasks.

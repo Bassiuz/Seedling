@@ -14,3 +14,5 @@ work with `Task`, `Tag` and plain strings.
   and idempotent, so nothing in the folder can corrupt the app.
 - `vault_service.dart` — `VaultService.exportAll()`: a full sweep of Firestore
   into the vault, and `defaultVault()` for this machine's folder.
+- `widget_publisher.dart` — `WidgetPublisher`: hands the payload to the iOS/
+  Android widget. Failures are swallowed; a missing widget must not break the app.

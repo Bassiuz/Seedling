@@ -13,7 +13,7 @@ piece lands. Branch `phase-1`.
 | 5 | Calendar (EventKit) agenda + blacklist with reveal | **done** |
 | 6 | Week review templates with goal snapshots | **done** |
 | 7 | Markdown vault export (macOS) | **done** |
-| 8 | iPhone home-screen widget | in progress |
+| 8 | iPhone home-screen widget | **done** — Dart side built and tested; Xcode target needs adding by hand, see `docs/ios-widget-setup.md` |
 
 ## Conventions (unchanged from phase 1)
 
