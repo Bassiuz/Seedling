@@ -34,7 +34,7 @@ class BlockFrame extends StatelessWidget {
               child: Text(title,
                   style: Theme.of(context).textTheme.titleLarge),
             ),
-            if (trailing != null) trailing!,
+            ?trailing,
           ],
         ),
         const SizedBox(height: 6),
