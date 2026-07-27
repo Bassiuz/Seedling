@@ -40,14 +40,21 @@ Future<void> loadFonts() async {
   ]);
 }
 
+/// Every font load goes through here, so a font that silently disappears
+/// (renamed, moved, dropped from a rebase) fails loudly instead of quietly
+/// turning every golden into tofu boxes.
 Future<void> _loadFontFamily(String family, List<String> paths) async {
   final loader = FontLoader(family);
   for (final path in paths) {
     final file = io.File(path).absolute;
-    if (file.existsSync()) {
-      final bytes = await file.readAsBytes();
-      loader.addFont(Future.value(ByteData.view(bytes.buffer)));
+    if (!file.existsSync()) {
+      throw StateError(
+        'Missing font file for family "$family": ${file.path}. '
+        'Golden tests need it; restore it or fix the path in load_fonts.dart.',
+      );
     }
+    final bytes = await file.readAsBytes();
+    loader.addFont(Future.value(ByteData.view(bytes.buffer)));
   }
   await loader.load();
 }

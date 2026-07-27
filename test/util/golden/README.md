@@ -8,7 +8,9 @@
   render Ahem boxes.
 - `golden_utils.dart` — `GoldenSize` (canonical screen contexts),
   `configureSize`, `wrapApp` (MaterialApp + SeedlingTheme), and
-  `goldenForSizes` (one golden per size).
+  `goldenForSizes` (one golden per size). Note: `goldenForSizes` calls
+  `pumpAndSettle`, so a widget with an indefinite animation (spinner, repeating
+  controller) times out — those need their own test with explicit `pump`s.
 - `infra_smoke_test.dart` — renders a plain `Text` at phone size; guards that
   the golden pipeline (config, comparator, fonts) keeps working.
 - `goldens/` — golden baselines for tests in this folder.
