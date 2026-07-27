@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 /// Seedling theme (SourceSans3/SourceSerif4 typography, color scheme, etc.).
 ///
 /// Already uses SourceSans3 as the base font family: it is the app's real
-/// body/UI font (declared in pubspec.yaml), and in widget tests the engine's
-/// built-in 'Roboto' mapping cannot be overridden with a real font, so
-/// goldens would render placeholder boxes without it.
+/// body/UI font (declared in pubspec.yaml), so goldens exercise the same
+/// typeface the app ships with instead of the platform default.
 class SeedlingTheme {
   static ThemeData light() =>
       ThemeData(useMaterial3: true, fontFamily: 'SourceSans3');

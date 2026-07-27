@@ -19,13 +19,14 @@ checked-in PNG baselines.
 - **Fonts**: `flutter_test` renders with a placeholder font (solid boxes) by
   default. `util/golden/load_fonts.dart` loads MaterialIcons, Roboto,
   SourceSans3 (400/500/600/700), SourceSerif4 (600 normal+italic) and
-  NotoColorEmoji from `test/assets/fonts/` so goldens show real glyphs.
-  Caveat: the test engine pre-registers the family name `Roboto` as the
-  placeholder font and a dynamically loaded real Roboto does NOT override it
-  (verified empirically on Flutter 3.44). Text styled with an explicit or
-  theme-derived `Roboto` family still renders boxes; `SeedlingTheme` uses
-  `SourceSans3`, so themed widgets render real glyphs. Always render goldens
-  through `wrapApp`/`SeedlingTheme`, not a bare `MaterialApp` default theme.
+  NotoColorEmoji from `test/assets/fonts/` so goldens show real glyphs. A
+  dynamically loaded font overrides the placeholder for that family,
+  including `Roboto` (verified empirically on Flutter 3.44). Beware:
+  `FontLoader` silently ignores invalid font bytes — if a golden shows solid
+  boxes, first check the font files with `file test/assets/fonts/*` (a
+  corrupt download, e.g. an HTML error page saved as .ttf, fails silently).
+  Still render goldens through `wrapApp`/`SeedlingTheme` (explicit
+  `SourceSans3`) rather than relying on the default theme's font.
 - **Sizes**: use `goldenForSizes` from `util/golden/golden_utils.dart` to
   render one golden per canonical screen context (phone, eink, macNarrow,
   mac). Baselines land in a `goldens/` folder next to the test file.
