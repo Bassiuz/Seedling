@@ -7,11 +7,14 @@ import '../data/settings_store.dart';
 import '../logic/day_key.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
+import '../models/daily_question.dart';
 import '../models/task.dart';
 import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
+import '../widgets/questions_block.dart';
 import '../widgets/tasks_block.dart';
 import '../widgets/timed_block.dart';
+import 'questions_screen.dart';
 import 'settings_screen.dart';
 import 'tags_screen.dart';
 
@@ -29,7 +32,15 @@ class DayContent extends StatelessWidget {
     required this.onMenu,
     required this.onAdd,
     required this.onNoteChanged,
+    this.questions = const [],
+    this.answers = const {},
+    this.onAnswer,
   });
+
+  /// Active questions for this day, and the answers given so far.
+  final List<DailyQuestion> questions;
+  final Map<String, String> answers;
+  final void Function(DailyQuestion, String?)? onAnswer;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -56,15 +67,20 @@ class DayContent extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         if (width >= threeColumnWidth) {
-          return _columns([_timed(timed), _tasks(untimed), _note()]);
-        }
-        if (width >= twoColumnWidth) {
           return _columns([
-            _stack([_timed(timed), _tasks(untimed)]),
+            _timed(timed),
+            _stack([_tasks(untimed), _questions()]),
             _note(),
           ]);
         }
-        return _stack([_timed(timed), _tasks(untimed), _note()]);
+        if (width >= twoColumnWidth) {
+          return _columns([
+            _stack([_timed(timed), _tasks(untimed), _questions()]),
+            _note(),
+          ]);
+        }
+        return _stack(
+            [_timed(timed), _tasks(untimed), _questions(), _note()]);
       },
     );
   }
@@ -87,6 +103,12 @@ class DayContent extends StatelessWidget {
       );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
+
+  Widget _questions() => QuestionsBlock(
+        questions: questions,
+        answers: answers,
+        onAnswer: onAnswer ?? (_, _) {},
+      );
 
   /// Blocks one under another, the whole lot scrolling together.
   Widget _stack(List<Widget> blocks) => SingleChildScrollView(
@@ -134,8 +156,14 @@ class DayView extends StatelessWidget {
     required this.onAdd,
     required this.onNoteChanged,
     this.onOpenSettings,
+    this.questions = const [],
+    this.answers = const {},
+    this.onAnswer,
   });
 
+  final List<DailyQuestion> questions;
+  final Map<String, String> answers;
+  final void Function(DailyQuestion, String?)? onAnswer;
   final List<Task> tasks;
   final Map<String, Tag> tags;
   final String dayKey;
@@ -168,6 +196,9 @@ class DayView extends StatelessWidget {
               onMenu: onMenu,
               onAdd: onAdd,
               onNoteChanged: onNoteChanged,
+              questions: questions,
+              answers: answers,
+              onAnswer: onAnswer,
             ),
           ),
         ],
@@ -237,6 +268,11 @@ class _DayPageState extends State<DayPage> {
             onOpenTags: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => TagsScreen(repo: widget.repo),
+              ),
+            ),
+            onOpenQuestions: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => QuestionsScreen(repo: widget.repo),
               ),
             ),
           ),
@@ -328,7 +364,13 @@ class _DayPageState extends State<DayPage> {
             final tags = {
               for (final tag in tagSnap.data ?? const <Tag>[]) tag.id: tag
             };
-            return StreamBuilder<List<Task>>(
+            return StreamBuilder<List<DailyQuestion>>(
+              stream: widget.repo.watchQuestions(),
+              builder: (context, questionSnap) {
+                final questions = (questionSnap.data ?? const <DailyQuestion>[])
+                    .where((q) => q.active)
+                    .toList();
+                return StreamBuilder<List<Task>>(
               stream: widget.repo.watchTasks(),
               builder: (context, taskSnap) {
                 final all = taskSnap.data ?? const <Task>[];
@@ -349,9 +391,19 @@ class _DayPageState extends State<DayPage> {
                             setState(() => _index = index),
                         itemBuilder: (context, index) {
                           final day = _dayForPage(index);
-                          return StreamBuilder<String>(
+                          return StreamBuilder<Map<String, String>>(
+                            stream: widget.repo.watchAnswers(day),
+                            builder: (context, answerSnap) =>
+                                StreamBuilder<String>(
                             stream: widget.repo.watchNote(day),
                             builder: (context, noteSnap) => DayContent(
+                              questions: questions,
+                              answers: answerSnap.data ?? const {},
+                              onAnswer: (question, value) => _write(
+                                () => widget.repo
+                                    .setAnswer(day, question.id, value),
+                                'save that answer',
+                              ),
                               dayKey: day,
                               tasks: tasksForDay(all, day, _today),
                               tags: tags,
@@ -365,12 +417,15 @@ class _DayPageState extends State<DayPage> {
                               ),
                               onNoteChanged: (text) => _saveNote(day, text),
                             ),
+                          ),
                           );
                         },
                       ),
                     ),
                   ],
                 );
+              },
+            );
               },
             );
           },

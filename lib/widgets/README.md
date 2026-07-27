@@ -19,3 +19,6 @@ be golden-tested without Firebase.
 - `add_task_field.dart` — `AddTaskField`: the type-a-new-task row.
 - `note_block.dart` — `NoteBlock`: the daily note on ruled paper. Its font size
   and line height are fixed constants because the rules are painted to match.
+- `questions_block.dart` — `QuestionsBlock`: the day's quick check-offs, which
+  fold into an "All answered · 2/2" line once complete. `QuestionCheck` is the
+  small circle a yes/no question uses.

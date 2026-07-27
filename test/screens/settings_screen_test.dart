@@ -9,12 +9,14 @@ Widget _settings({
   bool eink = false,
   ValueChanged<bool>? onEinkChanged,
   VoidCallback? onOpenTags,
+  VoidCallback? onOpenQuestions,
   VoidCallback? onSignOut,
 }) =>
     SettingsView(
       einkMode: eink,
       onEinkChanged: onEinkChanged ?? (_) {},
       onOpenTags: onOpenTags ?? () {},
+      onOpenQuestions: onOpenQuestions ?? () {},
       onSignOut: onSignOut ?? () {},
       signedInAs: 'test@sdevaan.nl',
     );

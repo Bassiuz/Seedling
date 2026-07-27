@@ -8,3 +8,5 @@ the models stay testable without a backend.
   and `completedOnDate` recording which day page it was checked off on.
 - `tag.dart` — `Tag`: a project label. Stores indexes into the palette and icon
   lists rather than a colour or codepoint.
+- `daily_question.dart` — `DailyQuestion`: a daily check-off, either a plain
+  check or a set of choice chips. Deactivating one keeps past answers.

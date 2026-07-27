@@ -7,8 +7,8 @@ piece lands. Branch `phase-1`.
 | # | Piece | State |
 |---|-------|-------|
 | 1 | Settings screen, e-ink display mode, sign out | **done** |
-| 2 | Daily questions (configurable, collapse when answered) | in progress |
-| 3 | Someday lists per tag + pull-top-3-5 flow | todo |
+| 2 | Daily questions (configurable, collapse when answered) | **done** |
+| 3 | Someday lists per tag + pull-top-3-5 flow | in progress |
 | 4 | Time entries in 15-minute steps | todo |
 | 5 | Calendar (EventKit) agenda + blacklist with reveal | todo |
 | 6 | Week review templates with goal snapshots | todo |

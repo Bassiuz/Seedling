@@ -11,6 +11,7 @@ class SettingsView extends StatelessWidget {
     required this.einkMode,
     required this.onEinkChanged,
     required this.onOpenTags,
+    required this.onOpenQuestions,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -18,6 +19,7 @@ class SettingsView extends StatelessWidget {
   final bool einkMode;
   final ValueChanged<bool> onEinkChanged;
   final VoidCallback onOpenTags;
+  final VoidCallback onOpenQuestions;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -52,11 +54,22 @@ class SettingsView extends StatelessWidget {
             BlockFrame(
               title: 'Projects',
               icon: Icons.label_outline,
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text('Tags', style: text.bodyLarge),
-                trailing: Icon(Icons.chevron_right, color: colors.muted),
-                onTap: onOpenTags,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Tags', style: text.bodyLarge),
+                    trailing: Icon(Icons.chevron_right, color: colors.muted),
+                    onTap: onOpenTags,
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Daily questions', style: text.bodyLarge),
+                    trailing: Icon(Icons.chevron_right, color: colors.muted),
+                    onTap: onOpenQuestions,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 28),
@@ -93,12 +106,14 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     required this.settings,
     required this.onOpenTags,
+    required this.onOpenQuestions,
     required this.onSignOut,
     this.signedInAs,
   });
 
   final SettingsStore settings;
   final VoidCallback onOpenTags;
+  final VoidCallback onOpenQuestions;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -110,6 +125,7 @@ class SettingsScreen extends StatelessWidget {
         einkMode: settings.einkMode,
         onEinkChanged: settings.setEinkMode,
         onOpenTags: onOpenTags,
+        onOpenQuestions: onOpenQuestions,
         onSignOut: onSignOut,
         signedInAs: signedInAs,
       ),

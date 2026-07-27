@@ -193,8 +193,13 @@ class SeedlingTheme {
 
   /// Only the SemiBold cut of SourceSerif4 is bundled — w600 is not a style
   /// choice here, it is the only weight that renders without fake-bolding.
+  /// Emoji have no glyphs in either bundled family, so without this fallback
+  /// every emoji renders as a tofu box — in goldens and on device alike.
+  static const List<String> _emojiFallback = ['NotoColorEmoji'];
+
   static TextStyle _serif(double size, SeedlingColors c) => TextStyle(
         fontFamily: _serifFamily,
+        fontFamilyFallback: _emojiFallback,
         fontWeight: FontWeight.w600,
         fontSize: size,
         height: 1.2,
@@ -209,6 +214,7 @@ class SeedlingTheme {
   }) =>
       TextStyle(
         fontFamily: _sansFamily,
+        fontFamilyFallback: _emojiFallback,
         fontWeight: weight,
         fontSize: size,
         height: 1.35,

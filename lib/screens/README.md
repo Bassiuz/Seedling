@@ -13,3 +13,5 @@ Whole screens, assembled from `lib/widgets/`.
   `SignInScreen`, which signs in and creates the account on first use.
 - `settings_screen.dart` — `SettingsView` (pure, golden-tested) and
   `SettingsScreen`: the e-ink display toggle, a link to tags, and sign out.
+- `questions_screen.dart` — `QuestionsView` (pure) and `QuestionsScreen`, where
+  daily questions are configured. `QuestionEditor` edits one.

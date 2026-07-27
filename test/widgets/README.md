@@ -11,3 +11,5 @@ Golden and behaviour tests for `lib/widgets/`. Goldens live in `goldens/`.
 - `blocks_test.dart` — the three blocks stacked, filled (phone and e-ink) and
   empty; the add field's submit/clear and blank-input handling; and that the
   note adopts text for a new day without resetting the field mid-sentence.
+- `questions_block_test.dart` — goldens for unanswered, half-answered and
+  collapsed, plus the collapse/expand rule and chip and check toggling.
