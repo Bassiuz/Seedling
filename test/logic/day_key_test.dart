@@ -39,5 +39,23 @@ void main() {
     test('across the Europe/Amsterdam DST spring-forward', () {
       expect(addDays('2026-03-29', 1), '2026-03-30');
     });
+
+    // The 25-hour day: Duration(days: 1) lands back on the same date, so
+    // "tomorrow" would resolve to today once a year.
+    test('across the Europe/Amsterdam DST fall-back', () {
+      expect(addDays('2026-10-25', 1), '2026-10-26');
+    });
+
+    test('backwards across the DST fall-back', () {
+      expect(addDays('2026-10-26', -1), '2026-10-25');
+    });
+
+    test('a whole year of single steps stays in step with the calendar', () {
+      var key = '2026-01-01';
+      for (var i = 0; i < 365; i++) {
+        key = addDays(key, 1);
+      }
+      expect(key, '2027-01-01');
+    });
   });
 }
