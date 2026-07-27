@@ -9,3 +9,5 @@ Whole screens, assembled from `lib/widgets/`.
   - `DayPage`, the live screen: an endless `PageView` of days anchored on
     today, streaming tasks, tags and the note from `SeedlingRepo`, with the
     check/uncheck rule, debounced note saves, and the snooze/delete menu.
+- `sign_in_screen.dart` — `SignInForm` (pure, golden-tested) and
+  `SignInScreen`, which signs in and creates the account on first use.
