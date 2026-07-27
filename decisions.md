@@ -10,3 +10,6 @@
 - **macOS app sandbox disabled** — Firebase Auth needs keychain access, which a sandboxed app only gets via an entitlement requiring a macOS provisioning profile we do not have. Seedling runs locally on Bas's own Mac, so dropping the sandbox is cheaper than certificate management. Revisit if it ever ships through the Mac App Store.
 - **Firestore rules are version-controlled in `firestore.rules`** — the project's default deny-all rules silently rejected every write, and `fake_cloud_firestore` cannot catch that class of bug because it has no rules engine.
 - **All writes go through `_write()` in `DayPage`** — a rejected save used to look identical to a successful one. Failures now surface in a SnackBar.
+- **Calendar is read-only** — Seedling is a lens on your calendar, not a calendar client, so events are shown and hidden but never edited. `CalendarSource` is an interface so day pages and their tests never touch a device.
+- **Hide rules match a repeating series first, the exact title otherwise** — hiding "water the plants" once should hide it forever, not one occurrence at a time. Cmd-Shift-H reveals hidden events so a wrong hide can be undone.
+- **macOS runs unsandboxed, so calendar access needs no extra entitlement** — but iOS does: `NSCalendarsUsageDescription` and `NSCalendarsFullAccessUsageDescription` are in both Info.plists.

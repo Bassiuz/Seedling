@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'data/calendar_source.dart';
 import 'data/seedling_repo.dart';
 import 'data/settings_store.dart';
 import 'screens/day_page.dart';
@@ -16,11 +17,13 @@ class SeedlingApp extends StatelessWidget {
     required this.auth,
     required this.firestore,
     required this.settings,
+    required this.calendar,
   });
 
   final FirebaseAuth auth;
   final FirebaseFirestore firestore;
   final SettingsStore settings;
+  final CalendarSource calendar;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +50,7 @@ class SeedlingApp extends StatelessWidget {
             return DayPage(
               repo: SeedlingRepo(firestore, user.uid),
               settings: settings,
+              calendar: calendar,
               onSignOut: auth.signOut,
               signedInAs: user.email,
             );

@@ -10,8 +10,8 @@ piece lands. Branch `phase-1`.
 | 2 | Daily questions (configurable, collapse when answered) | **done** |
 | 3 | Someday lists per tag + pull-top-3-5 flow | **done** |
 | 4 | Time entries in 15-minute steps | **done** |
-| 5 | Calendar (EventKit) agenda + blacklist with reveal | in progress |
-| 6 | Week review templates with goal snapshots | todo |
+| 5 | Calendar (EventKit) agenda + blacklist with reveal | **done** |
+| 6 | Week review templates with goal snapshots | in progress |
 | 7 | Markdown vault export (macOS) | todo |
 | 8 | iPhone home-screen widget | todo |
 

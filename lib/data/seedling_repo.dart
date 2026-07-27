@@ -133,6 +133,24 @@ class SeedlingRepo {
     await deleteSomeday(item);
   }
 
+  // --- hidden calendar events ---
+
+  DocumentReference<Map<String, dynamic>> get _blacklist =>
+      _user.collection('config').doc('blacklist');
+
+  /// The hide keys: a repeating event's series id, or an exact title.
+  Stream<Set<String>> watchHiddenEvents() =>
+      _blacklist.snapshots().map((snap) =>
+          ((snap.data()?['keys'] as List<dynamic>?) ?? const [])
+              .map((k) => k as String)
+              .toSet());
+
+  Future<void> hideEvent(String key) => _blacklist.set(
+      {'keys': FieldValue.arrayUnion([key])}, SetOptions(merge: true));
+
+  Future<void> unhideEvent(String key) => _blacklist.set(
+      {'keys': FieldValue.arrayRemove([key])}, SetOptions(merge: true));
+
   /// Answers for one day, keyed by question id.
   Stream<Map<String, String>> watchAnswers(String dayKey) =>
       _days.doc(dayKey).snapshots().map((snap) {

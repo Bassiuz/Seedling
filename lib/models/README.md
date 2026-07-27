@@ -12,3 +12,5 @@ the models stay testable without a backend.
   check or a set of choice chips. Deactivating one keeps past answers.
 - `someday_item.dart` — `SomedayItem`: an idea parked against a project, with a
   priority so the pull-into-today flow can offer the best few.
+- `calendar_event.dart` — `CalendarEvent`: one appointment read from the device
+  calendar. `hideKey` is what a blacklist rule matches on.

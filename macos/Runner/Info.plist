@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Seedling shows your appointments beside the day you are planning.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Seedling shows your appointments beside the day you are planning.</string>
 </dict>
 </plist>

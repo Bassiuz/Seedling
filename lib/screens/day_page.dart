@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/seedling_repo.dart';
+import '../data/calendar_source.dart';
 import '../data/settings_store.dart';
 import '../logic/day_key.dart';
+import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
+import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
@@ -40,6 +44,11 @@ class DayContent extends StatelessWidget {
     this.onAnswer,
     this.someday = const [],
     this.onPullSomeday,
+    this.events = const [],
+    this.hiddenKeys = const {},
+    this.revealing = false,
+    this.onHideEvent,
+    this.onUnhideEvent,
   });
 
   /// Active questions for this day, and the answers given so far.
@@ -48,6 +57,11 @@ class DayContent extends StatelessWidget {
   final void Function(DailyQuestion, String?)? onAnswer;
   final List<SomedayItem> someday;
   final void Function(SomedayItem)? onPullSomeday;
+  final List<CalendarEvent> events;
+  final Set<String> hiddenKeys;
+  final bool revealing;
+  final void Function(CalendarEvent)? onHideEvent;
+  final void Function(CalendarEvent)? onUnhideEvent;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -98,6 +112,11 @@ class DayContent extends StatelessWidget {
         shownDay: dayKey,
         onToggle: onToggle,
         onMenu: onMenu,
+        events: events,
+        hiddenKeys: hiddenKeys,
+        revealing: revealing,
+        onHideEvent: onHideEvent,
+        onUnhideEvent: onUnhideEvent,
       );
 
   Widget _tasks(List<Task> untimed) => TasksBlock(
@@ -170,6 +189,11 @@ class DayView extends StatelessWidget {
     this.onAnswer,
     this.someday = const [],
     this.onPullSomeday,
+    this.events = const [],
+    this.hiddenKeys = const {},
+    this.revealing = false,
+    this.onHideEvent,
+    this.onUnhideEvent,
   });
 
   final List<DailyQuestion> questions;
@@ -177,6 +201,11 @@ class DayView extends StatelessWidget {
   final void Function(DailyQuestion, String?)? onAnswer;
   final List<SomedayItem> someday;
   final void Function(SomedayItem)? onPullSomeday;
+  final List<CalendarEvent> events;
+  final Set<String> hiddenKeys;
+  final bool revealing;
+  final void Function(CalendarEvent)? onHideEvent;
+  final void Function(CalendarEvent)? onUnhideEvent;
   final List<Task> tasks;
   final Map<String, Tag> tags;
   final String dayKey;
@@ -214,6 +243,11 @@ class DayView extends StatelessWidget {
               onAnswer: onAnswer,
               someday: someday,
               onPullSomeday: onPullSomeday,
+              events: events,
+              hiddenKeys: hiddenKeys,
+              revealing: revealing,
+              onHideEvent: onHideEvent,
+              onUnhideEvent: onUnhideEvent,
             ),
           ),
         ],
@@ -229,9 +263,14 @@ class DayPage extends StatefulWidget {
     this.settings,
     this.onSignOut,
     this.signedInAs,
+    this.calendar = const NoCalendar(),
   });
 
   final SeedlingRepo repo;
+
+  /// Where appointments come from. Defaults to nothing so tests and the BigMe
+  /// both work without a device calendar.
+  final CalendarSource calendar;
 
   /// Null in tests that only care about the day itself; the settings button is
   /// hidden when it is absent.
@@ -256,6 +295,31 @@ class _DayPageState extends State<DayPage> {
   int _index = _anchor;
   Timer? _noteDebounce;
 
+  /// Appointments for the days around today, keyed by day.
+  Map<String, List<CalendarEvent>> _events = const {};
+
+  /// While true, hidden events are drawn greyed so a wrong hide can be undone.
+  bool _revealing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  /// A window around today rather than the whole calendar: paging years back
+  /// should not mean reading years of appointments.
+  Future<void> _loadEvents() async {
+    final events = await widget.calendar
+        .eventsBetween(addDays(_today, -60), addDays(_today, 60));
+    if (!mounted) return;
+    final byDay = <String, List<CalendarEvent>>{};
+    for (final event in events) {
+      byDay.putIfAbsent(event.dayKey, () => []).add(event);
+    }
+    setState(() => _events = byDay);
+  }
+
   @override
   void dispose() {
     _noteDebounce?.cancel();
@@ -264,6 +328,9 @@ class _DayPageState extends State<DayPage> {
   }
 
   String _dayForPage(int index) => addDays(_today, index - _anchor);
+
+  /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
+  void _toggleReveal() => setState(() => _revealing = !_revealing);
 
   void _jumpTo(int deltaFromToday) => _controller.animateToPage(
         _anchor + deltaFromToday,
@@ -410,7 +477,16 @@ class _DayPageState extends State<DayPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyH,
+            meta: true, shift: true): _toggleReveal,
+        const SingleActivator(LogicalKeyboardKey.keyH,
+            control: true, shift: true): _toggleReveal,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
       body: SafeArea(
         child: StreamBuilder<List<Tag>>(
           stream: widget.repo.watchTags(),
@@ -424,6 +500,10 @@ class _DayPageState extends State<DayPage> {
                 final questions = (questionSnap.data ?? const <DailyQuestion>[])
                     .where((q) => q.active)
                     .toList();
+                return StreamBuilder<Set<String>>(
+              stream: widget.repo.watchHiddenEvents(),
+              builder: (context, hiddenSnap) {
+                final hidden = hiddenSnap.data ?? const <String>{};
                 return StreamBuilder<List<SomedayItem>>(
               stream: widget.repo.watchSomeday(),
               builder: (context, somedaySnap) {
@@ -479,6 +559,21 @@ class _DayPageState extends State<DayPage> {
                                 () => widget.repo.promoteSomeday(item, day),
                                 'move that onto this day',
                               ),
+                              events: visibleEvents(
+                                _events[day] ?? const [],
+                                hidden,
+                                reveal: _revealing,
+                              ),
+                              hiddenKeys: hidden,
+                              revealing: _revealing,
+                              onHideEvent: (event) => _write(
+                                () => widget.repo.hideEvent(event.hideKey),
+                                'hide that event',
+                              ),
+                              onUnhideEvent: (event) => _write(
+                                () => widget.repo.unhideEvent(event.hideKey),
+                                'show that event again',
+                              ),
                             ),
                           ),
                           );
@@ -493,7 +588,11 @@ class _DayPageState extends State<DayPage> {
             );
               },
             );
+              },
+            );
           },
+        ),
+      ),
         ),
       ),
     );

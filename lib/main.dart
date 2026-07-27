@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'data/calendar_source.dart';
 import 'data/settings_store.dart';
 import 'firebase_options.dart';
 
@@ -25,6 +26,7 @@ Future<void> main() async {
       auth: FirebaseAuth.instance,
       firestore: FirebaseFirestore.instance,
       settings: await SettingsStore.open(),
+      calendar: DeviceCalendar(),
     ),
   );
 }
