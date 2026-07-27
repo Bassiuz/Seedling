@@ -43,11 +43,11 @@ A task has: title, optional tag, planned date, optional time, optional snooze-mo
 
 **Tags/projects** — name + color + icon, user-defined, shown as a small chip on each task. Filterable. Tag colors are picked from the e-ink-safe palette (below), so a tag looks the same on the iPhone, the Mac, and the BigMe.
 
-**Rollover** — the rule, derived from the wish list:
+**Rollover** — the rule:
 
-- A task appears on its planned date's page.
-- If uncompleted, it also appears on **Today** (carried over, visually marked "from Jul 26"). Carryover renders only on Today — past pages show exactly what was planned there plus what was completed there, so history stays honest.
-- Completing a task **anywhere** (including going back to yesterday's page) completes it once, recording *which day page* it was checked on. It immediately stops appearing as carryover everywhere else.
+- A task appears on every day page from its planned date through the day it was completed — or through Today while it remains open. `visible on D  ⟺  task.date ≤ D ≤ (completedOnDate ?? today)`.
+- Completing a task on any day page (including going back to an earlier day) records *that page's date* as `completedOnDate`. Days after it never show the task; days up to and including it keep showing it, so history stays honest. Example: planned Tuesday, checked off on Wednesday's page while it's Thursday → visible on Tuesday ("done Wed" annotation) and Wednesday (checked), gone from Thursday.
+- Carried instances are visually marked with their origin ("from Jul 26").
 - Future pages show only tasks planned/snoozed to that day.
 
 **Snooze** — pick a date; the task's planned date moves there (original creation date kept for history). Gone from today, appears there.
@@ -154,7 +154,8 @@ Notebook vibe throughout: subtle paper texture, ruled lines under the note area,
 
 ## Open questions
 
-- Firebase project: create a fresh one for Seedling (recommended) rather than reusing an existing project's.
 - Font pairing and paper texture: to be settled visually via golden prototypes in phase 1.
-- Whether completed-late tasks should also show a "done Wed" marker on their originally planned day's page (currently: yes, small gray annotation).
-- Daily-note templates (from the BigMe scribble: office day, meeting notes, MTG session) — a starter skeleton insertable into a day's note. Parked as a later phase; the note block stays free-form in v1.
+
+## Infrastructure
+
+- Firebase project: `seedling-461b0` (Firestore enabled).
