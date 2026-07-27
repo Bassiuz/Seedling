@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 
 /// Shared chrome for the sections of a day page: a serif heading with a small
 /// icon, a hairline under it, then the content.
@@ -23,12 +23,13 @@ class BlockFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: SeedlingPalette.grayDark),
+            Icon(icon, size: 18, color: colors.muted),
             const SizedBox(width: 8),
             Expanded(
               child: Text(title,
@@ -38,7 +39,7 @@ class BlockFrame extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        Container(height: 1, color: SeedlingPalette.paperLine),
+        Container(height: 1, color: colors.rule),
         const SizedBox(height: 8),
         child,
       ],
@@ -53,14 +54,17 @@ class EmptyNote extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    return Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(
           text,
           style: Theme.of(context)
               .textTheme
               .bodyMedium
-              ?.copyWith(color: SeedlingPalette.grayLight),
+              ?.copyWith(color: colors.faint),
         ),
       );
+  }
 }

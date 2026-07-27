@@ -5,7 +5,7 @@ import '../logic/day_key.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
-import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 import 'tag_chip.dart';
 
 /// One task on a day page: a big round checkbox, the title, and a quiet line
@@ -34,6 +34,7 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final state = checkStateOn(task, shownDay);
     final text = Theme.of(context).textTheme;
     final done = state != TaskCheckState.open;
@@ -49,7 +50,7 @@ class TaskTile extends StatelessWidget {
           children: [
             TaskCheckbox(
               state: state,
-              color: tag == null ? SeedlingPalette.ink : TagChip.colorOf(tag!),
+              color: tag == null ? colors.ink : TagChip.colorOf(tag!),
               onTap: interactive ? onToggle : null,
             ),
             const SizedBox(width: 12),
@@ -63,10 +64,10 @@ class TaskTile extends StatelessWidget {
                       task.title,
                       style: text.bodyLarge?.copyWith(
                         color: done
-                            ? SeedlingPalette.gray
-                            : SeedlingPalette.ink,
+                            ? colors.muted
+                            : colors.ink,
                         decoration: done ? TextDecoration.lineThrough : null,
-                        decorationColor: SeedlingPalette.gray,
+                        decorationColor: colors.muted,
                       ),
                     ),
                   ),
@@ -148,9 +149,10 @@ class TaskCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final checkedHere = state == TaskCheckState.checkedHere;
     final doneLater = state == TaskCheckState.doneLater;
-    final outline = doneLater ? SeedlingPalette.grayLight : color;
+    final outline = doneLater ? colors.faint : color;
 
     return GestureDetector(
       onTap: onTap,
@@ -169,7 +171,7 @@ class TaskCheckbox extends StatelessWidget {
                 Icons.check,
                 size: doneLater ? 14 : 18,
                 color:
-                    checkedHere ? SeedlingPalette.paper : SeedlingPalette.gray,
+                    checkedHere ? colors.paper : colors.muted,
               ),
       ),
     );

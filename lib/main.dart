@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'data/settings_store.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -23,6 +24,7 @@ Future<void> main() async {
     SeedlingApp(
       auth: FirebaseAuth.instance,
       firestore: FirebaseFirestore.instance,
+      settings: await SettingsStore.open(),
     ),
   );
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../logic/day_key.dart';
-import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 
 /// The top of a day page: the yesterday/today/tomorrow shortcuts, and the date
 /// written out the way you would write it at the top of a notebook page.
@@ -12,7 +12,7 @@ class DayHeader extends StatelessWidget {
     required this.dayKey,
     required this.today,
     required this.onJump,
-    this.onOpenTags,
+    this.onOpenSettings,
   });
 
   /// The day being shown.
@@ -24,12 +24,13 @@ class DayHeader extends StatelessWidget {
   /// Called with the offset from [today] of the day to jump to.
   final void Function(int deltaFromToday) onJump;
 
-  /// Null hides the tags button, which is what golden tests of the bare header
-  /// want.
-  final VoidCallback? onOpenTags;
+  /// Null hides the settings button, which is what golden tests of the bare
+  /// header want.
+  final VoidCallback? onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     final date = dateOfKey(dayKey);
 
@@ -44,7 +45,7 @@ class DayHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: SeedlingPalette.paperLine,
+                  color: colors.rule,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Row(
@@ -66,13 +67,13 @@ class DayHeader extends StatelessWidget {
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: onOpenTags == null
+                  child: onOpenSettings == null
                       ? const SizedBox.shrink()
                       : IconButton(
-                          onPressed: onOpenTags,
-                          tooltip: 'Tags',
-                          icon: const Icon(Icons.label_outline,
-                              color: SeedlingPalette.grayDark),
+                          onPressed: onOpenSettings,
+                          tooltip: 'Settings',
+                          icon: Icon(Icons.settings_outlined,
+                              color: colors.muted),
                         ),
                 ),
               ),
@@ -104,21 +105,22 @@ class DayShortcut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? SeedlingPalette.paper : null,
+          color: selected ? colors.paper : null,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: selected
-                    ? SeedlingPalette.ink
-                    : SeedlingPalette.grayDark,
+                    ? colors.ink
+                    : colors.muted,
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
         ),

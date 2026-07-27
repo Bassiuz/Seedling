@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 import 'block_frame.dart';
 
 /// The free-form note for the day, written on ruled paper.
@@ -50,33 +50,28 @@ class _NoteBlockState extends State<NoteBlock> {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final colors = SeedlingColors.of(context);
+    const metrics = TextStyle(
       fontFamily: 'SourceSans3',
       fontSize: NoteBlock.fontSize,
       height: NoteBlock.lineHeight / NoteBlock.fontSize,
-      color: SeedlingPalette.ink,
     );
 
     return BlockFrame(
       title: 'Daily Note',
       icon: Icons.edit_outlined,
       child: CustomPaint(
-        painter: const _RuledPaper(),
+        painter: _RuledPaper(colors.rule),
         child: TextField(
           controller: _controller,
           onChanged: widget.onChanged,
           maxLines: null,
           minLines: widget.minLines,
-          style: style,
-          cursorColor: SeedlingPalette.ink,
-          decoration: const InputDecoration.collapsed(
+          style: metrics.copyWith(color: colors.ink),
+          cursorColor: colors.ink,
+          decoration: InputDecoration.collapsed(
             hintText: 'How was today?',
-            hintStyle: TextStyle(
-              fontFamily: 'SourceSans3',
-              fontSize: NoteBlock.fontSize,
-              height: NoteBlock.lineHeight / NoteBlock.fontSize,
-              color: SeedlingPalette.grayLight,
-            ),
+            hintStyle: metrics.copyWith(color: colors.faint),
           ),
         ),
       ),
@@ -87,12 +82,14 @@ class _NoteBlockState extends State<NoteBlock> {
 /// Horizontal rules at exactly one line of note text apart, so writing sits on
 /// the lines instead of drifting away from them.
 class _RuledPaper extends CustomPainter {
-  const _RuledPaper();
+  const _RuledPaper(this.rule);
+
+  final Color rule;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = SeedlingPalette.paperLine
+      ..color = rule
       ..strokeWidth = 1;
     for (var y = NoteBlock.lineHeight; y <= size.height; y += NoteBlock.lineHeight) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
@@ -100,5 +97,5 @@ class _RuledPaper extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_RuledPaper oldDelegate) => false;
+  bool shouldRepaint(_RuledPaper oldDelegate) => oldDelegate.rule != rule;
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/seedling_repo.dart';
+import '../data/settings_store.dart';
 import '../logic/day_key.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
@@ -11,6 +12,7 @@ import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
 import '../widgets/tasks_block.dart';
 import '../widgets/timed_block.dart';
+import 'settings_screen.dart';
 import 'tags_screen.dart';
 
 /// The blocks of one day, laid out for whatever width they are given. This is
@@ -131,7 +133,7 @@ class DayView extends StatelessWidget {
     required this.onMenu,
     required this.onAdd,
     required this.onNoteChanged,
-    this.onOpenTags,
+    this.onOpenSettings,
   });
 
   final List<Task> tasks;
@@ -144,7 +146,7 @@ class DayView extends StatelessWidget {
   final void Function(Task) onMenu;
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
-  final VoidCallback? onOpenTags;
+  final VoidCallback? onOpenSettings;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -154,7 +156,7 @@ class DayView extends StatelessWidget {
             dayKey: dayKey,
             today: today,
             onJump: onJump,
-            onOpenTags: onOpenTags,
+            onOpenSettings: onOpenSettings,
           ),
           Expanded(
             child: DayContent(
@@ -175,9 +177,21 @@ class DayView extends StatelessWidget {
 /// The day page proper: swipe left and right through days, with everything
 /// wired to Firestore. The header does not move with the pages.
 class DayPage extends StatefulWidget {
-  const DayPage({super.key, required this.repo});
+  const DayPage({
+    super.key,
+    required this.repo,
+    this.settings,
+    this.onSignOut,
+    this.signedInAs,
+  });
 
   final SeedlingRepo repo;
+
+  /// Null in tests that only care about the day itself; the settings button is
+  /// hidden when it is absent.
+  final SettingsStore? settings;
+  final Future<void> Function()? onSignOut;
+  final String? signedInAs;
 
   @override
   State<DayPage> createState() => _DayPageState();
@@ -209,6 +223,24 @@ class _DayPageState extends State<DayPage> {
         _anchor + deltaFromToday,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
+      );
+
+  void _openSettings() => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SettingsScreen(
+            settings: widget.settings!,
+            signedInAs: widget.signedInAs,
+            onSignOut: () async {
+              Navigator.of(context).pop();
+              await widget.onSignOut?.call();
+            },
+            onOpenTags: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => TagsScreen(repo: widget.repo),
+              ),
+            ),
+          ),
+        ),
       );
 
   /// Every write goes through here: a failure has to be visible, or a rejected
@@ -307,11 +339,8 @@ class _DayPageState extends State<DayPage> {
                       dayKey: _dayForPage(_index),
                       today: _today,
                       onJump: _jumpTo,
-                      onOpenTags: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => TagsScreen(repo: widget.repo),
-                        ),
-                      ),
+                      onOpenSettings:
+                          widget.settings == null ? null : _openSettings,
                     ),
                     Expanded(
                       child: PageView.builder(

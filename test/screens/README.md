@@ -6,3 +6,6 @@
   task adding it to the day on screen.
 - `sign_in_screen_test.dart` — the form's goldens (phone, Mac, and with an
   error), that it trims the email, and that it cannot be submitted twice.
+- `settings_screen_test.dart` — settings goldens on phone, Mac and e-ink, the
+  toggle and sign-out callbacks, and that the e-ink colour set really is white
+  paper with no mid-grey text.

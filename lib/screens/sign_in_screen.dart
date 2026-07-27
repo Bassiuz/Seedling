@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 
 /// The sign-in form on its own, with no Firebase in sight, so it can be
 /// golden-tested and driven in widget tests.
@@ -29,6 +30,7 @@ class _SignInFormState extends State<SignInForm> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
 
     return Center(
@@ -60,7 +62,7 @@ class _SignInFormState extends State<SignInForm> {
                     : () => widget.onSubmit(_email.text.trim(), _password.text),
                 style: FilledButton.styleFrom(
                   backgroundColor: SeedlingPalette.greenDeep,
-                  foregroundColor: SeedlingPalette.paper,
+                  foregroundColor: colors.paper,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -89,6 +91,7 @@ class _Field extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     return TextField(
       controller: controller,
       obscureText: obscure,
@@ -102,14 +105,14 @@ class _Field extends StatelessWidget {
         labelStyle: Theme.of(context)
             .textTheme
             .labelLarge
-            ?.copyWith(color: SeedlingPalette.grayDark),
+            ?.copyWith(color: colors.muted),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: SeedlingPalette.grayLight),
+          borderSide: BorderSide(color: colors.faint),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: SeedlingPalette.grayLight),
+          borderSide: BorderSide(color: colors.faint),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

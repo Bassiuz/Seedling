@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/tag.dart';
-import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 import 'tag_chip.dart';
 
 /// The line at the bottom of the task list you type a new task into.
@@ -85,6 +85,7 @@ class _AddTaskFieldState extends State<AddTaskField> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -95,7 +96,7 @@ class _AddTaskFieldState extends State<AddTaskField> {
             height: 28,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: SeedlingPalette.grayLight, width: 2),
+              border: Border.all(color: colors.faint, width: 2),
             ),
           ),
           const SizedBox(width: 12),
@@ -108,7 +109,7 @@ class _AddTaskFieldState extends State<AddTaskField> {
               decoration: InputDecoration.collapsed(
                 hintText: 'Add a task…',
                 hintStyle:
-                    text.bodyLarge?.copyWith(color: SeedlingPalette.grayLight),
+                    text.bodyLarge?.copyWith(color: colors.faint),
               ),
             ),
           ),
@@ -117,7 +118,7 @@ class _AddTaskFieldState extends State<AddTaskField> {
               padding: const EdgeInsets.only(right: 4),
               child: Text(_time!,
                   style: text.labelMedium
-                      ?.copyWith(color: SeedlingPalette.grayDark)),
+                      ?.copyWith(color: colors.muted)),
             ),
           _GhostButton(
             icon: Icons.schedule,
@@ -164,7 +165,9 @@ class _GhostButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => IconButton(
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    return IconButton(
         onPressed: onTap,
         tooltip: tooltip,
         visualDensity: VisualDensity.compact,
@@ -172,7 +175,8 @@ class _GhostButton extends StatelessWidget {
           icon,
           size: 20,
           color:
-              active ? SeedlingPalette.grayDark : SeedlingPalette.grayLight,
+              active ? colors.muted : colors.faint,
         ),
       );
+  }
 }

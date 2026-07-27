@@ -4,6 +4,7 @@ import '../data/seedling_repo.dart';
 import '../models/tag.dart';
 import '../theme/seedling_icons.dart';
 import '../theme/seedling_palette.dart';
+import '../theme/seedling_theme.dart';
 import '../widgets/block_frame.dart';
 import '../widgets/tag_chip.dart';
 
@@ -22,6 +23,7 @@ class TagsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -32,7 +34,7 @@ class TagsView extends StatelessWidget {
             trailing: IconButton(
               onPressed: onAdd,
               tooltip: 'New tag',
-              icon: const Icon(Icons.add, color: SeedlingPalette.grayDark),
+              icon: Icon(Icons.add, color: colors.muted),
             ),
             child: tags.isEmpty
                 ? const EmptyNote('No tags yet')
@@ -83,6 +85,7 @@ class _TagEditorState extends State<TagEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     final color = SeedlingPalette.tagColors[_colorIndex];
 
@@ -119,7 +122,7 @@ class _TagEditorState extends State<TagEditor> {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: i == _colorIndex
-                            ? SeedlingPalette.ink
+                            ? colors.ink
                             : Colors.transparent,
                         width: 2.5,
                       ),
@@ -146,7 +149,7 @@ class _TagEditorState extends State<TagEditor> {
                       border: Border.all(
                         color: i == _iconIndex
                             ? color
-                            : SeedlingPalette.paperLine,
+                            : colors.rule,
                         width: 2,
                       ),
                     ),
@@ -164,7 +167,7 @@ class _TagEditorState extends State<TagEditor> {
             },
             style: FilledButton.styleFrom(
               backgroundColor: SeedlingPalette.greenDeep,
-              foregroundColor: SeedlingPalette.paper,
+              foregroundColor: colors.paper,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape:
                   RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

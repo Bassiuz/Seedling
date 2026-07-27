@@ -7,6 +7,7 @@ import 'package:seedling/logic/rollover.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/screens/day_page.dart';
+import 'package:seedling/theme/seedling_theme.dart';
 import 'package:seedling/widgets/day_header.dart';
 import 'package:seedling/widgets/task_tile.dart';
 
@@ -88,6 +89,18 @@ void main() {
     [GoldenSize.phone],
     () => _day(tasks: const []),
   );
+
+  testWidgets('day view in e-ink mode', (tester) async {
+    configureSize(tester, GoldenSize.eink);
+    await tester.pumpWidget(MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: SeedlingTheme.eink(),
+      home: _day(note: 'Took Riley to the vet this morning.'),
+    ));
+    await tester.pumpAndSettle();
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('goldens/day_view_eink_mode.png'));
+  });
 
   testWidgets('splits tasks into the timed and untimed blocks',
       (tester) async {
