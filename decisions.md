@@ -16,3 +16,5 @@
 - **A week review freezes the goals into itself** — a review is a record of that week, so it snapshots the template's goal blocks when it is created rather than reading them live. Editing goals later never rewrites history.
 - **Review answers are keyed by the question text** — re-wording a prompt leaves the old answer under the old wording instead of silently re-labelling it.
 - **Week keys are ISO-8601 (`2026-W31`)** — matches the vault filenames and sorts chronologically. Day-of-year is computed in UTC: a local `difference().inDays` loses an hour across DST and lands a week early.
+- **The vault is a one-way mirror** — Markdown is written from the data and never read back, so pointing an agent or Obsidian at the folder is safe and nothing there can corrupt the app. Export is a full sweep rather than an incremental sync: the data is small and idempotent writes are easy to trust.
+- **Export is desktop-only and manual for now** — a phone has nowhere useful to put a vault, and an automatic mirror on every keystroke would be noisy. Settings has "Export everything now"; automatic debounced mirroring is the obvious next step.

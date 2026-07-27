@@ -6,3 +6,5 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   `visibleEvents` (with a reveal mode so a wrong hide can be undone).
 - `week_key.dart` — ISO week keys (`2026-W31`), week bounds, and which week a
   review written on a given day belongs to.
+- `markdown.dart` — renders days, reviews, someday lists and tags as Markdown
+  for the vault, plus the paths each file belongs at.

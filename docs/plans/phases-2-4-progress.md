@@ -12,8 +12,8 @@ piece lands. Branch `phase-1`.
 | 4 | Time entries in 15-minute steps | **done** |
 | 5 | Calendar (EventKit) agenda + blacklist with reveal | **done** |
 | 6 | Week review templates with goal snapshots | **done** |
-| 7 | Markdown vault export (macOS) | in progress |
-| 8 | iPhone home-screen widget | todo |
+| 7 | Markdown vault export (macOS) | **done** |
+| 8 | iPhone home-screen widget | in progress |
 
 ## Conventions (unchanged from phase 1)
 

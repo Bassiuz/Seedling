@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../data/seedling_repo.dart';
 import '../data/calendar_source.dart';
 import '../data/settings_store.dart';
+import '../data/vault_service.dart';
 import '../logic/day_key.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
@@ -355,11 +356,30 @@ class _DayPageState extends State<DayPage> {
         ),
       );
 
+  String? _exportStatus;
+
+  Future<void> _exportVault(StateSetter refreshSheet) async {
+    final vault = defaultVault();
+    if (vault == null) return;
+    refreshSheet(() => _exportStatus = 'Exporting…');
+    try {
+      final count = await VaultService(widget.repo, vault).exportAll();
+      refreshSheet(() => _exportStatus = 'Wrote $count files');
+    } catch (error) {
+      refreshSheet(() => _exportStatus = 'Failed: $error');
+    }
+  }
+
   void _openSettings() => Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => SettingsScreen(
+          builder: (_) => StatefulBuilder(
+            builder: (context, refresh) => SettingsScreen(
             settings: widget.settings!,
             signedInAs: widget.signedInAs,
+            onExportVault:
+                defaultVault() == null ? null : () => _exportVault(refresh),
+            vaultPath: defaultVault()?.root.path,
+            exportStatus: _exportStatus,
             onSignOut: () async {
               Navigator.of(context).pop();
               await widget.onSignOut?.call();
@@ -379,6 +399,7 @@ class _DayPageState extends State<DayPage> {
                 builder: (_) =>
                     SomedayScreen(repo: widget.repo, today: _today),
               ),
+            ),
             ),
           ),
         ),

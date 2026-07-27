@@ -8,3 +8,5 @@ Tests for the pure logic helpers in `lib/logic/`.
   reveal, and the all-day-before-timed ordering.
 - `week_key_test.dart` — ISO numbering including the year-boundary weeks, week
   bounds, and which week a review belongs to.
+- `markdown_test.dart` — front matter, checkboxes, task annotations, the agenda,
+  answered questions, verbatim notes, reviews, and the file paths.

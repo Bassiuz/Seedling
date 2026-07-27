@@ -58,6 +58,35 @@ void main() {
     expect(signOuts, 1);
   });
 
+  testWidgets('the vault block is hidden where there is nowhere to write it',
+      (tester) async {
+    await tester.pumpWidget(wrapApp(_settings()));
+
+    expect(find.text('Markdown vault'), findsNothing);
+  });
+
+  testWidgets('exporting the vault reports back', (tester) async {
+    var exports = 0;
+    await tester.pumpWidget(wrapApp(SettingsView(
+      einkMode: false,
+      onEinkChanged: (_) {},
+      onOpenTags: () {},
+      onOpenQuestions: () {},
+      onOpenSomeday: () {},
+      onSignOut: () {},
+      onExportVault: () => exports++,
+      vaultPath: '/Users/bassiuz/Seedling Vault',
+      exportStatus: 'Wrote 42 files',
+    )));
+
+    expect(find.text('/Users/bassiuz/Seedling Vault'), findsOneWidget);
+    expect(find.text('Wrote 42 files'), findsOneWidget);
+
+    await tester.tap(find.text('Export everything now'));
+
+    expect(exports, 1);
+  });
+
   testWidgets('tags are reachable from settings', (tester) async {
     var opens = 0;
     await tester.pumpWidget(wrapApp(_settings(onOpenTags: () => opens++)));

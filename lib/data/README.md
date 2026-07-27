@@ -10,3 +10,7 @@ work with `Task`, `Tag` and plain strings.
   `DeviceCalendar` (EventKit / Android provider, read-only), `NoCalendar` for
   platforms that cannot see one, and `FakeCalendar` for tests.
 - `settings_store.dart` — per-device settings, currently the e-ink display mode.
+- `vault_exporter.dart` — `VaultExporter`: writes the Markdown files. One-way
+  and idempotent, so nothing in the folder can corrupt the app.
+- `vault_service.dart` — `VaultService.exportAll()`: a full sweep of Firestore
+  into the vault, and `defaultVault()` for this machine's folder.

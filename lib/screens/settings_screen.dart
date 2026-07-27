@@ -13,6 +13,9 @@ class SettingsView extends StatelessWidget {
     required this.onOpenTags,
     required this.onOpenQuestions,
     required this.onOpenSomeday,
+    this.onExportVault,
+    this.vaultPath,
+    this.exportStatus,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -22,6 +25,11 @@ class SettingsView extends StatelessWidget {
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
   final VoidCallback onOpenSomeday;
+
+  /// Null where this machine cannot hold a vault, which hides the whole block.
+  final VoidCallback? onExportVault;
+  final String? vaultPath;
+  final String? exportStatus;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -80,6 +88,42 @@ class SettingsView extends StatelessWidget {
                 ],
               ),
             ),
+            if (onExportVault != null) ...[
+              const SizedBox(height: 28),
+              BlockFrame(
+                title: 'Markdown vault',
+                icon: Icons.folder_outlined,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Writes every day, review and list as Markdown so an '
+                      'agent can read them. One way — nothing there is read '
+                      'back.',
+                      style: text.labelMedium,
+                    ),
+                    if (vaultPath != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(vaultPath!,
+                            style: text.labelMedium
+                                ?.copyWith(color: colors.muted)),
+                      ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Export everything now',
+                          style: text.bodyLarge),
+                      subtitle: exportStatus == null
+                          ? null
+                          : Text(exportStatus!, style: text.labelMedium),
+                      trailing:
+                          Icon(Icons.ios_share, color: colors.muted),
+                      onTap: onExportVault,
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 28),
             BlockFrame(
               title: 'Account',
@@ -116,6 +160,9 @@ class SettingsScreen extends StatelessWidget {
     required this.onOpenTags,
     required this.onOpenQuestions,
     required this.onOpenSomeday,
+    this.onExportVault,
+    this.vaultPath,
+    this.exportStatus,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -124,6 +171,11 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
   final VoidCallback onOpenSomeday;
+
+  /// Null where this machine cannot hold a vault, which hides the whole block.
+  final VoidCallback? onExportVault;
+  final String? vaultPath;
+  final String? exportStatus;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -139,6 +191,9 @@ class SettingsScreen extends StatelessWidget {
         onOpenSomeday: onOpenSomeday,
         onSignOut: onSignOut,
         signedInAs: signedInAs,
+        onExportVault: onExportVault,
+        vaultPath: vaultPath,
+        exportStatus: exportStatus,
       ),
     );
   }
