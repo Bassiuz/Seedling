@@ -1,0 +1,11 @@
+{
+  // There is no global flutter on PATH — this project is pinned with fvm, and
+  // without this the Dart extension cannot find an SDK at all.
+  "dart.flutterSdkPath": ".fvm/flutter_sdk",
+  "search.exclude": {
+    "**/.fvm": true
+  },
+  "files.watcherExclude": {
+    "**/.fvm": true
+  }
+}

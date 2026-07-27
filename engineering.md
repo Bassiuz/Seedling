@@ -21,6 +21,17 @@
 - macOS needs `com.apple.security.network.client` in **both**
   `macos/Runner/*.entitlements`, or Firestore silently fails to reach the
   network in the sandbox.
+- iOS is pinned to deployment target **15.0** (`ios/Podfile` and all three
+  `IPHONEOS_DEPLOYMENT_TARGET` entries in `Runner.xcodeproj`) because
+  `cloud_firestore` requires it. Flutter's default of 13.0 fails at
+  `pod install`; keep the Podfile and the Xcode project in step.
+
+## Running from VS Code
+
+`.vscode/settings.json` points the Dart extension at `.fvm/flutter_sdk`; without
+it there is no SDK to find, since nothing is installed globally.
+`.vscode/launch.json` offers debug, profile, and a release configuration that
+installs a standalone build on a device.
 
 ## `lib/` layout
 
