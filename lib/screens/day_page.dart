@@ -14,6 +14,7 @@ import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
 import '../widgets/questions_block.dart';
 import '../widgets/tasks_block.dart';
+import '../widgets/time_sheet.dart';
 import '../widgets/timed_block.dart';
 import 'questions_screen.dart';
 import 'settings_screen.dart';
@@ -334,13 +335,41 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
-  Future<void> _openMenu(Task task) async {
+  /// Keeps the sheet open while you tap, so logging an hour is four taps
+  /// rather than four round trips through the menu.
+  Future<void> _logTime(Task task, String day) => showModalBottomSheet<void>(
+        context: context,
+        builder: (sheetContext) => StreamBuilder<List<Task>>(
+          stream: widget.repo.watchTasks(),
+          builder: (context, snapshot) {
+            final latest = (snapshot.data ?? const <Task>[])
+                .where((t) => t.id == task.id)
+                .firstOrNull;
+            if (latest == null) return const SizedBox.shrink();
+            return TimeSheet(
+              task: latest,
+              dayKey: day,
+              onChange: (delta) => _write(
+                () => widget.repo.logTime(latest, day, delta),
+                'log that time',
+              ),
+            );
+          },
+        ),
+      );
+
+  Future<void> _openMenu(Task task, String day) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: const Icon(Icons.timer_outlined),
+              title: const Text('Log time'),
+              onTap: () => Navigator.pop(context, 'time'),
+            ),
             ListTile(
               leading: const Icon(Icons.schedule),
               title: const Text('Snooze to…'),
@@ -356,6 +385,11 @@ class _DayPageState extends State<DayPage> {
       ),
     );
     if (!mounted || action == null) return;
+
+    if (action == 'time') {
+      await _logTime(task, day);
+      return;
+    }
 
     if (action == 'delete') {
       await _write(() => widget.repo.deleteTask(task), 'delete that');
@@ -433,7 +467,7 @@ class _DayPageState extends State<DayPage> {
                               tags: tags,
                               note: noteSnap.data ?? '',
                               onToggle: (task) => _toggle(task, day),
-                              onMenu: _openMenu,
+                              onMenu: (task) => _openMenu(task, day),
                               onAdd: (title, {tagId, time}) => _write(
                                 () => widget.repo.addTask(title,
                                     date: day, tagId: tagId, time: time),

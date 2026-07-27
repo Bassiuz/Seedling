@@ -22,3 +22,6 @@ be golden-tested without Firebase.
 - `questions_block.dart` — `QuestionsBlock`: the day's quick check-offs, which
   fold into an "All answered · 2/2" line once complete. `QuestionCheck` is the
   small circle a yes/no question uses.
+- `time_sheet.dart` — `TimeSheet`: logs work against a task in quarter-hour
+  steps, showing the day's total and the all-days total. `TimeSheet.format`
+  renders minutes as "1h 30m" for the tile footnote too.

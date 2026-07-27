@@ -73,6 +73,16 @@ class SeedlingRepo {
 
   Future<void> deleteTask(Task t) => _tasks.doc(t.id).delete();
 
+  /// Adds [deltaMinutes] to the time logged against [dayKey], never letting a
+  /// day go negative. Zero removes the entry rather than storing a 0.
+  Future<void> logTime(Task t, String dayKey, int deltaMinutes) {
+    final updated = (t.minutesOn(dayKey) + deltaMinutes).clamp(0, 24 * 60);
+    return _tasks.doc(t.id).update({
+      'timeEntries.$dayKey':
+          updated == 0 ? FieldValue.delete() : updated,
+    });
+  }
+
   Future<void> upsertTag(Tag t) => _tags.doc(t.id).set(t.toMap());
 
   /// Merges, so a day document keeps whatever else it holds.

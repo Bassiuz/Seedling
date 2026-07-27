@@ -14,6 +14,7 @@ class Task {
     this.tagId,
     this.time,
     this.completedOnDate,
+    this.timeEntries = const {},
   });
 
   factory Task.fromMap(String id, Map<String, dynamic> map) => Task(
@@ -24,6 +25,12 @@ class Task {
         tagId: map['tagId'] as String?,
         time: map['time'] as String?,
         completedOnDate: map['completedOnDate'] as String?,
+        timeEntries: {
+          for (final e
+              in (map['timeEntries'] as Map<String, dynamic>? ?? const {})
+                  .entries)
+            e.key: (e.value as num).toInt(),
+        },
       );
 
   final String id;
@@ -36,8 +43,17 @@ class Task {
   final String? time;
   final String? completedOnDate;
 
+  /// Minutes worked, keyed by the day they were worked on — the admin Bas
+  /// needs later is per day, not just a running total.
+  final Map<String, int> timeEntries;
+
   bool get isCompleted => completedOnDate != null;
   bool get isTimed => time != null;
+
+  int get totalMinutes =>
+      timeEntries.values.fold(0, (sum, minutes) => sum + minutes);
+
+  int minutesOn(String dayKey) => timeEntries[dayKey] ?? 0;
 
   /// [id] is the document id, so it is not part of the stored data.
   Map<String, dynamic> toMap() => {
@@ -47,6 +63,7 @@ class Task {
         'tagId': tagId,
         'time': time,
         'completedOnDate': completedOnDate,
+        'timeEntries': timeEntries,
       };
 
   /// [clearCompleted] is the only way to set [completedOnDate] back to null:
@@ -57,6 +74,7 @@ class Task {
     String? tagId,
     String? time,
     String? completedOnDate,
+    Map<String, int>? timeEntries,
     bool clearCompleted = false,
   }) =>
       Task(
@@ -68,5 +86,6 @@ class Task {
         time: time ?? this.time,
         completedOnDate:
             clearCompleted ? null : completedOnDate ?? this.completedOnDate,
+        timeEntries: timeEntries ?? this.timeEntries,
       );
 }

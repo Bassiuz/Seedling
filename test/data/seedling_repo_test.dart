@@ -56,6 +56,28 @@ void main() {
       expect(moved.createdDate, task.createdDate);
     });
 
+    test('logTime accumulates per day and never goes negative', () async {
+      await repo.addTask('Fix promo video', date: '2026-07-27');
+      var task = (await repo.watchTasks().first).single;
+
+      await repo.logTime(task, '2026-07-27', 15);
+      task = (await repo.watchTasks().first).single;
+      await repo.logTime(task, '2026-07-27', 30);
+      task = (await repo.watchTasks().first).single;
+      expect(task.minutesOn('2026-07-27'), 45);
+
+      await repo.logTime(task, '2026-07-26', 60);
+      task = (await repo.watchTasks().first).single;
+      expect(task.totalMinutes, 105);
+
+      // Subtracting more than was logged clears the day rather than going below
+      // zero.
+      await repo.logTime(task, '2026-07-26', -120);
+      task = (await repo.watchTasks().first).single;
+      expect(task.minutesOn('2026-07-26'), 0);
+      expect(task.timeEntries.containsKey('2026-07-26'), isFalse);
+    });
+
     test('deleteTask removes it', () async {
       await repo.addTask('Set out blue can', date: '2026-07-15');
       final task = (await repo.watchTasks().first).single;

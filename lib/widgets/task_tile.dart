@@ -7,6 +7,7 @@ import '../models/tag.dart';
 import '../models/task.dart';
 import '../theme/seedling_theme.dart';
 import 'tag_chip.dart';
+import 'time_sheet.dart';
 
 /// One task on a day page: a big round checkbox, the title, and a quiet line
 /// underneath for its time, its tag, and where it came from.
@@ -94,8 +95,10 @@ class _Footnote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.labelSmall;
+    final logged = task.minutesOn(shownDay);
     final notes = <String>[
       if (task.time != null) task.time!,
+      if (logged > 0) TimeSheet.format(logged),
       ..._originNote(),
     ];
 
