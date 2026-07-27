@@ -12,6 +12,7 @@ class SettingsView extends StatelessWidget {
     required this.onEinkChanged,
     required this.onOpenTags,
     required this.onOpenQuestions,
+    required this.onOpenSomeday,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -20,6 +21,7 @@ class SettingsView extends StatelessWidget {
   final ValueChanged<bool> onEinkChanged;
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
+  final VoidCallback onOpenSomeday;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -69,6 +71,12 @@ class SettingsView extends StatelessWidget {
                     trailing: Icon(Icons.chevron_right, color: colors.muted),
                     onTap: onOpenQuestions,
                   ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Someday', style: text.bodyLarge),
+                    trailing: Icon(Icons.chevron_right, color: colors.muted),
+                    onTap: onOpenSomeday,
+                  ),
                 ],
               ),
             ),
@@ -107,6 +115,7 @@ class SettingsScreen extends StatelessWidget {
     required this.settings,
     required this.onOpenTags,
     required this.onOpenQuestions,
+    required this.onOpenSomeday,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -114,6 +123,7 @@ class SettingsScreen extends StatelessWidget {
   final SettingsStore settings;
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
+  final VoidCallback onOpenSomeday;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -126,6 +136,7 @@ class SettingsScreen extends StatelessWidget {
         onEinkChanged: settings.setEinkMode,
         onOpenTags: onOpenTags,
         onOpenQuestions: onOpenQuestions,
+        onOpenSomeday: onOpenSomeday,
         onSignOut: onSignOut,
         signedInAs: signedInAs,
       ),

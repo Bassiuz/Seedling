@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/day_key.dart';
 import '../models/daily_question.dart';
+import '../models/someday_item.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
 
@@ -95,6 +96,32 @@ class SeedlingRepo {
 
   Future<void> deleteQuestion(DailyQuestion question) =>
       _questions.doc(question.id).delete();
+
+  // --- someday ---
+
+  CollectionReference<Map<String, dynamic>> get _someday =>
+      _user.collection('someday');
+
+  /// Highest priority first — the pull-into-today flow offers the top few.
+  Stream<List<SomedayItem>> watchSomeday() =>
+      _someday.orderBy('priority').snapshots().map((snap) =>
+          snap.docs.map((d) => SomedayItem.fromMap(d.id, d.data())).toList());
+
+  Future<void> addSomeday(String title, {String? tagId, int priority = 0}) =>
+      _someday.add({'title': title, 'tagId': tagId, 'priority': priority});
+
+  Future<void> upsertSomeday(SomedayItem item) =>
+      _someday.doc(item.id).set(item.toMap());
+
+  Future<void> deleteSomeday(SomedayItem item) =>
+      _someday.doc(item.id).delete();
+
+  /// Moves a someday item onto a day, and takes it off the someday list — the
+  /// whole point is that it stops being "someday".
+  Future<void> promoteSomeday(SomedayItem item, String dayKey) async {
+    await addTask(item.title, date: dayKey, tagId: item.tagId);
+    await deleteSomeday(item);
+  }
 
   /// Answers for one day, keyed by question id.
   Stream<Map<String, String>> watchAnswers(String dayKey) =>

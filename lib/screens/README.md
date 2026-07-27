@@ -15,3 +15,5 @@ Whole screens, assembled from `lib/widgets/`.
   `SettingsScreen`: the e-ink display toggle, a link to tags, and sign out.
 - `questions_screen.dart` — `QuestionsView` (pure) and `QuestionsScreen`, where
   daily questions are configured. `QuestionEditor` edits one.
+- `someday_screen.dart` — `SomedayView` (pure) and `SomedayScreen`: ideas parked
+  per project, with a one-tap "do it today" that moves one onto the day.

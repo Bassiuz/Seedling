@@ -8,6 +8,7 @@ import '../logic/day_key.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
 import '../models/daily_question.dart';
+import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
@@ -16,6 +17,7 @@ import '../widgets/tasks_block.dart';
 import '../widgets/timed_block.dart';
 import 'questions_screen.dart';
 import 'settings_screen.dart';
+import 'someday_screen.dart';
 import 'tags_screen.dart';
 
 /// The blocks of one day, laid out for whatever width they are given. This is
@@ -35,12 +37,16 @@ class DayContent extends StatelessWidget {
     this.questions = const [],
     this.answers = const {},
     this.onAnswer,
+    this.someday = const [],
+    this.onPullSomeday,
   });
 
   /// Active questions for this day, and the answers given so far.
   final List<DailyQuestion> questions;
   final Map<String, String> answers;
   final void Function(DailyQuestion, String?)? onAnswer;
+  final List<SomedayItem> someday;
+  final void Function(SomedayItem)? onPullSomeday;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -100,6 +106,8 @@ class DayContent extends StatelessWidget {
         onToggle: onToggle,
         onMenu: onMenu,
         onAdd: onAdd,
+        someday: someday,
+        onPullSomeday: onPullSomeday,
       );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
@@ -159,11 +167,15 @@ class DayView extends StatelessWidget {
     this.questions = const [],
     this.answers = const {},
     this.onAnswer,
+    this.someday = const [],
+    this.onPullSomeday,
   });
 
   final List<DailyQuestion> questions;
   final Map<String, String> answers;
   final void Function(DailyQuestion, String?)? onAnswer;
+  final List<SomedayItem> someday;
+  final void Function(SomedayItem)? onPullSomeday;
   final List<Task> tasks;
   final Map<String, Tag> tags;
   final String dayKey;
@@ -199,6 +211,8 @@ class DayView extends StatelessWidget {
               questions: questions,
               answers: answers,
               onAnswer: onAnswer,
+              someday: someday,
+              onPullSomeday: onPullSomeday,
             ),
           ),
         ],
@@ -273,6 +287,12 @@ class _DayPageState extends State<DayPage> {
             onOpenQuestions: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => QuestionsScreen(repo: widget.repo),
+              ),
+            ),
+            onOpenSomeday: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    SomedayScreen(repo: widget.repo, today: _today),
               ),
             ),
           ),
@@ -370,6 +390,10 @@ class _DayPageState extends State<DayPage> {
                 final questions = (questionSnap.data ?? const <DailyQuestion>[])
                     .where((q) => q.active)
                     .toList();
+                return StreamBuilder<List<SomedayItem>>(
+              stream: widget.repo.watchSomeday(),
+              builder: (context, somedaySnap) {
+                final someday = somedaySnap.data ?? const <SomedayItem>[];
                 return StreamBuilder<List<Task>>(
               stream: widget.repo.watchTasks(),
               builder: (context, taskSnap) {
@@ -416,6 +440,11 @@ class _DayPageState extends State<DayPage> {
                                 'add that task',
                               ),
                               onNoteChanged: (text) => _saveNote(day, text),
+                              someday: someday,
+                              onPullSomeday: (item) => _write(
+                                () => widget.repo.promoteSomeday(item, day),
+                                'move that onto this day',
+                              ),
                             ),
                           ),
                           );
@@ -424,6 +453,8 @@ class _DayPageState extends State<DayPage> {
                     ),
                   ],
                 );
+              },
+            );
               },
             );
               },

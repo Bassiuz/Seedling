@@ -9,3 +9,5 @@
 - `settings_screen_test.dart` — settings goldens on phone, Mac and e-ink, the
   toggle and sign-out callbacks, and that the e-ink colour set really is white
   paper with no mid-grey text.
+- `someday_screen_test.dart` — goldens filled and empty, the grouping rule, and
+  that promoting really creates the task and removes the parked item.

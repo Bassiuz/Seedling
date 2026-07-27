@@ -10,6 +10,7 @@ Widget _settings({
   ValueChanged<bool>? onEinkChanged,
   VoidCallback? onOpenTags,
   VoidCallback? onOpenQuestions,
+  VoidCallback? onOpenSomeday,
   VoidCallback? onSignOut,
 }) =>
     SettingsView(
@@ -17,6 +18,7 @@ Widget _settings({
       onEinkChanged: onEinkChanged ?? (_) {},
       onOpenTags: onOpenTags ?? () {},
       onOpenQuestions: onOpenQuestions ?? () {},
+      onOpenSomeday: onOpenSomeday ?? () {},
       onSignOut: onSignOut ?? () {},
       signedInAs: 'test@sdevaan.nl',
     );

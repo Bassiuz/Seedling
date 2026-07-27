@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/someday_item.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
 import 'add_task_field.dart';
@@ -16,6 +17,8 @@ class TasksBlock extends StatelessWidget {
     required this.onToggle,
     required this.onMenu,
     required this.onAdd,
+    this.someday = const [],
+    this.onPullSomeday,
   });
 
   final List<Task> tasks;
@@ -24,6 +27,8 @@ class TasksBlock extends StatelessWidget {
   final void Function(Task) onToggle;
   final void Function(Task) onMenu;
   final void Function(String title, {String? tagId, String? time}) onAdd;
+  final List<SomedayItem> someday;
+  final void Function(SomedayItem)? onPullSomeday;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +46,12 @@ class TasksBlock extends StatelessWidget {
               onToggle: () => onToggle(task),
               onMenu: () => onMenu(task),
             ),
-          AddTaskField(onAdd: onAdd, tags: tags.values.toList()),
+          AddTaskField(
+            onAdd: onAdd,
+            tags: tags.values.toList(),
+            someday: someday,
+            onPullSomeday: onPullSomeday,
+          ),
         ],
       ),
     );

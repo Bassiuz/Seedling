@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/someday_item.dart';
 import '../models/tag.dart';
 import '../theme/seedling_theme.dart';
 import 'tag_chip.dart';
@@ -14,10 +15,20 @@ class AddTaskField extends StatefulWidget {
     super.key,
     required this.onAdd,
     this.tags = const [],
+    this.someday = const [],
+    this.onPullSomeday,
   });
 
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final List<Tag> tags;
+
+  /// The someday list, best first. Only the top few are ever offered — picking
+  /// from a long list is the thing this flow exists to avoid.
+  final List<SomedayItem> someday;
+  final void Function(SomedayItem)? onPullSomeday;
+
+  /// How many someday items the picker offers at once.
+  static const int somedayOffered = 5;
 
   @override
   State<AddTaskField> createState() => _AddTaskFieldState();
@@ -73,6 +84,29 @@ class _AddTaskFieldState extends State<AddTaskField> {
     if (mounted) setState(() => _tag = picked);
   }
 
+  Future<void> _pickSomeday() async {
+    final offered =
+        widget.someday.take(AddTaskField.somedayOffered).toList();
+    if (offered.isEmpty) return;
+    final picked = await showModalBottomSheet<SomedayItem>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final item in offered)
+              ListTile(
+                leading: const Icon(Icons.playlist_add_check),
+                title: Text(item.title),
+                onTap: () => Navigator.pop(context, item),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) widget.onPullSomeday?.call(picked);
+  }
+
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -119,6 +153,13 @@ class _AddTaskFieldState extends State<AddTaskField> {
               child: Text(_time!,
                   style: text.labelMedium
                       ?.copyWith(color: colors.muted)),
+            ),
+          if (widget.someday.isNotEmpty && widget.onPullSomeday != null)
+            _GhostButton(
+              icon: Icons.playlist_add_check,
+              active: false,
+              tooltip: 'From someday',
+              onTap: _pickSomeday,
             ),
           _GhostButton(
             icon: Icons.schedule,
