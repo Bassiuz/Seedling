@@ -9,6 +9,7 @@ import '../data/settings_store.dart';
 import '../logic/day_key.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
+import '../logic/week_key.dart';
 import '../models/tag.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
@@ -22,6 +23,7 @@ import '../widgets/time_sheet.dart';
 import '../widgets/timed_block.dart';
 import 'questions_screen.dart';
 import 'settings_screen.dart';
+import 'week_review_screen.dart';
 import 'someday_screen.dart';
 import 'tags_screen.dart';
 
@@ -184,6 +186,8 @@ class DayView extends StatelessWidget {
     required this.onAdd,
     required this.onNoteChanged,
     this.onOpenSettings,
+    this.onOpenReview,
+    this.reviewDue = false,
     this.questions = const [],
     this.answers = const {},
     this.onAnswer,
@@ -217,6 +221,8 @@ class DayView extends StatelessWidget {
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenReview;
+  final bool reviewDue;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -227,6 +233,8 @@ class DayView extends StatelessWidget {
             today: today,
             onJump: onJump,
             onOpenSettings: onOpenSettings,
+            onOpenReview: onOpenReview,
+            reviewDue: reviewDue,
           ),
           Expanded(
             child: DayContent(
@@ -336,6 +344,15 @@ class _DayPageState extends State<DayPage> {
         _anchor + deltaFromToday,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
+      );
+
+  void _openReview(String day) => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => WeekReviewScreen(
+            repo: widget.repo,
+            weekKey: reviewWeekFor(day),
+          ),
+        ),
       );
 
   void _openSettings() => Navigator.of(context).push(
@@ -504,6 +521,10 @@ class _DayPageState extends State<DayPage> {
               stream: widget.repo.watchHiddenEvents(),
               builder: (context, hiddenSnap) {
                 final hidden = hiddenSnap.data ?? const <String>{};
+                return StreamBuilder<List<String>>(
+              stream: widget.repo.watchReviewedWeeks(),
+              builder: (context, reviewedSnap) {
+                final reviewedWeeks = reviewedSnap.data ?? const <String>[];
                 return StreamBuilder<List<SomedayItem>>(
               stream: widget.repo.watchSomeday(),
               builder: (context, somedaySnap) {
@@ -521,6 +542,10 @@ class _DayPageState extends State<DayPage> {
                       onJump: _jumpTo,
                       onOpenSettings:
                           widget.settings == null ? null : _openSettings,
+                      onOpenReview: () => _openReview(_dayForPage(_index)),
+                      reviewDue: isReviewDay(_dayForPage(_index)) &&
+                          !reviewedWeeks
+                              .contains(reviewWeekFor(_dayForPage(_index))),
                     ),
                     Expanded(
                       child: PageView.builder(
@@ -582,6 +607,8 @@ class _DayPageState extends State<DayPage> {
                     ),
                   ],
                 );
+              },
+            );
               },
             );
               },

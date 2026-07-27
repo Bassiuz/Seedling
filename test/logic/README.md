@@ -6,3 +6,5 @@ Tests for the pure logic helpers in `lib/logic/`.
   Thursday) and the anomaly where `completedOnDate` precedes the planned date.
 - `blacklist_test.dart` — series-vs-title matching, dropping hidden events,
   reveal, and the all-day-before-timed ordering.
+- `week_key_test.dart` — ISO numbering including the year-boundary weeks, week
+  bounds, and which week a review belongs to.

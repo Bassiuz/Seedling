@@ -14,3 +14,5 @@
 - `calendar_test.dart` — the timed block with appointments, hide and reveal, and
   one day-page test proving events land on the day. A second DayPage test in
   this file never settles, so hiding is covered at repo level instead.
+- `week_review_test.dart` — goldens written and blank, that a new review freezes
+  the goals, and answering, adding and removing observations.

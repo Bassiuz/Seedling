@@ -13,3 +13,6 @@
 - **Calendar is read-only** — Seedling is a lens on your calendar, not a calendar client, so events are shown and hidden but never edited. `CalendarSource` is an interface so day pages and their tests never touch a device.
 - **Hide rules match a repeating series first, the exact title otherwise** — hiding "water the plants" once should hide it forever, not one occurrence at a time. Cmd-Shift-H reveals hidden events so a wrong hide can be undone.
 - **macOS runs unsandboxed, so calendar access needs no extra entitlement** — but iOS does: `NSCalendarsUsageDescription` and `NSCalendarsFullAccessUsageDescription` are in both Info.plists.
+- **A week review freezes the goals into itself** — a review is a record of that week, so it snapshots the template's goal blocks when it is created rather than reading them live. Editing goals later never rewrites history.
+- **Review answers are keyed by the question text** — re-wording a prompt leaves the old answer under the old wording instead of silently re-labelling it.
+- **Week keys are ISO-8601 (`2026-W31`)** — matches the vault filenames and sorts chronologically. Day-of-year is computed in UTC: a local `difference().inDays` loses an hour across DST and lands a week early.

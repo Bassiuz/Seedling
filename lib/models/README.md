@@ -14,3 +14,8 @@ the models stay testable without a backend.
   priority so the pull-into-today flow can offer the best few.
 - `calendar_event.dart` — `CalendarEvent`: one appointment read from the device
   calendar. `hideKey` is what a blacklist rule matches on.
+- `review_template.dart` — `ReviewTemplate` and `GoalBlock`: the shape of a
+  week review, configured once. `ReviewTemplate.starter` mirrors the review Bas
+  already writes by hand.
+- `week_review.dart` — `WeekReview` and `MoodLine`: one written review, holding
+  a frozen copy of the goals as they stood that week.

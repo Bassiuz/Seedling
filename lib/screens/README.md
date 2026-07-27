@@ -17,3 +17,5 @@ Whole screens, assembled from `lib/widgets/`.
   daily questions are configured. `QuestionEditor` edits one.
 - `someday_screen.dart` — `SomedayView` (pure) and `SomedayScreen`: ideas parked
   per project, with a one-tap "do it today" that moves one onto the day.
+- `week_review_screen.dart` — `WeekReviewView` (pure) and `WeekReviewScreen`:
+  frozen goals, the repeating questions, and emoji-bundled observations.

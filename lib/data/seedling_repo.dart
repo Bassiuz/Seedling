@@ -3,8 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../logic/day_key.dart';
 import '../models/daily_question.dart';
 import '../models/someday_item.dart';
+import '../models/review_template.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
+import '../models/week_review.dart';
 
 /// Everything Seedling reads from and writes to Firestore, for one signed-in
 /// user. Firestore types stop here — callers deal in [Task], [Tag] and
@@ -132,6 +134,37 @@ class SeedlingRepo {
     await addTask(item.title, date: dayKey, tagId: item.tagId);
     await deleteSomeday(item);
   }
+
+  // --- week reviews ---
+
+  DocumentReference<Map<String, dynamic>> get _template =>
+      _user.collection('config').doc('reviewTemplate');
+
+  CollectionReference<Map<String, dynamic>> get _reviews =>
+      _user.collection('reviews');
+
+  /// Falls back to the starter template so the first review is not a blank
+  /// page waiting to be configured.
+  Stream<ReviewTemplate> watchReviewTemplate() =>
+      _template.snapshots().map((snap) => snap.exists
+          ? ReviewTemplate.fromMap(snap.data() ?? const {})
+          : ReviewTemplate.starter);
+
+  Future<void> saveReviewTemplate(ReviewTemplate template) =>
+      _template.set(template.toMap());
+
+  Stream<WeekReview?> watchReview(String weekKey) => _reviews
+      .doc(weekKey)
+      .snapshots()
+      .map((snap) =>
+          snap.exists ? WeekReview.fromMap(weekKey, snap.data() ?? const {}) : null);
+
+  Future<void> saveReview(WeekReview review) =>
+      _reviews.doc(review.weekKey).set(review.toMap());
+
+  Stream<List<String>> watchReviewedWeeks() => _reviews
+      .snapshots()
+      .map((snap) => snap.docs.map((d) => d.id).toList()..sort());
 
   // --- hidden calendar events ---
 
