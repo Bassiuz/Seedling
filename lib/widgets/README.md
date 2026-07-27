@@ -11,3 +11,11 @@ be golden-tested without Firebase.
   later day is drawn as faded history and ignores taps.
 - `tag_chip.dart` — `TagChip`: a tag as a small outlined chip, plus
   `colorOf`/`iconOf` for anything else that needs a tag's colour or icon.
+- `block_frame.dart` — `BlockFrame`: the shared heading-plus-hairline chrome
+  every day-page section sits in. `EmptyNote` is the grey line an empty one
+  shows.
+- `timed_block.dart` — `TimedBlock`: the day's timed tasks in clock order.
+- `tasks_block.dart` — `TasksBlock`: the day's untimed tasks, with the add line.
+- `add_task_field.dart` — `AddTaskField`: the type-a-new-task row.
+- `note_block.dart` — `NoteBlock`: the daily note on ruled paper. Its font size
+  and line height are fixed constants because the rules are painted to match.
