@@ -15,66 +15,19 @@ class SeedlingTheme {
   static const String _serifFamily = 'SourceSerif4';
   static const String _sansFamily = 'SourceSans3';
 
-  /// Cards, buttons and inputs share this corner radius.
-  static const double _radius = 12;
-
-  static ThemeData light() {
-    final textTheme = _textTheme();
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: _colorScheme,
-      scaffoldBackgroundColor: SeedlingPalette.paper,
-      // Catches text built outside the textTheme: an unnamed family renders as
-      // tofu boxes in golden tests.
-      fontFamily: _sansFamily,
-      textTheme: textTheme,
-      cardTheme: CardThemeData(
-        color: SeedlingPalette.paper,
-        surfaceTintColor: SeedlingPalette.paper,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_radius),
-          side: const BorderSide(color: SeedlingPalette.paperLine),
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: SeedlingPalette.greenDeep,
-          foregroundColor: SeedlingPalette.paper,
-          textStyle: textTheme.labelLarge,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(_radius),
-          ),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: SeedlingPalette.greenDeep,
-          textStyle: textTheme.labelLarge,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(_radius),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: false,
-        hintStyle: textTheme.bodyMedium?.copyWith(color: SeedlingPalette.gray),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_radius),
-          borderSide: const BorderSide(color: SeedlingPalette.grayLight),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_radius),
-          borderSide: const BorderSide(color: SeedlingPalette.grayLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(_radius),
-          borderSide: const BorderSide(color: SeedlingPalette.greenDeep),
-        ),
-      ),
-    );
-  }
+  // ponytail: no component themes (card/button/input) until a screen actually
+  // renders one — untested theme config is config that silently rots. Add each
+  // one alongside the widget that needs it, and golden-test them together.
+  static ThemeData light() => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        colorScheme: _colorScheme,
+        scaffoldBackgroundColor: SeedlingPalette.paper,
+        // Catches text built outside the textTheme: an unnamed family renders
+        // as tofu boxes in golden tests.
+        fontFamily: _sansFamily,
+        textTheme: _textTheme(),
+      );
 
   static const ColorScheme _colorScheme = ColorScheme(
     brightness: Brightness.light,
