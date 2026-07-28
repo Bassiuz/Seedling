@@ -18,6 +18,9 @@ class DayHeader extends StatelessWidget {
     this.revealing = false,
     this.onOpenSomeday,
     this.onOpenCalendar,
+    this.trailing,
+    this.title,
+    this.subtitle,
   });
 
   /// The day being shown.
@@ -45,6 +48,14 @@ class DayHeader extends StatelessWidget {
   /// lives up here rather than on the page: the day's own blocks scroll, and
   /// a downward drag inside them means scroll, not "show me the month".
   final VoidCallback? onOpenCalendar;
+
+  /// Sits beside the date, aligned with the top of it. The day's check-offs
+  /// go here once they are all answered and have folded to one line.
+  final Widget? trailing;
+
+  /// What the page is, when it is not a date — a week review, say.
+  final String? title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -121,12 +132,20 @@ class DayHeader extends StatelessWidget {
           GestureDetector(
             onLongPress: onToggleReveal,
             behavior: HitTestBehavior.opaque,
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(DateFormat('EEEE', 'en_US').format(date),
+                // The date takes what is left; the summary beside it is only
+                // as wide as it needs to be.
+                Expanded(
+                  child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title ?? DateFormat('EEEE', 'en_US').format(date),
                     style: text.displayMedium),
-                Text(DateFormat('MMMM d, y', 'en_US').format(date),
+                Text(
+                    subtitle ??
+                        DateFormat('MMMM d, y', 'en_US').format(date),
                     style: text.displaySmall),
                 if (revealing)
                   Padding(
@@ -136,6 +155,14 @@ class DayHeader extends StatelessWidget {
                       style: text.labelMedium
                           ?.copyWith(color: SeedlingPalette.crimson),
                     ),
+                  ),
+              ],
+            ),
+                ),
+                if (trailing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, top: 6),
+                    child: trailing!,
                   ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/data/seedling_repo.dart';
 import 'package:seedling/models/review_template.dart';
@@ -207,5 +208,34 @@ void main() {
     expect(find.text('2026-W31'), findsOneWidget);
     expect(find.textContaining('since last week review'), findsNothing,
         reason: 'that prompt was dropped from the starter template');
+  });
+
+  testWidgets('an emoji on the clipboard can be pasted in', (tester) async {
+    // Raycast and friends copy the emoji as well as pasting it; this is the
+    // route that does not depend on the paste reaching the field.
+    final added = <(String, String)>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async => call.method == 'Clipboard.getData'
+          ? <String, dynamic>{'text': '🪴 potted'}
+          : null,
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    configureSize(tester, GoldenSize.mac);
+    await tester
+        .pumpWidget(wrapApp(_view(onAddMood: (e, t) => added.add((e, t)))));
+    await tester.ensureVisible(find.byTooltip('Paste an emoji'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Paste an emoji'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Add an observation…'), 'Repotted');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
+    expect(added, [('🪴', 'Repotted')]);
   });
 }

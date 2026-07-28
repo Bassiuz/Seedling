@@ -273,49 +273,39 @@ class DayView extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final header = DayHeader(
-                dayKey: dayKey,
-                today: today,
-                onJump: onJump,
-                onOpenSettings: onOpenSettings,
-                onToggleReveal: onToggleReveal,
-                revealing: revealing,
-                onOpenSomeday: onOpenSomeday,
-                onOpenCalendar: onOpenCalendar,
-              );
-              // The daily check-offs belong beside the date where there is
-              // room: they are about the day as a whole, not a task among
-              // tasks.
-              if (constraints.maxWidth < DayContent.twoColumnWidth ||
-                  questions.isEmpty) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    header,
-                    if (questions.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                        child: _questionsBlock(),
-                      ),
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(child: header),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 12, 24, 16),
-                      child: _questionsBlock(),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+          // Answered and folded shut, the day's check-offs are one line and
+          // sit beside the date. Otherwise they are something to do, and
+          // belong under the header at full width.
+          if (questions.isNotEmpty &&
+              QuestionsBlock.allAnswered(questions, answers))
+            DayHeader(
+              dayKey: dayKey,
+              today: today,
+              onJump: onJump,
+              onOpenSettings: onOpenSettings,
+              onToggleReveal: onToggleReveal,
+              revealing: revealing,
+              onOpenSomeday: onOpenSomeday,
+              onOpenCalendar: onOpenCalendar,
+              trailing: _questionsBlock(),
+            )
+          else ...[
+            DayHeader(
+              dayKey: dayKey,
+              today: today,
+              onJump: onJump,
+              onOpenSettings: onOpenSettings,
+              onToggleReveal: onToggleReveal,
+              revealing: revealing,
+              onOpenSomeday: onOpenSomeday,
+              onOpenCalendar: onOpenCalendar,
+            ),
+            if (questions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: _questionsBlock(),
+              ),
+          ],
           Expanded(
             child: DayContent(
               dayKey: dayKey,
@@ -416,6 +406,9 @@ class _DayPageState extends State<DayPage> {
   /// Days with a note, an answer or a ticked appointment on them, for the
   /// month calendar. Task completions are folded in when it opens.
   Set<String> _activeDays = const {};
+
+  /// The day's check-offs, opened by hand after they were all answered.
+  bool _questionsOpen = false;
   StreamSubscription<Set<String>>? _activeSub;
 
   @override
@@ -666,64 +659,68 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
-  /// The pinned header, with the daily check-offs beside the date where the
-  /// window is wide enough for them.
+  /// The pinned header. [title] and [subtitle] override the date, for the
+  /// review pages, which are about a week rather than a day.
+  Widget _headerWith({
+    required String day,
+    Widget? trailing,
+    String? title,
+    String? subtitle,
+  }) =>
+      DayHeader(
+        dayKey: day,
+        today: _today,
+        title: title,
+        subtitle: subtitle,
+        trailing: trailing,
+        onJump: _jumpTo,
+        onOpenSettings: widget.settings == null ? null : _openSettings,
+        onToggleReveal: _toggleReveal,
+        revealing: _revealing,
+        onOpenSomeday: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => SomedayScreen(repo: widget.repo, today: _today),
+          ),
+        ),
+        onOpenCalendar: () => _openCalendar(day),
+      );
+
+  /// The pinned header, with the daily check-offs beside the date once they
+  /// have all been answered.
   Widget _header({
     required String day,
     required List<DailyQuestion> questions,
     required Map<String, String> answers,
   }) {
-    final header = DayHeader(
-      dayKey: day,
-      today: _today,
-      onJump: _jumpTo,
-      onOpenSettings: widget.settings == null ? null : _openSettings,
-      onToggleReveal: _toggleReveal,
-      revealing: _revealing,
-      onOpenSomeday: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => SomedayScreen(repo: widget.repo, today: _today),
-        ),
-      ),
-      onOpenCalendar: () => _openCalendar(day),
-    );
+    final header = _headerWith(day: day);
 
     if (questions.isEmpty) return header;
 
     final block = QuestionsBlock(
       questions: questions,
       answers: answers,
+      expanded: _questionsOpen,
+      onExpandedChanged: (open) => setState(() => _questionsOpen = open),
       onAnswer: (question, value) => _write(
         () => widget.repo.setAnswer(day, question.id, value),
         'save that answer',
       ),
     );
 
-    // Answered, it is one quiet line and tucks in beside the date. Unanswered,
-    // it is something to do and belongs in the flow of the day, under the
-    // header and above the lists.
-    final answeredAll = QuestionsBlock.allAnswered(questions, answers);
+    // Answered and folded shut, it is one quiet line and tucks in beside the
+    // date. Otherwise it is either something to do or something being
+    // changed, and it belongs in the flow of the day at full width.
+    final folded =
+        QuestionsBlock.allAnswered(questions, answers) && !_questionsOpen;
 
-    if (!answeredAll) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-            child: block,
-          ),
-        ],
-      );
-    }
+    if (folded) return _headerWith(day: day, trailing: block);
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
-        // Right of the date, clear of the settings button above it.
-        Positioned(
-          right: 24,
-          bottom: 16,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
           child: block,
         ),
       ],
@@ -850,6 +847,7 @@ class _DayPageState extends State<DayPage> {
   Future<void> _logEventTime(CalendarEvent event, String day) =>
       showModalBottomSheet<void>(
         context: context,
+        isScrollControlled: true,
         builder: (sheetContext) => StreamBuilder<Map<String, EventExtras>>(
           stream: widget.repo.watchEventExtras(),
           builder: (context, snapshot) {
@@ -996,6 +994,8 @@ class _DayPageState extends State<DayPage> {
   /// rather than four round trips through the menu.
   Future<void> _logTime(Task task, String day) => showModalBottomSheet<void>(
         context: context,
+        // So the sheet rides above the keyboard rather than under it.
+        isScrollControlled: true,
         builder: (sheetContext) => StreamBuilder<List<Task>>(
           stream: widget.repo.watchTasks(),
           builder: (context, snapshot) {
@@ -1209,15 +1209,22 @@ class _DayPageState extends State<DayPage> {
                     // The header is pinned, and the daily check-offs sit
                     // beside it, so they need the shown day's answers up here
                     // rather than inside the sliding page.
-                    StreamBuilder<Map<String, String>>(
-                      stream: widget.repo
-                          .watchAnswers(_dayForPage(_index)),
-                      builder: (context, headerAnswers) => _header(
+                    if (_slotForPage(_index).isReview)
+                      _headerWith(
                         day: _dayForPage(_index),
-                        questions: questions,
-                        answers: headerAnswers.data ?? const {},
+                        title: 'Week review',
+                        subtitle: _slotForPage(_index).weekKey,
+                      )
+                    else
+                      StreamBuilder<Map<String, String>>(
+                        stream: widget.repo
+                            .watchAnswers(_dayForPage(_index)),
+                        builder: (context, headerAnswers) => _header(
+                          day: _dayForPage(_index),
+                          questions: questions,
+                          answers: headerAnswers.data ?? const {},
+                        ),
                       ),
-                    ),
                     Expanded(
                       child: PageView.builder(
                         controller: _controller,
@@ -1232,6 +1239,8 @@ class _DayPageState extends State<DayPage> {
                               repo: widget.repo,
                               weekKey: slot.weekKey!,
                               showBack: false,
+                              // The pinned header already says which week.
+                              showTitle: false,
                             );
                           }
                           final day = slot.dayKey!;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/seedling_repo.dart';
 import '../logic/recent_emoji.dart';
@@ -19,6 +20,7 @@ class WeekReviewView extends StatelessWidget {
     required this.onRemoveMood,
     this.recentEmoji = const [],
     this.showBack = true,
+    this.showTitle = true,
   });
 
   final WeekReview review;
@@ -32,6 +34,9 @@ class WeekReviewView extends StatelessWidget {
   final List<String> recentEmoji;
   final bool showBack;
 
+  /// False when the page's own pinned header already names the week.
+  final bool showTitle;
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -42,8 +47,10 @@ class WeekReviewView extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           children: [
             if (showBack) const BackLine(),
-            Text('Week review', style: text.displayMedium),
-            Text(review.weekKey, style: text.displaySmall),
+            if (showTitle) ...[
+              Text('Week review', style: text.displayMedium),
+              Text(review.weekKey, style: text.displaySmall),
+            ],
             const SizedBox(height: 28),
 
             // The goals as they stood when this review was made — deliberately
@@ -212,6 +219,19 @@ class _AddMoodState extends State<_AddMood> {
     _controller.clear();
   }
 
+  /// Straight off the clipboard, for the emoji pickers that copy rather than
+  /// type — Raycast's, among others, whose paste does not always reach a
+  /// Flutter field on macOS.
+  Future<void> _pasteEmoji() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final emoji = firstEmoji(data?.text ?? '');
+    if (emoji == null || !mounted) return;
+    setState(() {
+      _emoji = emoji;
+      _emojiController.clear();
+    });
+  }
+
   /// Whatever is in the little box wins over the strip.
   ///
   /// Deliberately does *not* rewrite the field. Rewriting its value on every
@@ -252,6 +272,12 @@ class _AddMoodState extends State<_AddMood> {
                   child: Text(emoji, style: text.titleMedium),
                 ),
               ),
+            IconButton(
+              tooltip: 'Paste an emoji',
+              visualDensity: VisualDensity.compact,
+              onPressed: _pasteEmoji,
+              icon: Icon(Icons.content_paste, size: 18, color: colors.muted),
+            ),
             // Any emoji, not just the ones on the strip.
             SizedBox(
               width: 52,
@@ -312,6 +338,7 @@ class WeekReviewScreen extends StatelessWidget {
     required this.repo,
     required this.weekKey,
     this.showBack = true,
+    this.showTitle = true,
   });
 
   final SeedlingRepo repo;
@@ -320,6 +347,9 @@ class WeekReviewScreen extends StatelessWidget {
   /// False when the review is a page in the day pager rather than a pushed
   /// screen — there is nothing to go back to.
   final bool showBack;
+
+  /// False when the page's own pinned header already names the week.
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +379,7 @@ class WeekReviewScreen extends StatelessWidget {
               review: review,
               template: template,
               showBack: showBack,
+              showTitle: showTitle,
               recentEmoji: emojiSnap.data ?? const [],
               onAnswer: (question, answer) => repo.saveReview(
                 WeekReview(

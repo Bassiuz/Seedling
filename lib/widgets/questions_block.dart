@@ -9,12 +9,14 @@ import 'block_frame.dart';
 /// Once every question has an answer the block folds itself into a single
 /// "All answered · 2/2" line — the point of these is to be recorded and then
 /// get out of the way. Tap that line to open it again.
-class QuestionsBlock extends StatefulWidget {
+class QuestionsBlock extends StatelessWidget {
   const QuestionsBlock({
     super.key,
     required this.questions,
     required this.answers,
     required this.onAnswer,
+    this.expanded = false,
+    this.onExpandedChanged,
   });
 
   /// Active questions only; the day page filters the deactivated ones out.
@@ -24,50 +26,47 @@ class QuestionsBlock extends StatefulWidget {
   /// A null value clears the answer.
   final void Function(DailyQuestion question, String? value) onAnswer;
 
+  /// Opened by hand after every question was answered. The page above owns
+  /// this: collapsed it tucks in beside the date, open it needs the width of
+  /// the page, and only the page can move it between the two.
+  final bool expanded;
+  final void Function(bool expanded)? onExpandedChanged;
+
   static bool allAnswered(
           List<DailyQuestion> questions, Map<String, String> answers) =>
       questions.isNotEmpty &&
       questions.every((q) => answers[q.id] != null);
 
   @override
-  State<QuestionsBlock> createState() => _QuestionsBlockState();
-}
-
-class _QuestionsBlockState extends State<QuestionsBlock> {
-  /// Set once you open a completed block by hand, so it does not slam shut
-  /// again while you are changing an answer.
-  bool _expandedByHand = false;
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.questions.isEmpty) return const SizedBox.shrink();
+    if (questions.isEmpty) return const SizedBox.shrink();
 
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     final answered =
-        widget.questions.where((q) => widget.answers[q.id] != null).length;
+        questions.where((q) => answers[q.id] != null).length;
     final complete =
-        QuestionsBlock.allAnswered(widget.questions, widget.answers);
+        QuestionsBlock.allAnswered(questions, answers);
 
     // Collapsed it is a single line: heading, summary and the chevron all in
     // one row, so it can sit beside the date without stacking.
-    if (complete && !_expandedByHand) {
+    if (complete && !expanded) {
       return GestureDetector(
-        onTap: () => setState(() => _expandedByHand = true),
+        onTap: () => onExpandedChanged?.call(true),
         behavior: HitTestBehavior.opaque,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.task_alt, size: 16, color: colors.muted),
-            const SizedBox(width: 8),
+            Icon(Icons.task_alt, size: 13, color: colors.muted),
+            const SizedBox(width: 6),
             Flexible(
               child: Text(
-                'Daily — all answered $answered/${widget.questions.length}',
+                'Daily $answered/${questions.length}',
                 overflow: TextOverflow.ellipsis,
-                style: text.labelLarge?.copyWith(color: colors.muted),
+                style: text.labelSmall?.copyWith(color: colors.muted),
               ),
             ),
-            Icon(Icons.expand_more, size: 18, color: colors.muted),
+            Icon(Icons.expand_more, size: 15, color: colors.muted),
           ],
         ),
       );
@@ -80,18 +79,18 @@ class _QuestionsBlockState extends State<QuestionsBlock> {
           ? IconButton(
               tooltip: 'Collapse',
               visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _expandedByHand = false),
+              onPressed: () => onExpandedChanged?.call(false),
               icon: Icon(Icons.expand_less, color: colors.muted),
             )
           : null,
       child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final question in widget.questions)
+                for (final question in questions)
                   _QuestionRow(
                     question: question,
-                    answer: widget.answers[question.id],
-                    onAnswer: (value) => widget.onAnswer(question, value),
+                    answer: answers[question.id],
+                    onAnswer: (value) => onAnswer(question, value),
                   ),
         ],
       ),

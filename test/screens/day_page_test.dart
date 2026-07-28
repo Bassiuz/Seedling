@@ -5,6 +5,7 @@ import 'package:seedling/data/seedling_repo.dart';
 import 'package:seedling/logic/day_key.dart';
 import 'package:seedling/logic/rollover.dart';
 import 'package:seedling/models/tag.dart';
+import 'package:seedling/models/daily_question.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/screens/day_page.dart';
 import 'package:seedling/theme/seedling_theme.dart';
@@ -47,11 +48,25 @@ final _fixture = [
   _task('6', 'Set out blue and green can', completedOnDate: _today),
 ];
 
-Widget _day({List<Task>? tasks, String note = ''}) => Scaffold(
+const _questions = [
+  DailyQuestion(id: 'travel', label: 'Work travel', options: ['OV', 'Bike'],
+      sortOrder: 0),
+  DailyQuestion(id: 'gym', label: 'Cycled to the gym', options: [],
+      sortOrder: 1),
+];
+
+Widget _day({
+  List<Task>? tasks,
+  String note = '',
+  List<DailyQuestion> questions = const [],
+  Map<String, String> answers = const {},
+}) => Scaffold(
       body: SafeArea(
         child: DayView(
           dayKey: _today,
           today: _today,
+          questions: questions,
+          answers: answers,
           tasks: tasksForDay(tasks ?? _fixture, _today, _today),
           tags: _tags,
           note: note,
@@ -81,6 +96,23 @@ void main() {
     () => _day(
       note: 'Parchment release day!!!\n\nTook Riley to the vet this morning.',
     ),
+  );
+
+  goldenForSizes(
+    'day view with the check-offs answered and folded beside the date',
+    'day_view_questions_folded',
+    [GoldenSize.phone, GoldenSize.mac],
+    () => _day(
+      questions: _questions,
+      answers: const {'travel': 'Bike', 'gym': 'yes'},
+    ),
+  );
+
+  goldenForSizes(
+    'day view with the check-offs still to do',
+    'day_view_questions_open',
+    [GoldenSize.phone],
+    () => _day(questions: _questions),
   );
 
   goldenForSizes(

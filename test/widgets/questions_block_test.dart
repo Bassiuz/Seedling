@@ -20,22 +20,30 @@ const _cycled = DailyQuestion(
   sortOrder: 1,
 );
 
+/// The page above owns whether a finished block is open, so the harness has
+/// to as well.
 Widget _block({
   Map<String, String> answers = const {},
   void Function(DailyQuestion, String?)? onAnswer,
-}) =>
-    Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: QuestionsBlock(
+}) {
+  var expanded = false;
+  return Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: StatefulBuilder(
+          builder: (context, setState) => QuestionsBlock(
             questions: const [_travel, _cycled],
             answers: answers,
+            expanded: expanded,
+            onExpandedChanged: (open) => setState(() => expanded = open),
             onAnswer: onAnswer ?? (_, _) {},
           ),
         ),
       ),
-    );
+    ),
+  );
+}
 
 void main() {
   goldenForSizes('daily questions unanswered', 'questions_open',
@@ -63,7 +71,7 @@ void main() {
 
     // One line, not a heading with a summary under it — it has to fit beside
     // the date.
-    expect(find.text('Daily — all answered 2/2'), findsOneWidget);
+    expect(find.text('Daily 2/2'), findsOneWidget);
     expect(find.text('Work travel'), findsNothing);
   });
 
@@ -79,7 +87,7 @@ void main() {
       wrapApp(_block(answers: const {'travel': 'OV', 'gym': 'yes'})),
     );
 
-    await tester.tap(find.text('Daily — all answered 2/2'));
+    await tester.tap(find.text('Daily 2/2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Work travel'), findsOneWidget);

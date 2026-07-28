@@ -25,6 +25,9 @@ class GoalsView extends StatelessWidget {
   final void Function(String blockTitle, int index) onRemoveGoal;
   final void Function(String title) onRemoveBlock;
 
+  /// The lists Seedling ships with, which stay put.
+  static const standing = {'Quarterly Goals', 'Yearly Goals'};
+
   @override
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
@@ -50,12 +53,17 @@ class GoalsView extends StatelessWidget {
               BlockFrame(
                 title: block.title,
                 icon: Icons.flag_outlined,
-                trailing: IconButton(
-                  tooltip: 'Remove this list',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => onRemoveBlock(block.title),
-                  icon: Icon(Icons.close, size: 18, color: colors.faint),
-                ),
+                // The two standing lists have no × — they are the point of
+                // this screen. Anything else you ended up with still does.
+                trailing: GoalsView.standing.contains(block.title)
+                    ? null
+                    : IconButton(
+                        tooltip: 'Remove this list',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onRemoveBlock(block.title),
+                        icon:
+                            Icon(Icons.close, size: 18, color: colors.faint),
+                      ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
