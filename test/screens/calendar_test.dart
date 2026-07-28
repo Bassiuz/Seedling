@@ -1,4 +1,5 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/data/calendar_source.dart';
@@ -70,8 +71,9 @@ void main() {
     expect(find.text('All day'), findsOneWidget);
   });
 
-  testWidgets('long-pressing an event asks to hide it', (tester) async {
-    final hidden = <String>[];
+  testWidgets('long-pressing an event opens its menu rather than hiding it',
+      (tester) async {
+    final menus = <String>[];
     await tester.pumpWidget(wrapApp(Scaffold(
       body: TimedBlock(
         tasks: const [],
@@ -80,13 +82,39 @@ void main() {
         onToggle: (_) {},
         onMenu: (_) {},
         events: [_event('Bins out', day: day, time: '19:00')],
-        onHideEvent: (e) => hidden.add(e.hideKey),
+        onEventMenu: (e) => menus.add(e.hideKey),
       ),
     )));
 
     await tester.longPress(find.text('Bins out'));
 
-    expect(hidden, ['Bins out']);
+    expect(menus, ['Bins out'],
+        reason: 'hiding outright on a long press had nothing to undo it');
+  });
+
+  testWidgets('right-clicking an event opens the same menu', (tester) async {
+    final menus = <String>[];
+    await tester.pumpWidget(wrapApp(Scaffold(
+      body: TimedBlock(
+        tasks: const [],
+        tags: const {},
+        shownDay: day,
+        onToggle: (_) {},
+        onMenu: (_) {},
+        events: [_event('Bins out', day: day, time: '19:00')],
+        onEventMenu: (e) => menus.add(e.hideKey),
+      ),
+    )));
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('Bins out')),
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await gesture.up();
+    await tester.pump();
+
+    expect(menus, ['Bins out'], reason: 'right click is the desktop gesture');
   });
 
   testWidgets('a revealed hidden event offers to come back', (tester) async {

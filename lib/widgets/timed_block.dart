@@ -26,7 +26,7 @@ class TimedBlock extends StatelessWidget {
     required this.onToggle,
     required this.onMenu,
     this.events = const [],
-    this.onHideEvent,
+    this.onEventMenu,
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
@@ -37,7 +37,11 @@ class TimedBlock extends StatelessWidget {
   });
 
   final List<CalendarEvent> events;
-  final void Function(CalendarEvent)? onHideEvent;
+
+  /// Opens the event's menu. Hiding lives in there rather than on the gesture:
+  /// a long press used to hide an appointment outright, with no confirmation
+  /// and no hint that it had happened.
+  final void Function(CalendarEvent)? onEventMenu;
   final void Function(CalendarEvent)? onUnhideEvent;
 
   /// Ticking an appointment off. Null leaves them read-only.
@@ -97,8 +101,9 @@ class TimedBlock extends StatelessWidget {
                   onToggle: onToggleEvent == null
                       ? null
                       : (done) => onToggleEvent!(entry.event!, done),
-                  onHide:
-                      onHideEvent == null ? null : () => onHideEvent!(entry.event!),
+                  onMenu: onEventMenu == null
+                      ? null
+                      : () => onEventMenu!(entry.event!),
                   onUnhide: onUnhideEvent == null
                       ? null
                       : () => onUnhideEvent!(entry.event!),
@@ -137,7 +142,7 @@ class EventRow extends StatelessWidget {
     this.done = false,
     this.overdue = false,
     this.onToggle,
-    this.onHide,
+    this.onMenu,
     this.onUnhide,
   });
 
@@ -149,7 +154,9 @@ class EventRow extends StatelessWidget {
   final bool done;
   final bool overdue;
   final void Function(bool done)? onToggle;
-  final VoidCallback? onHide;
+
+  /// Long press or right click. Opens a menu rather than hiding outright.
+  final VoidCallback? onMenu;
   final VoidCallback? onUnhide;
 
   @override
@@ -163,7 +170,8 @@ class EventRow extends StatelessWidget {
             : colors.ink;
 
     return GestureDetector(
-      onLongPress: hidden ? onUnhide : onHide,
+      onLongPress: onMenu,
+      onSecondaryTap: onMenu,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

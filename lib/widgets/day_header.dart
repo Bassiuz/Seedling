@@ -18,6 +18,7 @@ class DayHeader extends StatelessWidget {
     this.reviewDue = false,
     this.onToggleReveal,
     this.revealing = false,
+    this.onOpenSomeday,
   });
 
   /// The day being shown.
@@ -42,6 +43,9 @@ class DayHeader extends StatelessWidget {
   final VoidCallback? onToggleReveal;
   final bool revealing;
 
+  /// The someday list, reachable from the day rather than buried in settings.
+  final VoidCallback? onOpenSomeday;
+
   @override
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
@@ -55,7 +59,18 @@ class DayHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Spacer(),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: onOpenSomeday == null
+                      ? const SizedBox.shrink()
+                      : IconButton(
+                          onPressed: onOpenSomeday,
+                          tooltip: 'Someday',
+                          icon: Icon(Icons.cloud_outlined, color: colors.muted),
+                        ),
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(

@@ -44,7 +44,6 @@ class ReviewTemplate {
       GoalBlock(title: 'Yearly Goals', goals: []),
     ],
     questions: [
-      'What did I do since last week review?',
       'What is going to be a lasting memory of this week?',
       'What is something I want to leave behind in the last week?',
     ],

@@ -48,6 +48,9 @@ class TaskTile extends StatelessWidget {
 
     return GestureDetector(
       onLongPress: onMenu,
+      // Right-click is the desktop gesture; long-press is the touch one. The
+      // menu was effectively undiscoverable on the Mac without this.
+      onSecondaryTap: onMenu,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),

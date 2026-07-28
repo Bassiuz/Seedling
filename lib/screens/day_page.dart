@@ -54,7 +54,7 @@ class DayContent extends StatelessWidget {
     this.onPullSomeday,
     this.events = const [],
     this.hiddenKeys = const {},
-    this.onHideEvent,
+    this.onEventMenu,
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
@@ -70,7 +70,7 @@ class DayContent extends StatelessWidget {
   final void Function(SomedayItem)? onPullSomeday;
   final List<CalendarEvent> events;
   final Set<String> hiddenKeys;
-  final void Function(CalendarEvent)? onHideEvent;
+  final void Function(CalendarEvent)? onEventMenu;
   final void Function(CalendarEvent)? onUnhideEvent;
   final void Function(CalendarEvent, bool done)? onToggleEvent;
   final Set<String> doneEvents;
@@ -104,8 +104,7 @@ class DayContent extends StatelessWidget {
         if (constraints.maxWidth >= twoColumnWidth) {
           return _wide(timed, untimed);
         }
-        return _stack(
-            [_timed(timed), _tasks(untimed), _questions(), _note()]);
+        return _stack([_timed(timed), _tasks(untimed), _note()]);
       },
     );
   }
@@ -124,16 +123,7 @@ class DayContent extends StatelessWidget {
               children: [
                 Expanded(child: _timed(timed)),
                 const SizedBox(width: 32),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _tasks(untimed),
-                      const SizedBox(height: 28),
-                      _questions(),
-                    ],
-                  ),
-                ),
+                Expanded(child: _tasks(untimed)),
               ],
             ),
             const SizedBox(height: 28),
@@ -150,7 +140,7 @@ class DayContent extends StatelessWidget {
         onMenu: onMenu,
         events: events,
         hiddenKeys: hiddenKeys,
-        onHideEvent: onHideEvent,
+        onEventMenu: onEventMenu,
         onUnhideEvent: onUnhideEvent,
         onToggleEvent: onToggleEvent,
         doneEvents: doneEvents,
@@ -171,12 +161,6 @@ class DayContent extends StatelessWidget {
       );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
-
-  Widget _questions() => QuestionsBlock(
-        questions: questions,
-        answers: answers,
-        onAnswer: onAnswer ?? (_, _) {},
-      );
 
   /// Blocks one under another, the whole lot scrolling together.
   Widget _stack(List<Widget> blocks) => SingleChildScrollView(
@@ -221,13 +205,15 @@ class DayView extends StatelessWidget {
     this.onPullSomeday,
     this.events = const [],
     this.hiddenKeys = const {},
-    this.onHideEvent,
+    this.onEventMenu,
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
     this.now,
+    this.onOpenSomeday,
   });
 
+  final VoidCallback? onOpenSomeday;
   final List<DailyQuestion> questions;
   final Map<String, String> answers;
   final void Function(DailyQuestion, String?)? onAnswer;
@@ -235,7 +221,7 @@ class DayView extends StatelessWidget {
   final void Function(SomedayItem)? onPullSomeday;
   final List<CalendarEvent> events;
   final Set<String> hiddenKeys;
-  final void Function(CalendarEvent)? onHideEvent;
+  final void Function(CalendarEvent)? onEventMenu;
   final void Function(CalendarEvent)? onUnhideEvent;
   final void Function(CalendarEvent, bool done)? onToggleEvent;
   final Set<String> doneEvents;
@@ -259,19 +245,59 @@ class DayView extends StatelessWidget {
   final VoidCallback? onToggleReveal;
   final bool revealing;
 
+  Widget _questionsBlock() => QuestionsBlock(
+        questions: questions,
+        answers: answers,
+        onAnswer: onAnswer ?? (_, _) {},
+      );
+
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DayHeader(
-            dayKey: dayKey,
-            today: today,
-            onJump: onJump,
-            onOpenSettings: onOpenSettings,
-            onOpenReview: onOpenReview,
-            reviewDue: reviewDue,
-            onToggleReveal: onToggleReveal,
-            revealing: revealing,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final header = DayHeader(
+                dayKey: dayKey,
+                today: today,
+                onJump: onJump,
+                onOpenSettings: onOpenSettings,
+                onOpenReview: onOpenReview,
+                reviewDue: reviewDue,
+                onToggleReveal: onToggleReveal,
+                revealing: revealing,
+                onOpenSomeday: onOpenSomeday,
+              );
+              // The daily check-offs belong beside the date where there is
+              // room: they are about the day as a whole, not a task among
+              // tasks.
+              if (constraints.maxWidth < DayContent.twoColumnWidth ||
+                  questions.isEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    header,
+                    if (questions.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                        child: _questionsBlock(),
+                      ),
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: header),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 12, 24, 16),
+                      child: _questionsBlock(),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           Expanded(
             child: DayContent(
@@ -290,7 +316,7 @@ class DayView extends StatelessWidget {
               onPullSomeday: onPullSomeday,
               events: events,
               hiddenKeys: hiddenKeys,
-                    onHideEvent: onHideEvent,
+                    onEventMenu: onEventMenu,
               onUnhideEvent: onUnhideEvent,
               onToggleEvent: onToggleEvent,
               doneEvents: doneEvents,
@@ -572,6 +598,108 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  /// The pinned header, with the daily check-offs beside the date where the
+  /// window is wide enough for them.
+  Widget _header({
+    required String day,
+    required List<DailyQuestion> questions,
+    required Map<String, String> answers,
+    required List<String> reviewedWeeks,
+  }) {
+    final header = DayHeader(
+      dayKey: day,
+      today: _today,
+      onJump: _jumpTo,
+      onOpenSettings: widget.settings == null ? null : _openSettings,
+      onOpenReview: () => _openReview(day),
+      onToggleReveal: _toggleReveal,
+      revealing: _revealing,
+      onOpenSomeday: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SomedayScreen(repo: widget.repo, today: _today),
+        ),
+      ),
+      reviewDue:
+          isReviewDay(day) && !reviewedWeeks.contains(reviewWeekFor(day)),
+    );
+
+    if (questions.isEmpty) return header;
+
+    final block = QuestionsBlock(
+      questions: questions,
+      answers: answers,
+      onAnswer: (question, value) => _write(
+        () => widget.repo.setAnswer(day, question.id, value),
+        'save that answer',
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < DayContent.twoColumnWidth) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              header,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: block,
+              ),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: header),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 12, 24, 16),
+                child: block,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// An appointment's menu. Hiding is here rather than on the long press
+  /// itself, which used to hide it outright with nothing to undo it.
+  Future<void> _openEventMenu(CalendarEvent event, Set<String> hidden) async {
+    final isHidden = hidden.contains(event.hideKey);
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.event_busy_outlined),
+              title: Text(isHidden ? 'Show this again' : 'Hide this'),
+              subtitle: Text(
+                isHidden
+                    ? 'It will appear on your days again.'
+                    : event.recurringId == null
+                        ? 'Hides this appointment. Your calendar is untouched.'
+                        : 'Hides every occurrence of it. Your calendar is '
+                            'untouched.',
+              ),
+              onTap: () => Navigator.pop(sheetContext, 'hide'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    await _write(
+      () => isHidden
+          ? widget.repo.unhideEvent(event.hideKey)
+          : widget.repo.hideEvent(event.hideKey),
+      isHidden ? 'show that event again' : 'hide that event',
+    );
+  }
+
   /// The same list the add line offers, plus a way back to no tag at all.
   Future<void> _pickTagFor(Task task, Map<String, Tag> tags) async {
     if (tags.isEmpty) return;
@@ -774,18 +902,18 @@ class _DayPageState extends State<DayPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DayHeader(
-                      dayKey: _dayForPage(_index),
-                      today: _today,
-                      onJump: _jumpTo,
-                      onOpenSettings:
-                          widget.settings == null ? null : _openSettings,
-                      onOpenReview: () => _openReview(_dayForPage(_index)),
-                      onToggleReveal: _toggleReveal,
-                      revealing: _revealing,
-                      reviewDue: isReviewDay(_dayForPage(_index)) &&
-                          !reviewedWeeks
-                              .contains(reviewWeekFor(_dayForPage(_index))),
+                    // The header is pinned, and the daily check-offs sit
+                    // beside it, so they need the shown day's answers up here
+                    // rather than inside the sliding page.
+                    StreamBuilder<Map<String, String>>(
+                      stream: widget.repo
+                          .watchAnswers(_dayForPage(_index)),
+                      builder: (context, headerAnswers) => _header(
+                        day: _dayForPage(_index),
+                        questions: questions,
+                        answers: headerAnswers.data ?? const {},
+                        reviewedWeeks: reviewedWeeks,
+                      ),
                     ),
                     Expanded(
                       child: PageView.builder(
@@ -850,10 +978,8 @@ class _DayPageState extends State<DayPage> {
                                 reveal: _revealing,
                               ),
                               hiddenKeys: hidden,
-                              onHideEvent: (event) => _write(
-                                () => widget.repo.hideEvent(event.hideKey),
-                                'hide that event',
-                              ),
+                              onEventMenu: (event) =>
+                                  _openEventMenu(event, hidden),
                               onUnhideEvent: (event) => _write(
                                 () => widget.repo.unhideEvent(event.hideKey),
                                 'show that event again',

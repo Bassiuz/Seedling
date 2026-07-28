@@ -202,7 +202,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('What did I do since last week review?'), findsOneWidget);
+    expect(find.text('What is going to be a lasting memory of this week?'),
+        findsOneWidget);
     expect(find.text('2026-W31'), findsOneWidget);
+    expect(find.textContaining('since last week review'), findsNothing,
+        reason: 'that prompt was dropped from the starter template');
   });
 }

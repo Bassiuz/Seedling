@@ -30,6 +30,18 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   fake_cloud_firestore: ^4.2.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  # source has transparent rounded corners; iOS forbids alpha, fill with the art's green
+  remove_alpha_ios: true
+  background_color_ios: "#A8D18A"
+  macos:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
 
 flutter:
   uses-material-design: true
