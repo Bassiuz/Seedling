@@ -19,6 +19,8 @@ class SettingsView extends StatelessWidget {
     this.exportStatus,
     this.mirroring = true,
     this.onMirroringChanged,
+    this.readsDeviceCalendar = false,
+    this.onReadsCalendarChanged,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -37,6 +39,11 @@ class SettingsView extends StatelessWidget {
   /// Whether the vault follows the app as you type.
   final bool mirroring;
   final ValueChanged<bool>? onMirroringChanged;
+
+  /// Whether this device reads its own calendar or shows what another one
+  /// published. Null hides the row where no calendar can be read at all.
+  final bool readsDeviceCalendar;
+  final ValueChanged<bool>? onReadsCalendarChanged;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -96,6 +103,29 @@ class SettingsView extends StatelessWidget {
                 ],
               ),
             ),
+            if (onReadsCalendarChanged != null) ...[
+              const SizedBox(height: 28),
+              BlockFrame(
+                title: 'Calendar',
+                icon: Icons.event_outlined,
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: readsDeviceCalendar,
+                  onChanged: onReadsCalendarChanged,
+                  title: Text('Read this device\u2019s calendar',
+                      style: text.bodyLarge),
+                  subtitle: Text(
+                    readsDeviceCalendar
+                        ? 'This device reads your calendar and shares it with '
+                            'the others.'
+                        : 'This device shows the appointments another device '
+                            'shared. Leave it off where there is no calendar '
+                            'account, like the BigMe.',
+                    style: text.labelMedium,
+                  ),
+                ),
+              ),
+            ],
             if (onExportVault != null) ...[
               const SizedBox(height: 28),
               BlockFrame(
@@ -183,6 +213,7 @@ class SettingsScreen extends StatelessWidget {
     this.onExportVault,
     this.vaultPath,
     this.exportStatus,
+    this.canReadDeviceCalendar = false,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -196,6 +227,9 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback? onExportVault;
   final String? vaultPath;
   final String? exportStatus;
+
+  /// False where the platform has no calendar to read, which hides the row.
+  final bool canReadDeviceCalendar;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -216,6 +250,9 @@ class SettingsScreen extends StatelessWidget {
         exportStatus: exportStatus,
         mirroring: settings.vaultMirroring,
         onMirroringChanged: settings.setVaultMirroring,
+        readsDeviceCalendar: settings.readsDeviceCalendar,
+        onReadsCalendarChanged:
+            canReadDeviceCalendar ? settings.setReadsDeviceCalendar : null,
       ),
     );
   }

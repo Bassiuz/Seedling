@@ -12,17 +12,12 @@ import 'day_key.dart';
   DateTime start, {
   required bool allDay,
 }) {
-  if (allDay) {
-    // An all-day event has no meaningful clock time, and converting one can
-    // push it onto the day before. Take the date exactly as given.
-    return (
-      dayKey: dayKeyOf(DateTime(start.year, start.month, start.day)),
-      time: null,
-    );
-  }
-
+  // All-day events go through the same conversion. EventKit stores them at
+  // *local* midnight, which as an absolute instant is the evening before in
+  // UTC — reading the raw components put a Wednesday event on Tuesday. They
+  // just carry no clock time.
   final local = DateTime.fromMillisecondsSinceEpoch(start.millisecondsSinceEpoch);
-  return (dayKey: dayKeyOf(local), time: clockOf(local));
+  return (dayKey: dayKeyOf(local), time: allDay ? null : clockOf(local));
 }
 
 /// `HH:mm`, the format times are stored and shown in.

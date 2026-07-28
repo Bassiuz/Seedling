@@ -51,11 +51,14 @@ class SeedlingApp extends StatelessWidget {
             return DayPage(
               repo: repo,
               settings: settings,
-              // Where a calendar can be read, read it. Everywhere else, show
-              // what the phone published.
-              calendar: DeviceCalendar.supported
+              // Only devices told to read their own calendar do so. Being
+              // Android is not enough — the BigMe has no iCloud account.
+              calendar: settings.readsDeviceCalendar &&
+                      DeviceCalendar.supported
                   ? calendar
                   : MirrorCalendar(repo.readCalendarMirror),
+              publishesCalendar:
+                  settings.readsDeviceCalendar && DeviceCalendar.supported,
               onSignOut: auth.signOut,
               signedInAs: user.email,
             );

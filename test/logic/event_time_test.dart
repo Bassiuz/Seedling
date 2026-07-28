@@ -34,14 +34,26 @@ void main() {
       expect(localEventTime(start, allDay: false).time, '23:45');
     });
 
-    test('an all-day event keeps its date and has no time', () {
-      // Midnight UTC is the awkward case: converting it can land on the 27th.
-      final start = DateTime.utc(2026, 7, 28);
-
-      final result = localEventTime(start, allDay: true);
+    test('an all-day event has no clock time', () {
+      final result = localEventTime(DateTime(2026, 7, 28), allDay: true);
 
       expect(result.dayKey, '2026-07-28');
       expect(result.time, isNull);
+    });
+
+    test('an all-day event stays on its own day, not the one before', () {
+      // EventKit stores all-day events at local midnight. As an absolute
+      // instant that is the previous evening in UTC, and reading the raw
+      // components put a Wednesday event on Tuesday.
+      final localMidnight = DateTime(2026, 7, 29);
+      final sameInstantInUtc = localMidnight.toUtc();
+
+      expect(localEventTime(localMidnight, allDay: true).dayKey, '2026-07-29');
+      expect(
+        localEventTime(sameInstantInUtc, allDay: true).dayKey,
+        '2026-07-29',
+        reason: 'the same moment, however it is expressed',
+      );
     });
 
     test('midnight is padded rather than shortened', () {

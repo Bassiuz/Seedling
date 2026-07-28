@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,6 +13,7 @@ class SettingsStore extends ChangeNotifier {
 
   static const _einkKey = 'display.eink';
   static const _mirrorKey = 'vault.mirror';
+  static const _readsCalendarKey = 'calendar.readsDevice';
 
   final SharedPreferences _prefs;
 
@@ -31,6 +34,27 @@ class SettingsStore extends ChangeNotifier {
 
   Future<void> setVaultMirroring(bool on) async {
     await _prefs.setBool(_mirrorKey, on);
+    notifyListeners();
+  }
+
+  /// Whether this device reads its own calendar, or shows what another device
+  /// published.
+  ///
+  /// Defaults to on for the iPhone and off everywhere else. Being Android is
+  /// not the same as being able to see your calendar: the BigMe runs Android
+  /// but has no iCloud account, so reading its own calendar shows nothing and
+  /// publishing from it would overwrite what the phone shared.
+  bool get readsDeviceCalendar =>
+      _prefs.getBool(_readsCalendarKey) ?? defaultReadsDeviceCalendar;
+
+  /// Overridable so tests do not depend on the platform they run on.
+  static bool Function() defaultReadsDeviceCalendarFor = () => Platform.isIOS;
+
+  static bool get defaultReadsDeviceCalendar =>
+      defaultReadsDeviceCalendarFor();
+
+  Future<void> setReadsDeviceCalendar(bool on) async {
+    await _prefs.setBool(_readsCalendarKey, on);
     notifyListeners();
   }
 }

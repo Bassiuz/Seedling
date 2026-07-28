@@ -312,6 +312,7 @@ class DayPage extends StatefulWidget {
     this.onSignOut,
     this.signedInAs,
     this.calendar = const NoCalendar(),
+    this.publishesCalendar = false,
   });
 
   final SeedlingRepo repo;
@@ -319,6 +320,10 @@ class DayPage extends StatefulWidget {
   /// Where appointments come from. Defaults to nothing so tests and the BigMe
   /// both work without a device calendar.
   final CalendarSource calendar;
+
+  /// Whether what this device reads is shared with the others. Only the device
+  /// that can actually see your calendar should publish.
+  final bool publishesCalendar;
 
   /// Null in tests that only care about the day itself; the settings button is
   /// hidden when it is absent.
@@ -380,9 +385,9 @@ class _DayPageState extends State<DayPage> {
       return;
     }
 
-    // Devices that can read a calendar publish it for the ones that cannot —
-    // the Mac and the BigMe have no way to see iCloud themselves.
-    if (DeviceCalendar.supported && events.isNotEmpty) {
+    // Only the device that reads a real calendar shares it. Publishing from a
+    // device that cannot see iCloud would replace what the phone sent.
+    if (widget.publishesCalendar && events.isNotEmpty) {
       unawaited(_write(
         () => widget.repo.publishCalendarMirror(events, from: from, to: to),
         'share your calendar with your other devices',
@@ -501,6 +506,7 @@ class _DayPageState extends State<DayPage> {
           builder: (_) => StatefulBuilder(
             builder: (context, refresh) => SettingsScreen(
             settings: widget.settings!,
+            canReadDeviceCalendar: DeviceCalendar.supported,
             signedInAs: widget.signedInAs,
             onExportVault:
                 defaultVault() == null ? null : () => _exportVault(refresh),
