@@ -23,6 +23,7 @@ import '../models/task.dart';
 import '../widgets/day_header.dart';
 import '../widgets/note_block.dart';
 import '../widgets/questions_block.dart';
+import '../widgets/tag_chip.dart';
 import '../widgets/tasks_block.dart';
 import '../widgets/time_sheet.dart';
 import '../widgets/timed_block.dart';
@@ -565,6 +566,39 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  /// The same list the add line offers, plus a way back to no tag at all.
+  Future<void> _pickTagFor(Task task, Map<String, Tag> tags) async {
+    if (tags.isEmpty) return;
+    final picked = await showModalBottomSheet<String?>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (task.tagId != null)
+              ListTile(
+                leading: const Icon(Icons.clear),
+                title: const Text('No tag'),
+                // An empty string means "clear", since null means "cancelled".
+                onTap: () => Navigator.pop(sheetContext, ''),
+              ),
+            for (final tag in tags.values)
+              ListTile(
+                leading: Icon(TagChip.iconOf(tag), color: TagChip.colorOf(tag)),
+                title: Text(tag.name),
+                onTap: () => Navigator.pop(sheetContext, tag.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    await _write(
+      () => widget.repo.setTag(task, picked.isEmpty ? null : picked),
+      'set that tag',
+    );
+  }
+
   /// Keeps the sheet open while you tap, so logging an hour is four taps
   /// rather than four round trips through the menu.
   Future<void> _logTime(Task task, String day) => showModalBottomSheet<void>(
@@ -588,7 +622,10 @@ class _DayPageState extends State<DayPage> {
         ),
       );
 
-  Future<void> _openMenu(Task task, String day) async {
+  /// Everything you can do to a task after it exists. Tag and time are here
+  /// as well as on the add line, because they are just as often decided
+  /// afterwards as while typing.
+  Future<void> _openMenu(Task task, String day, Map<String, Tag> tags) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -598,7 +635,27 @@ class _DayPageState extends State<DayPage> {
             ListTile(
               leading: const Icon(Icons.timer_outlined),
               title: const Text('Log time'),
+              onTap: () => Navigator.pop(context, 'log'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.access_time),
+              title: Text(task.isTimed ? 'Change time' : 'Set a time…'),
+              subtitle: task.isTimed ? Text(task.time!) : null,
               onTap: () => Navigator.pop(context, 'time'),
+            ),
+            if (task.isTimed)
+              ListTile(
+                leading: const Icon(Icons.timer_off_outlined),
+                title: const Text('Remove the time'),
+                onTap: () => Navigator.pop(context, 'untime'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.label_outline),
+              title: Text(task.tagId == null ? 'Set a tag…' : 'Change tag'),
+              subtitle: task.tagId == null
+                  ? null
+                  : Text(tags[task.tagId]?.name ?? task.tagId!),
+              onTap: () => Navigator.pop(context, 'tag'),
             ),
             ListTile(
               leading: const Icon(Icons.schedule),
@@ -616,8 +673,37 @@ class _DayPageState extends State<DayPage> {
     );
     if (!mounted || action == null) return;
 
-    if (action == 'time') {
+    if (action == 'log') {
       await _logTime(task, day);
+      return;
+    }
+
+    if (action == 'untime') {
+      await _write(() => widget.repo.setTime(task, null), 'remove that time');
+      return;
+    }
+
+    if (action == 'time') {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: task.isTimed
+            ? TimeOfDay(
+                hour: int.parse(task.time!.split(':').first),
+                minute: int.parse(task.time!.split(':').last),
+              )
+            : TimeOfDay.now(),
+      );
+      if (picked == null) return;
+      await _write(
+        () => widget.repo.setTime(task, clockOf(DateTime(0, 1, 1,
+            picked.hour, picked.minute))),
+        'set that time',
+      );
+      return;
+    }
+
+    if (action == 'tag') {
+      await _pickTagFor(task, tags);
       return;
     }
 
@@ -740,7 +826,7 @@ class _DayPageState extends State<DayPage> {
                               tags: tags,
                               note: noteSnap.data ?? '',
                               onToggle: (task) => _toggle(task, day),
-                              onMenu: (task) => _openMenu(task, day),
+                              onMenu: (task) => _openMenu(task, day, tags),
                               onAdd: (title, {tagId, time}) => _write(
                                 () => widget.repo.addTask(title,
                                     date: day, tagId: tagId, time: time),

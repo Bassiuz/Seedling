@@ -78,6 +78,51 @@ void main() {
       expect(task.timeEntries.containsKey('2026-07-26'), isFalse);
     });
 
+    test('a time can be set on an existing task, and taken off again',
+        () async {
+      await repo.addTask('Fix promo video', date: '2026-07-28');
+      var task = (await repo.watchTasks().first).single;
+      expect(task.isTimed, isFalse);
+
+      await repo.setTime(task, '17:00');
+      task = (await repo.watchTasks().first).single;
+      expect(task.time, '17:00');
+      expect(task.isTimed, isTrue);
+
+      await repo.setTime(task, null);
+      task = (await repo.watchTasks().first).single;
+      expect(task.time, isNull, reason: 'back out of the timed list');
+    });
+
+    test('a tag can be set on an existing task, and taken off again',
+        () async {
+      await repo.addTask('Fix promo video', date: '2026-07-28');
+      var task = (await repo.watchTasks().first).single;
+      expect(task.tagId, isNull);
+
+      await repo.setTag(task, 'moxify');
+      task = (await repo.watchTasks().first).single;
+      expect(task.tagId, 'moxify');
+
+      await repo.setTag(task, null);
+      expect((await repo.watchTasks().first).single.tagId, isNull);
+    });
+
+    test('setting a time leaves everything else alone', () async {
+      await repo.addTask('Fix promo video',
+          date: '2026-07-28', tagId: 'moxify');
+      var task = (await repo.watchTasks().first).single;
+      await repo.setCompleted(task, '2026-07-28');
+      task = (await repo.watchTasks().first).single;
+
+      await repo.setTime(task, '09:00');
+
+      final after = (await repo.watchTasks().first).single;
+      expect(after.tagId, 'moxify');
+      expect(after.completedOnDate, '2026-07-28');
+      expect(after.title, 'Fix promo video');
+    });
+
     test('deleteTask removes it', () async {
       await repo.addTask('Set out blue can', date: '2026-07-15');
       final task = (await repo.watchTasks().first).single;

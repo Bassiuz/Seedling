@@ -76,6 +76,14 @@ class SeedlingRepo {
   Future<void> snooze(Task t, String toDayKey) =>
       _tasks.doc(t.id).update({'date': toDayKey});
 
+  /// Null clears the time, moving the task out of the timed list.
+  Future<void> setTime(Task t, String? time) =>
+      _tasks.doc(t.id).update({'time': time});
+
+  /// Null clears the tag.
+  Future<void> setTag(Task t, String? tagId) =>
+      _tasks.doc(t.id).update({'tagId': tagId});
+
   Future<void> deleteTask(Task t) => _tasks.doc(t.id).delete();
 
   /// Adds [deltaMinutes] to the time logged against [dayKey], never letting a

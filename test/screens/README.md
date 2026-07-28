@@ -20,3 +20,5 @@
   be left again, including the week review's loading frame, which used to be a
   blank page with no way out. On the Mac there is no edge-swipe, so without the
   arrow these are dead ends.
+- `task_menu_test.dart` — that an existing task can be given a tag and have its
+  time set or removed, and that "Remove the time" only appears when there is one.
