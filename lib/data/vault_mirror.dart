@@ -28,12 +28,14 @@ class VaultMirror {
 
   Timer? _dayTimer;
   Timer? _sidecarTimer;
+  Timer? _reviewTimer;
 
   /// The last content written, so an identical rebuild is not written twice.
   final Map<String, String> _lastWritten = {};
 
   Future<void> Function()? _pendingDay;
   Future<void> Function()? _pendingSidecars;
+  Future<void> Function()? _pendingReview;
 
   /// Number of writes actually performed. Handy in tests and for the status
   /// line in settings.
@@ -42,6 +44,21 @@ class VaultMirror {
   void dispose() {
     _dayTimer?.cancel();
     _sidecarTimer?.cancel();
+    _reviewTimer?.cancel();
+  }
+
+  /// Queues a rewrite of one week review. On its own timer rather than folded
+  /// into [sidecars]: a review is only loaded while you are looking at it, and
+  /// tacking it onto a signature that is rebuilt on every day page would mean
+  /// rewriting it constantly, or forgetting it the moment you paged away.
+  void review(WeekReview review) {
+    final signature = '${review.weekKey}:${review.toMap()}';
+    if (_lastWritten['review:${review.weekKey}'] == signature) return;
+    _lastWritten['review:${review.weekKey}'] = signature;
+
+    _pendingReview = () => exporter.writeReview(review);
+    _reviewTimer?.cancel();
+    _reviewTimer = Timer(debounce, () => _run(_pendingReview));
   }
 
   /// Queues a rewrite of one day. Safe to call from build.
@@ -123,9 +140,12 @@ class VaultMirror {
   Future<void> flush() async {
     _dayTimer?.cancel();
     _sidecarTimer?.cancel();
+    _reviewTimer?.cancel();
     await _run(_pendingDay);
     await _run(_pendingSidecars);
+    await _run(_pendingReview);
     _pendingDay = null;
     _pendingSidecars = null;
+    _pendingReview = null;
   }
 }

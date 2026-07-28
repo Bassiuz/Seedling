@@ -56,3 +56,5 @@
 - **The two standing goal lists have no delete button** — they are the point of that screen. Any other list you ended up with can still go.
 - **A review page in the pager gets its own header** — "Week review · 2026-W30" rather than the Sunday it follows, and no daily check-offs: a review is about the week, not about that last day.
 - **There is a paste button beside the emoji strip** — some emoji pickers (Raycast's among them) copy and then simulate a paste, and that paste does not reliably land in a Flutter text field on macOS. Reading the clipboard on a button press does not depend on it.
+- **A week review is mirrored on its own timer** — it is only loaded while you are looking at it, so that is the only moment it can be written. Folding it into the sidecar signature, which every day page rebuilds, would have meant either rewriting it constantly or forgetting it the moment you paged away. Reviews land in `reviews/2026-W30.md`.
+- **A day counts for export if anything happened on it** — a note or an answer is enough; it used to take a task, so a day you only wrote on never reached the vault.

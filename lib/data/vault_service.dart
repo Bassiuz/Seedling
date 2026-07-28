@@ -25,13 +25,15 @@ class VaultService {
 
     var written = 0;
 
-    // Every day that has anything on it: a task planned or finished there, or a
-    // note. Days with nothing get no file rather than an empty one.
+    // Every day that has anything on it: a task planned or finished there, a
+    // note, an answer or a ticked appointment. Days with nothing get no file
+    // rather than an empty one.
     final days = <String>{
       for (final task in tasks) ...[
         task.date,
         if (task.completedOnDate != null) task.completedOnDate!,
       ],
+      ...await repo.watchActiveDays().first,
     };
 
     for (final day in days) {

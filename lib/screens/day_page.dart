@@ -25,6 +25,7 @@ import '../models/daily_question.dart';
 import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
+import '../models/week_review.dart';
 import '../widgets/day_header.dart';
 import '../widgets/month_sheet.dart';
 import '../widgets/note_block.dart';
@@ -536,6 +537,12 @@ class _DayPageState extends State<DayPage> {
       answers: answers,
     );
     mirror.sidecars(tags: tags.values.toList(), someday: someday);
+  }
+
+  /// The same, for the week review you are writing.
+  void _mirrorReview(WeekReview review) {
+    if (widget.settings?.vaultMirroring == false) return;
+    _mirror?.review(review);
   }
 
   /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
@@ -1241,6 +1248,7 @@ class _DayPageState extends State<DayPage> {
                               showBack: false,
                               // The pinned header already says which week.
                               showTitle: false,
+                              onReview: _mirrorReview,
                             );
                           }
                           final day = slot.dayKey!;

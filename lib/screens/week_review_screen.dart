@@ -339,6 +339,7 @@ class WeekReviewScreen extends StatelessWidget {
     required this.weekKey,
     this.showBack = true,
     this.showTitle = true,
+    this.onReview,
   });
 
   final SeedlingRepo repo;
@@ -350,6 +351,11 @@ class WeekReviewScreen extends StatelessWidget {
 
   /// False when the page's own pinned header already names the week.
   final bool showTitle;
+
+  /// Called with the review as it loads and as it changes, so the page above
+  /// can mirror it to the vault. A review is only loaded while it is on
+  /// screen, so this is the only moment it can be written.
+  final void Function(WeekReview review)? onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -375,6 +381,9 @@ class WeekReviewScreen extends StatelessWidget {
             // snapshot is taken the moment you sit down to write.
             final review =
                 reviewSnap.data ?? WeekReview.from(weekKey, template);
+            // Only mirror what has actually been written down; an unsaved
+            // blank would put an empty file in the vault.
+            if (reviewSnap.data != null) onReview?.call(review);
             return WeekReviewView(
               review: review,
               template: template,

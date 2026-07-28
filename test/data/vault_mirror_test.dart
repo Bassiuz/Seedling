@@ -6,6 +6,7 @@ import 'package:seedling/data/vault_mirror.dart';
 import 'package:seedling/models/someday_item.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
+import 'package:seedling/models/week_review.dart';
 
 const _day = '2026-07-27';
 
@@ -115,6 +116,46 @@ void main() {
 
     expect(read('tags.md'), contains('- Moxify'));
     expect(read('someday/moxify.md'), contains('YOLO 26'));
+  });
+
+  test('a week review lands in the vault as it is written', () async {
+    mirror.review(const WeekReview(
+      weekKey: '2026-W30',
+      goals: [],
+      answers: {'What went well?': 'Shipped the promo video.'},
+      moodLines: [MoodLine(emoji: '🌱', text: 'Slower week, on purpose.')],
+    ));
+    await settle();
+
+    final written = read('reviews/2026-W30.md');
+    expect(written, contains('Shipped the promo video.'));
+    expect(written, contains('Slower week, on purpose.'));
+  });
+
+  test('a review that has not changed is not rewritten', () async {
+    const review = WeekReview(
+        weekKey: '2026-W30', goals: [], answers: {'Q': 'A'}, moodLines: []);
+    mirror.review(review);
+    await settle();
+    final before = mirror.writes;
+
+    mirror.review(review);
+    await settle();
+
+    expect(mirror.writes, before);
+  });
+
+  test('a day being mirrored does not stop a review being mirrored too',
+      () async {
+    // They used to share one queue, so whichever came second won.
+    mirror.day(
+        dayKey: _day, tasks: const [], tags: const {}, note: 'Wrote it up');
+    mirror.review(const WeekReview(
+        weekKey: '2026-W30', goals: [], answers: {'Q': 'A'}, moodLines: []));
+    await settle();
+
+    expect(exists('days/2026/2026-07-27.md'), isTrue);
+    expect(exists('reviews/2026-W30.md'), isTrue);
   });
 
   test('unchanged sidecars are not rewritten', () async {
