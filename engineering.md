@@ -54,6 +54,27 @@ That fails every AGP 9 build with *"Could not find method kotlin()"*. Our projec
 is on AGP 9.0.1. `path_provider` reaches us only through `home_widget`. Remove
 the override once `jni` guards the usage as well as the plugin.
 
+## Only one copy at a time
+
+Firestore's offline cache is a LevelDB database with an exclusive file lock, so
+a second instance cannot start:
+
+```
+FIRESTORE INTERNAL ASSERTION FAILED: Failed to open DB … LOCK: Resource
+temporarily unavailable
+```
+
+That is not a bug in Seedling and nothing in the app can catch it — the throw is
+a native assertion inside the Firestore SDK. It usually means a debug build is
+still running while you start a release one. Find it and stop it:
+
+```
+lsof ~/Library/Application\ Support/firestore/__FIRAPP_DEFAULT/seedling-461b0/main/LOCK
+```
+
+macOS will not launch two copies of the *same* bundle, so this only bites while
+developing, with two different builds.
+
 ## Calendar
 
 `device_calendar` supports **iOS and Android only**. The iPhone reads EventKit
