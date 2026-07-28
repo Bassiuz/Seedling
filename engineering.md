@@ -21,13 +21,12 @@
 - macOS needs `com.apple.security.network.client` in **both**
   `macos/Runner/*.entitlements`, or Firestore silently fails to reach the
   network in the sandbox.
-- **macOS sign-in is blocked on a provisioning profile — see
-  `docs/macos-signing.md`.** Firebase Auth needs the data protection keychain,
-  which requires an `application-identifier` entitlement that only a profile
-  provides. The sandbox is off and the app is signed with a real development
-  certificate (team `NSCP3LMJ94`), but neither is sufficient on its own; the Mac
-  has never been registered in the developer account, which is a one-time Xcode
-  step. iPhone and Android are unaffected.
+- **macOS needs a provisioning profile for sign-in to work — see
+  `docs/macos-signing.md`.** Firebase Auth uses the data protection keychain,
+  which requires the `com.apple.application-identifier` entitlement that only a
+  profile carries. That means automatic signing with team `NSCP3LMJ94`, the Mac
+  registered in the developer account, and a *named* keychain access group —
+  Xcode's empty `<array/>` grants nothing.
 - **Firestore rules live in `firestore.rules`** and are deployed with
   `firebase deploy --only firestore:rules`. The project shipped with the
   production default (`allow read, write: if false`), which silently rejected

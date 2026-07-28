@@ -2,11 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- See DebugProfile.entitlements: the sandbox is off so Firebase Auth can
-	     reach the keychain without a provisioning profile. -->
 	<key>com.apple.security.app-sandbox</key>
 	<false/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- A real group, not an empty array: the empty one Xcode writes grants
+	     nothing and does not force a provisioning profile, so the app never
+	     gets the application-identifier entitlement the data protection
+	     keychain requires. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)dev.bassiuz.seedling</string>
+	</array>
 </dict>
 </plist>
