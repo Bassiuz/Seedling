@@ -553,7 +553,7 @@ class _DayPageState extends State<DayPage> {
             },
             onOpenTags: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => TagsScreen(repo: widget.repo),
+                builder: (_) => TagsScreen(repo: widget.repo, today: _today),
               ),
             ),
             onOpenQuestions: () => Navigator.of(context).push(

@@ -47,3 +47,5 @@
 - **The daily check-offs move depending on whether they are answered** — unanswered they sit under the date at full width, because they are something to do; answered they fold to one line beside the date and get out of the way. Settings stays pinned to the top right regardless.
 - **The untimed add line has no clock** — setting a time there moved the task into the other list, which reads as the row doing something it did not say.
 - **Goal lists are only ever quarterly and yearly** — the "new list" input is gone and a list can be removed, which exists to undo one added by accident rather than to curate a collection.
+- **The emoji box is never rewritten while you type** — resetting its `TextEditingValue` on every keystroke cancelled macOS's emoji insertion mid-composition, so a character picked from the Viewer only landed after repeated attempts. The text is left exactly as typed and reduced to one grapheme cluster when it is used.
+- **A project can take a task or an idea from the tags screen** — same line, two destinations: today, or that project's someday list, which is the difference between doing it and not yet.

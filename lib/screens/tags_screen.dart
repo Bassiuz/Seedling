@@ -16,11 +16,19 @@ class TagsView extends StatelessWidget {
     required this.tags,
     required this.onEdit,
     required this.onAdd,
+    this.onAddTask,
+    this.onParkIdea,
   });
 
   final List<Tag> tags;
   final void Function(Tag) onEdit;
   final VoidCallback onAdd;
+
+  /// Puts a task on today under this project. Null hides the add lines.
+  final void Function(Tag tag, String title)? onAddTask;
+
+  /// Parks it on the project's someday list instead.
+  final void Function(Tag tag, String title)? onParkIdea;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +53,7 @@ class TagsView extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (final tag in tags)
+                      for (final tag in tags) ...[
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(TagChip.iconOf(tag),
@@ -54,6 +62,17 @@ class TagsView extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodyLarge),
                           onTap: () => onEdit(tag),
                         ),
+                        if (onAddTask != null)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                left: 40, bottom: 12, right: 4),
+                            child: _AddForProject(
+                              tag: tag,
+                              onAddTask: onAddTask!,
+                              onParkIdea: onParkIdea,
+                            ),
+                          ),
+                      ],
                     ],
                   ),
             ),
@@ -187,9 +206,10 @@ class _TagEditorState extends State<TagEditor> {
 
 /// The live tags screen.
 class TagsScreen extends StatelessWidget {
-  const TagsScreen({super.key, required this.repo});
+  const TagsScreen({super.key, required this.repo, required this.today});
 
   final SeedlingRepo repo;
+  final String today;
 
   /// A readable document id, so the Firestore console stays browsable. Editing
   /// keeps the original id, so a rename never orphans the tasks pointing at it.
@@ -227,12 +247,95 @@ class TagsScreen extends StatelessWidget {
       builder: (context, snapshot) {
         final tags = snapshot.data ?? const <Tag>[];
         return TagsView(
+          onAddTask: (tag, title) =>
+              repo.addTask(title, date: today, tagId: tag.id),
+          onParkIdea: (tag, title) => repo.addSomeday(title, tagId: tag.id),
           tags: tags,
           onAdd: () => _edit(context, nextSortOrder: tags.length),
           onEdit: (tag) =>
               _edit(context, existing: tag, nextSortOrder: tags.length),
         );
       },
+    );
+  }
+}
+
+/// Adds something under one project without leaving this screen.
+///
+/// Two destinations from the same line: today, or the project's someday list —
+/// which is the difference between "I am doing this" and "not yet".
+class _AddForProject extends StatefulWidget {
+  const _AddForProject({
+    required this.tag,
+    required this.onAddTask,
+    this.onParkIdea,
+  });
+
+  final Tag tag;
+  final void Function(Tag, String) onAddTask;
+  final void Function(Tag, String)? onParkIdea;
+
+  @override
+  State<_AddForProject> createState() => _AddForProjectState();
+}
+
+class _AddForProjectState extends State<_AddForProject> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String? _take() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return null;
+    _controller.clear();
+    return value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _controller,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) {
+              final value = _take();
+              if (value != null) widget.onAddTask(widget.tag, value);
+            },
+            style: text.bodyMedium,
+            decoration: InputDecoration.collapsed(
+              hintText: 'Add to ${widget.tag.name}…',
+              hintStyle: text.bodyMedium?.copyWith(color: colors.faint),
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Put it on today',
+          visualDensity: VisualDensity.compact,
+          onPressed: () {
+            final value = _take();
+            if (value != null) widget.onAddTask(widget.tag, value);
+          },
+          icon: Icon(Icons.today_outlined, size: 20, color: colors.muted),
+        ),
+        if (widget.onParkIdea != null)
+          IconButton(
+            tooltip: 'Park it on someday',
+            visualDensity: VisualDensity.compact,
+            onPressed: () {
+              final value = _take();
+              if (value != null) widget.onParkIdea!(widget.tag, value);
+            },
+            icon: Icon(Icons.cloud_outlined, size: 20, color: colors.faint),
+          ),
+      ],
     );
   }
 }

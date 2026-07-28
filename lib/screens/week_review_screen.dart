@@ -208,24 +208,17 @@ class _AddMoodState extends State<_AddMood> {
   void _submit(String raw) {
     final value = raw.trim();
     if (value.isEmpty) return;
-    widget.onAdd(_emoji, value);
+    widget.onAdd(_chosenEmoji, value);
     _controller.clear();
   }
 
-  /// Anything typed in the little box wins over the strip, so an emoji you have
-  /// never used is one keystroke away rather than unavailable.
-  void _typed(String raw) {
-    final emoji = firstEmoji(raw);
-    if (emoji == null) return;
-    setState(() => _emoji = emoji);
-    // Keep only the cluster we took, so the box shows what will be used.
-    if (_emojiController.text != emoji) {
-      _emojiController.value = TextEditingValue(
-        text: emoji,
-        selection: TextSelection.collapsed(offset: emoji.length),
-      );
-    }
-  }
+  /// Whatever is in the little box wins over the strip.
+  ///
+  /// Deliberately does *not* rewrite the field. Rewriting its value on every
+  /// keystroke cancelled macOS's emoji insertion mid-composition, so an emoji
+  /// picked from the Character Viewer only landed after several tries. The
+  /// text is left exactly as typed and reduced to one cluster when it is used.
+  String get _chosenEmoji => firstEmoji(_emojiController.text) ?? _emoji;
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +243,9 @@ class _AddMoodState extends State<_AddMood> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: emoji == _emoji ? colors.ink : Colors.transparent,
+                      color: emoji == _chosenEmoji
+                          ? colors.ink
+                          : Colors.transparent,
                       width: 2,
                     ),
                   ),
@@ -262,7 +257,9 @@ class _AddMoodState extends State<_AddMood> {
               width: 52,
               child: TextField(
                 controller: _emojiController,
-                onChanged: _typed,
+                // Rebuild so the preview beside the input follows what you
+                // typed; the field itself is never rewritten.
+                onChanged: (_) => setState(() {}),
                 textAlign: TextAlign.center,
                 style: text.titleMedium,
                 decoration: InputDecoration(
@@ -287,7 +284,7 @@ class _AddMoodState extends State<_AddMood> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Text(_emoji, style: text.titleMedium),
+            Text(_chosenEmoji, style: text.titleMedium),
             const SizedBox(width: 10),
             Expanded(
               child: TextField(
