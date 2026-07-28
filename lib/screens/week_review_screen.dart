@@ -263,7 +263,15 @@ class WeekReviewScreen extends StatelessWidget {
       stream: repo.watchReviewTemplate(),
       builder: (context, templateSnap) {
         final template = templateSnap.data;
-        if (template == null) return const Scaffold(body: SizedBox.shrink());
+        // Still waiting on the template. Draw the arrow anyway — a blank page
+        // you cannot leave is worse than a slow one.
+        if (template == null) {
+          return const Scaffold(
+            body: SafeArea(
+              child: Padding(padding: EdgeInsets.all(24), child: BackLine()),
+            ),
+          );
+        }
         return StreamBuilder<WeekReview?>(
           stream: repo.watchReview(weekKey),
           builder: (context, reviewSnap) {
