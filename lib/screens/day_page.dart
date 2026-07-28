@@ -89,11 +89,9 @@ class DayContent extends StatelessWidget {
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
 
-  /// Below this the blocks stack; above it they sit side by side.
+  /// Below this everything stacks; above it the two task lists sit side by
+  /// side with the note underneath them.
   static const double twoColumnWidth = 600;
-
-  /// Above this the note gets a column of its own.
-  static const double threeColumnWidth = 1000;
 
   @override
   Widget build(BuildContext context) {
@@ -102,25 +100,46 @@ class DayContent extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        if (width >= threeColumnWidth) {
-          return _columns([
-            _timed(timed),
-            _stack([_tasks(untimed), _questions()]),
-            _note(),
-          ]);
-        }
-        if (width >= twoColumnWidth) {
-          return _columns([
-            _stack([_timed(timed), _tasks(untimed), _questions()]),
-            _note(),
-          ]);
+        if (constraints.maxWidth >= twoColumnWidth) {
+          return _wide(timed, untimed);
         }
         return _stack(
             [_timed(timed), _tasks(untimed), _questions(), _note()]);
       },
     );
   }
+
+  /// Timed and untimed beside each other, the note full width below them.
+  ///
+  /// One scroll for the whole page rather than a column each: the note is the
+  /// long thing, and it should have the width to be worth writing in.
+  Widget _wide(List<Task> timed, List<Task> untimed) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _timed(timed)),
+                const SizedBox(width: 32),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _tasks(untimed),
+                      const SizedBox(height: 28),
+                      _questions(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            _note(),
+          ],
+        ),
+      );
 
   Widget _timed(List<Task> timed) => TimedBlock(
         tasks: timed,
@@ -172,20 +191,6 @@ class DayContent extends StatelessWidget {
         ),
       );
 
-  /// Blocks side by side, each scrolling on its own.
-  Widget _columns(List<Widget> blocks) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final (i, block) in blocks.indexed)
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(i == 0 ? 24 : 12, 0,
-                    i == blocks.length - 1 ? 24 : 12, 32),
-                child: block,
-              ),
-            ),
-        ],
-      );
 }
 
 /// A whole day: the pinned header with the content under it. Golden tests

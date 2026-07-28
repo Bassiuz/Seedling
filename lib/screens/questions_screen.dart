@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/seedling_repo.dart';
 import '../models/daily_question.dart';
 import '../theme/seedling_theme.dart';
+import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
 
 /// The question list without a repo behind it, so it can be golden-tested.
@@ -28,6 +29,8 @@ class QuestionsView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            const BackLine(),
+            const SizedBox(height: 8),
             BlockFrame(
               title: 'Daily questions',
               icon: Icons.task_alt,

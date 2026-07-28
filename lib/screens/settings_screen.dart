@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/settings_store.dart';
 import '../theme/seedling_theme.dart';
+import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
 
 /// Settings without any store behind it, so it can be golden-tested.
@@ -49,6 +50,7 @@ class SettingsView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            const BackLine(),
             Text('Settings', style: text.displaySmall),
             const SizedBox(height: 24),
             BlockFrame(

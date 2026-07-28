@@ -5,6 +5,7 @@ import '../models/tag.dart';
 import '../theme/seedling_icons.dart';
 import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
+import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
 import '../widgets/tag_chip.dart';
 
@@ -26,9 +27,12 @@ class TagsView extends StatelessWidget {
     final colors = SeedlingColors.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(24),
-          child: BlockFrame(
+          children: [
+            const BackLine(),
+            const SizedBox(height: 8),
+            BlockFrame(
             title: 'Tags',
             icon: Icons.label_outline,
             trailing: IconButton(
@@ -52,7 +56,8 @@ class TagsView extends StatelessWidget {
                         ),
                     ],
                   ),
-          ),
+            ),
+          ],
         ),
       ),
     );

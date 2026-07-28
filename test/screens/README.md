@@ -16,3 +16,5 @@
   this file never settles, so hiding is covered at repo level instead.
 - `week_review_test.dart` — goldens written and blank, that a new review freezes
   the goals, and answering, adding and removing observations.
+- `back_line_test.dart` — that settings and tags can actually be left again;
+  on the Mac there is no edge-swipe, so without the arrow they are dead ends.

@@ -25,3 +25,6 @@ be golden-tested without Firebase.
 - `time_sheet.dart` — `TimeSheet`: logs work against a task in quarter-hour
   steps, showing the day's total and the all-days total. `TimeSheet.format`
   renders minutes as "1h 30m" for the tile footnote too.
+- `back_line.dart` — `BackLine`: the way back from a pushed screen. Not a
+  Material AppBar, which would put a grey bar and a second title above pages
+  that already carry their own serif heading.

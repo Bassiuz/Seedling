@@ -4,6 +4,7 @@ import '../data/seedling_repo.dart';
 import '../models/someday_item.dart';
 import '../models/tag.dart';
 import '../theme/seedling_theme.dart';
+import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
 import '../widgets/tag_chip.dart';
 
@@ -54,6 +55,7 @@ class SomedayView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            const BackLine(),
             Text('Someday', style: text.displaySmall),
             const SizedBox(height: 8),
             Text(

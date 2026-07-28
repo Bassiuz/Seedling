@@ -4,6 +4,7 @@ import '../data/seedling_repo.dart';
 import '../models/review_template.dart';
 import '../models/week_review.dart';
 import '../theme/seedling_theme.dart';
+import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
 
 /// A written week review, without a repo behind it so it can be golden-tested.
@@ -32,6 +33,7 @@ class WeekReviewView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            const BackLine(),
             Text('Week review', style: text.displayMedium),
             Text(review.weekKey, style: text.displaySmall),
             const SizedBox(height: 28),
