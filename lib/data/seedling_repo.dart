@@ -96,6 +96,14 @@ class SeedlingRepo {
     });
   }
 
+  /// Sets the day's logged time outright, for when it is typed rather than
+  /// stepped.
+  Future<void> setTimeLogged(Task t, String dayKey, int minutes) =>
+      _tasks.doc(t.id).update({
+        'timeEntries.$dayKey':
+            minutes <= 0 ? FieldValue.delete() : minutes.clamp(0, 24 * 60),
+      });
+
   Future<void> upsertTag(Tag t) => _tags.doc(t.id).set(t.toMap());
 
   /// Merges, so a day document keeps whatever else it holds.

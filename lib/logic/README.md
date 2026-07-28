@@ -19,3 +19,5 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
 - `mirror_doc_id.dart` — encodes a calendar event id into something Firestore
   will accept as a document id. EventKit ids contain slashes and the reserved
   `__…__` shape, either of which is fatal.
+- `duration_input.dart` — reads a typed duration into minutes: a bare number
+  under 15 is hours, from 15 up is minutes, and `3.5`, `3:15`, `90m` all work.

@@ -751,6 +751,10 @@ class _DayPageState extends State<DayPage> {
                 () => widget.repo.logTime(latest, day, delta),
                 'log that time',
               ),
+              onSet: (minutes) => _write(
+                () => widget.repo.setTimeLogged(latest, day, minutes),
+                'log that time',
+              ),
             );
           },
         ),

@@ -15,11 +15,14 @@ Task _task({Map<String, int> entries = const {}}) => Task(
       timeEntries: entries,
     );
 
-Widget _sheet(Task task, {void Function(int)? onChange}) => Scaffold(
+Widget _sheet(Task task,
+        {void Function(int)? onChange, void Function(int)? onSet}) =>
+    Scaffold(
       body: TimeSheet(
         task: task,
         dayKey: _day,
         onChange: onChange ?? (_) {},
+        onSet: onSet,
       ),
     );
 
@@ -72,6 +75,42 @@ void main() {
     await tester.tap(find.byTooltip('Less 15 minutes'));
 
     expect(deltas, [-15]);
+  });
+
+  testWidgets('a typed duration sets the day outright', (tester) async {
+    final set = <int>[];
+    await tester.pumpWidget(wrapApp(_sheet(_task(), onSet: set.add)));
+
+    await tester.enterText(find.byType(TextField), '3:15');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
+    expect(set, [195]);
+  });
+
+  testWidgets('typing a small number means hours', (tester) async {
+    final set = <int>[];
+    await tester.pumpWidget(wrapApp(_sheet(_task(), onSet: set.add)));
+
+    await tester.enterText(find.byType(TextField), '3');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
+    expect(set, [180]);
+  });
+
+  testWidgets('typing something unreadable logs nothing', (tester) async {
+    final set = <int>[];
+    await tester.pumpWidget(wrapApp(_sheet(_task(), onSet: set.add)));
+
+    await tester.enterText(find.byType(TextField), 'soon');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+
+    expect(set, isEmpty);
+  });
+
+  testWidgets('without onSet the sheet stays stepper-only', (tester) async {
+    await tester.pumpWidget(wrapApp(_sheet(_task())));
+
+    expect(find.byType(TextField), findsNothing);
   });
 
   testWidgets('shows the day and the all-days total separately',

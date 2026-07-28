@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../logic/duration_input.dart';
 import '../models/task.dart';
 import '../theme/seedling_theme.dart';
 
@@ -7,12 +8,13 @@ import '../theme/seedling_theme.dart';
 ///
 /// Quarter hours because that is the unit the admin ends up in — anything
 /// finer would be invented precision.
-class TimeSheet extends StatelessWidget {
+class TimeSheet extends StatefulWidget {
   const TimeSheet({
     super.key,
     required this.task,
     required this.dayKey,
     required this.onChange,
+    this.onSet,
   });
 
   final Task task;
@@ -20,6 +22,10 @@ class TimeSheet extends StatelessWidget {
 
   /// Called with the signed number of minutes to add.
   final void Function(int deltaMinutes) onChange;
+
+  /// Called with an absolute number of minutes for the day, from typing.
+  /// Null leaves the sheet stepper-only.
+  final void Function(int minutes)? onSet;
 
   static const int step = 15;
 
@@ -34,10 +40,31 @@ class TimeSheet extends StatelessWidget {
   }
 
   @override
+  State<TimeSheet> createState() => _TimeSheetState();
+}
+
+class _TimeSheetState extends State<TimeSheet> {
+  final _typed = TextEditingController();
+
+  @override
+  void dispose() {
+    _typed.dispose();
+    super.dispose();
+  }
+
+  void _submit(String raw) {
+    final minutes = parseDuration(raw);
+    if (minutes == null) return;
+    widget.onSet!(minutes);
+    _typed.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    final today = task.minutesOn(dayKey);
+    final task = widget.task;
+    final today = task.minutesOn(widget.dayKey);
 
     return SafeArea(
       child: Padding(
@@ -57,21 +84,47 @@ class TimeSheet extends StatelessWidget {
                   icon: Icons.remove,
                   tooltip: 'Less 15 minutes',
                   enabled: today > 0,
-                  onTap: () => onChange(-step),
+                  onTap: () => widget.onChange(-TimeSheet.step),
                 ),
-                Text(format(today), style: text.displaySmall),
+                Text(TimeSheet.format(today), style: text.displaySmall),
                 _StepButton(
                   icon: Icons.add,
                   tooltip: 'Another 15 minutes',
                   enabled: true,
-                  onTap: () => onChange(step),
+                  onTap: () => widget.onChange(TimeSheet.step),
                 ),
               ],
             ),
+            if (widget.onSet != null) ...[
+              const SizedBox(height: 20),
+              TextField(
+                controller: _typed,
+                onSubmitted: _submit,
+                textInputAction: TextInputAction.done,
+                textAlign: TextAlign.center,
+                style: text.bodyLarge,
+                decoration: InputDecoration(
+                  hintText: 'or type it: 3, 40, 3.5, 3:15',
+                  hintStyle:
+                      text.bodyLarge?.copyWith(color: colors.faint),
+                  helperText:
+                      'Under 15 counts as hours, from 15 up as minutes.',
+                  helperStyle: text.labelMedium,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.rule),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colors.rule),
+                  ),
+                ),
+              ),
+            ],
             if (task.totalMinutes != today) ...[
               const SizedBox(height: 16),
               Text(
-                '${format(task.totalMinutes)} across all days',
+                '${TimeSheet.format(task.totalMinutes)} across all days',
                 style: text.labelMedium?.copyWith(color: colors.muted),
               ),
             ],
