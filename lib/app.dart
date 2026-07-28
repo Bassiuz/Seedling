@@ -47,10 +47,15 @@ class SeedlingApp extends StatelessWidget {
           builder: (context, snapshot) {
             final user = snapshot.data;
             if (user == null) return SignInScreen(auth: auth);
+            final repo = SeedlingRepo(firestore, user.uid);
             return DayPage(
-              repo: SeedlingRepo(firestore, user.uid),
+              repo: repo,
               settings: settings,
-              calendar: calendar,
+              // Where a calendar can be read, read it. Everywhere else, show
+              // what the phone published.
+              calendar: DeviceCalendar.supported
+                  ? calendar
+                  : MirrorCalendar(repo.readCalendarMirror),
               onSignOut: auth.signOut,
               signedInAs: user.email,
             );

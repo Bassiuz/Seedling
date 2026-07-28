@@ -37,6 +37,14 @@
   `cloud_firestore` requires it. Flutter's default of 13.0 fails at
   `pod install`; keep the Podfile and the Xcode project in step.
 
+## Calendar
+
+`device_calendar` supports **iOS and Android only**. The iPhone reads EventKit
+and publishes a 60-day window to `users/{uid}/calendarMirror`; the Mac and the
+BigMe read that mirror because neither can see iCloud themselves.
+`DeviceCalendar.supported` is the one switch deciding which path a device takes.
+Setup is in `docs/calendar-setup.md`.
+
 ## Running from VS Code
 
 `.vscode/settings.json` points the Dart extension at `.fvm/flutter_sdk`; without

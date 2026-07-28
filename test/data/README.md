@@ -17,3 +17,5 @@
   so a repeating event done today is still waiting tomorrow.
 - `recent_emoji_repo_test.dart` — the strip is stored newest-first, capped at
   ten, and scoped to its own user.
+- `calendar_mirror_repo_test.dart` — publishing replaces its window rather than
+  accumulating, events outside it are untouched, and reads are scoped per user.

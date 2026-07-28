@@ -360,8 +360,28 @@ class _DayPageState extends State<DayPage> {
   /// A window around today rather than the whole calendar: paging years back
   /// should not mean reading years of appointments.
   Future<void> _loadEvents() async {
-    final events = await widget.calendar
-        .eventsBetween(addDays(_today, -60), addDays(_today, 60));
+    final from = addDays(_today, -60);
+    final to = addDays(_today, 60);
+
+    List<CalendarEvent> events;
+    try {
+      events = await widget.calendar.eventsBetween(from, to);
+    } catch (error) {
+      // No calendar on this platform, or permission refused. The day still
+      // works; it just has no appointments on it.
+      debugPrint('Seedling: could not read the calendar: $error');
+      return;
+    }
+
+    // Devices that can read a calendar publish it for the ones that cannot —
+    // the Mac and the BigMe have no way to see iCloud themselves.
+    if (DeviceCalendar.supported && events.isNotEmpty) {
+      unawaited(_write(
+        () => widget.repo.publishCalendarMirror(events, from: from, to: to),
+        'share your calendar with your other devices',
+      ));
+    }
+
     if (!mounted) return;
     final byDay = <String, List<CalendarEvent>>{};
     for (final event in events) {

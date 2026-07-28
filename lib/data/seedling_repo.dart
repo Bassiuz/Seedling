@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/day_key.dart';
 import '../logic/recent_emoji.dart';
+import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
 import '../models/someday_item.dart';
 import '../models/review_template.dart';
@@ -201,6 +202,46 @@ class SeedlingRepo {
         'doneEvents':
             done ? FieldValue.arrayUnion([eventId]) : FieldValue.arrayRemove([eventId]),
       }, SetOptions(merge: true));
+
+  // --- calendar mirror ---
+
+  CollectionReference<Map<String, dynamic>> get _calendarMirror =>
+      _user.collection('calendarMirror');
+
+  /// What the phone published, for machines that cannot read a calendar.
+  Future<List<CalendarEvent>> readCalendarMirror(String from, String to) async {
+    final snap = await _calendarMirror
+        .where('dayKey', isGreaterThanOrEqualTo: from)
+        .where('dayKey', isLessThanOrEqualTo: to)
+        .get();
+    return snap.docs
+        .map((d) => CalendarEvent.fromMap(d.id, d.data()))
+        .toList();
+  }
+
+  /// Replaces the window [from]..[to] with [events].
+  ///
+  /// A replace rather than a merge, so an appointment deleted or moved in the
+  /// real calendar disappears here too instead of lingering forever.
+  Future<void> publishCalendarMirror(
+    List<CalendarEvent> events, {
+    required String from,
+    required String to,
+  }) async {
+    final existing = await _calendarMirror
+        .where('dayKey', isGreaterThanOrEqualTo: from)
+        .where('dayKey', isLessThanOrEqualTo: to)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in existing.docs) {
+      batch.delete(doc.reference);
+    }
+    for (final event in events) {
+      batch.set(_calendarMirror.doc(event.id), event.toMap());
+    }
+    await batch.commit();
+  }
 
   // --- hidden calendar events ---
 

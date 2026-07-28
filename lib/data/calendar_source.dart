@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:device_calendar/device_calendar.dart';
+import 'package:flutter/services.dart';
 
 import '../logic/day_key.dart';
 import '../logic/event_time.dart';
@@ -47,20 +50,32 @@ class FakeCalendar implements CalendarSource {
   Future<bool> get available async => true;
 }
 
-/// The real thing, via EventKit on Apple platforms and the calendar provider
-/// on Android.
+/// The real thing, via EventKit on iOS and the calendar provider on Android.
+///
+/// `device_calendar` ships implementations for those two platforms only — there
+/// is no macOS one, so on the Mac the method channel does not exist. Anything
+/// else reads the mirror those devices publish instead.
 class DeviceCalendar implements CalendarSource {
   DeviceCalendar([DeviceCalendarPlugin? plugin])
       : _plugin = plugin ?? DeviceCalendarPlugin();
 
   final DeviceCalendarPlugin _plugin;
 
+  /// Where a calendar can actually be read from the device.
+  static bool get supported => Platform.isIOS || Platform.isAndroid;
+
   @override
   Future<bool> get available async {
-    final granted = await _plugin.hasPermissions();
-    if (granted.isSuccess && granted.data == true) return true;
-    final asked = await _plugin.requestPermissions();
-    return asked.isSuccess && asked.data == true;
+    if (!supported) return false;
+    try {
+      final granted = await _plugin.hasPermissions();
+      if (granted.isSuccess && granted.data == true) return true;
+      final asked = await _plugin.requestPermissions();
+      return asked.isSuccess && asked.data == true;
+    } on MissingPluginException {
+      // No implementation on this platform; not an error worth surfacing.
+      return false;
+    }
   }
 
   @override
@@ -100,4 +115,23 @@ class DeviceCalendar implements CalendarSource {
     }
     return found;
   }
+}
+
+/// Reads the events your phone published, for the machines that cannot see a
+/// calendar themselves — the Mac and the BigMe.
+///
+/// One-way: this never writes, so a device without calendar access can never
+/// stale out what the phone knows.
+class MirrorCalendar implements CalendarSource {
+  const MirrorCalendar(this.read);
+
+  /// Usually `SeedlingRepo.readCalendarMirror`.
+  final Future<List<CalendarEvent>> Function(String from, String to) read;
+
+  @override
+  Future<bool> get available async => true;
+
+  @override
+  Future<List<CalendarEvent>> eventsBetween(String from, String to) =>
+      read(from, to);
 }
