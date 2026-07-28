@@ -37,6 +37,41 @@ class ReviewTemplate {
         'moodEmoji': moodEmoji,
       };
 
+  /// Editing goal lists. Pure so the rules can be tested without a screen.
+  ReviewTemplate _withBlocks(List<GoalBlock> blocks) => ReviewTemplate(
+        goalBlocks: blocks,
+        questions: questions,
+        moodEmoji: moodEmoji,
+      );
+
+  /// Adds [goal] to the list called [blockTitle], leaving the others alone.
+  ReviewTemplate withGoalAdded(String blockTitle, String goal) =>
+      _withBlocks([
+        for (final block in goalBlocks)
+          if (block.title == blockTitle)
+            GoalBlock(title: block.title, goals: [...block.goals, goal])
+          else
+            block,
+      ]);
+
+  ReviewTemplate withGoalRemoved(String blockTitle, int index) => _withBlocks([
+        for (final block in goalBlocks)
+          if (block.title == blockTitle && index < block.goals.length)
+            GoalBlock(
+              title: block.title,
+              goals: [...block.goals]..removeAt(index),
+            )
+          else
+            block,
+      ]);
+
+  /// A new, empty list. A title already in use is left as it is rather than
+  /// duplicated.
+  ReviewTemplate withBlockAdded(String title) =>
+      goalBlocks.any((b) => b.title == title)
+          ? this
+          : _withBlocks([...goalBlocks, GoalBlock(title: title, goals: const [])]);
+
   /// The defaults mirror the review Bas already writes by hand.
   static const starter = ReviewTemplate(
     goalBlocks: [

@@ -19,3 +19,6 @@ Whole screens, assembled from `lib/widgets/`.
   per project, with a one-tap "do it today" that moves one onto the day.
 - `week_review_screen.dart` — `WeekReviewView` (pure) and `WeekReviewScreen`:
   frozen goals, the repeating questions, and emoji-bundled observations.
+- `goals_screen.dart` — `GoalsView` (pure) and `GoalsScreen`: the quarterly and
+  yearly goal lists a week review snapshots. Editing them never rewrites a
+  review already written.

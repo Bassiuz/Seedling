@@ -19,6 +19,7 @@ Widget _settings({
       onOpenTags: onOpenTags ?? () {},
       onOpenQuestions: onOpenQuestions ?? () {},
       onOpenSomeday: onOpenSomeday ?? () {},
+      onOpenGoals: () {},
       onSignOut: onSignOut ?? () {},
       signedInAs: 'test@sdevaan.nl',
     );
@@ -73,6 +74,7 @@ void main() {
       onOpenTags: () {},
       onOpenQuestions: () {},
       onOpenSomeday: () {},
+      onOpenGoals: () {},
       onSignOut: () {},
       onExportVault: () => exports++,
       vaultPath: '/Users/bassiuz/Seedling Vault',
@@ -99,6 +101,7 @@ void main() {
       onOpenTags: () {},
       onOpenQuestions: () {},
       onOpenSomeday: () {},
+      onOpenGoals: () {},
       onSignOut: () {},
       onExportVault: () {},
       vaultPath: '/tmp/vault',

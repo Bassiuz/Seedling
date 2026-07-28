@@ -27,6 +27,7 @@ import '../widgets/tag_chip.dart';
 import '../widgets/tasks_block.dart';
 import '../widgets/time_sheet.dart';
 import '../widgets/timed_block.dart';
+import 'goals_screen.dart';
 import 'questions_screen.dart';
 import 'settings_screen.dart';
 import 'week_review_screen.dart';
@@ -556,6 +557,11 @@ class _DayPageState extends State<DayPage> {
               MaterialPageRoute<void>(
                 builder: (_) =>
                     SomedayScreen(repo: widget.repo, today: _today),
+              ),
+            ),
+            onOpenGoals: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => GoalsScreen(repo: widget.repo),
               ),
             ),
             ),

@@ -14,6 +14,7 @@ class SettingsView extends StatelessWidget {
     required this.onOpenTags,
     required this.onOpenQuestions,
     required this.onOpenSomeday,
+    required this.onOpenGoals,
     this.onExportVault,
     this.vaultPath,
     this.exportStatus,
@@ -30,6 +31,7 @@ class SettingsView extends StatelessWidget {
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
   final VoidCallback onOpenSomeday;
+  final VoidCallback onOpenGoals;
 
   /// Null where this machine cannot hold a vault, which hides the whole block.
   final VoidCallback? onExportVault;
@@ -99,6 +101,14 @@ class SettingsView extends StatelessWidget {
                     title: Text('Someday', style: text.bodyLarge),
                     trailing: Icon(Icons.chevron_right, color: colors.muted),
                     onTap: onOpenSomeday,
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Goals', style: text.bodyLarge),
+                    subtitle: Text('Quarterly and yearly, for week reviews',
+                        style: text.labelMedium),
+                    trailing: Icon(Icons.chevron_right, color: colors.muted),
+                    onTap: onOpenGoals,
                   ),
                 ],
               ),
@@ -210,6 +220,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onOpenTags,
     required this.onOpenQuestions,
     required this.onOpenSomeday,
+    required this.onOpenGoals,
     this.onExportVault,
     this.vaultPath,
     this.exportStatus,
@@ -222,6 +233,7 @@ class SettingsScreen extends StatelessWidget {
   final VoidCallback onOpenTags;
   final VoidCallback onOpenQuestions;
   final VoidCallback onOpenSomeday;
+  final VoidCallback onOpenGoals;
 
   /// Null where this machine cannot hold a vault, which hides the whole block.
   final VoidCallback? onExportVault;
@@ -243,6 +255,7 @@ class SettingsScreen extends StatelessWidget {
         onOpenTags: onOpenTags,
         onOpenQuestions: onOpenQuestions,
         onOpenSomeday: onOpenSomeday,
+        onOpenGoals: onOpenGoals,
         onSignOut: onSignOut,
         signedInAs: signedInAs,
         onExportVault: onExportVault,

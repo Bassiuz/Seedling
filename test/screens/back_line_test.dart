@@ -29,6 +29,7 @@ Widget _settings() => SettingsView(
       onOpenTags: () {},
       onOpenQuestions: () {},
       onOpenSomeday: () {},
+      onOpenGoals: () {},
       onSignOut: () {},
     );
 
