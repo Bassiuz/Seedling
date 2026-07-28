@@ -53,8 +53,11 @@ void main() {
     var signOuts = 0;
     await tester.pumpWidget(wrapApp(_settings(onSignOut: () => signOuts++)));
 
+    final signOut = find.widgetWithText(ListTile, 'Sign out');
+    await tester.ensureVisible(signOut);
+    await tester.pump();
     expect(find.text('test@sdevaan.nl'), findsOneWidget);
-    await tester.tap(find.text('Sign out'));
+    await tester.tap(signOut, warnIfMissed: false);
 
     expect(signOuts, 1);
   });
@@ -109,8 +112,11 @@ void main() {
       onMirroringChanged: changes.add,
     )));
 
-    await tester.ensureVisible(find.text('Keep it up to date automatically'));
-    await tester.tap(find.text('Keep it up to date automatically'));
+    final toggle = find.widgetWithText(
+        SwitchListTile, 'Keep it up to date automatically');
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle, warnIfMissed: false);
     await tester.pump();
 
     expect(changes, [false]);
