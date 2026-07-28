@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -21,6 +24,7 @@ class DayHeader extends StatelessWidget {
     this.trailing,
     this.title,
     this.subtitle,
+    this.onTripleTapDate,
   });
 
   /// The day being shown.
@@ -56,6 +60,10 @@ class DayHeader extends StatelessWidget {
   /// What the page is, when it is not a date — a week review, say.
   final String? title;
   final String? subtitle;
+
+  /// Three taps on the date. Hidden on purpose: it is a thing you do on the
+  /// way into a meeting, not a button that needs a home on the page.
+  final VoidCallback? onTripleTapDate;
 
   @override
   Widget build(BuildContext context) {
@@ -129,9 +137,9 @@ class DayHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          GestureDetector(
+          _DateGestures(
             onLongPress: onToggleReveal,
-            behavior: HitTestBehavior.opaque,
+            onTripleTap: onTripleTapDate,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -172,6 +180,57 @@ class DayHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Long-press to reveal hidden events, three taps for the standup.
+///
+/// Flutter has no triple-tap recogniser, so the taps are counted by hand.
+/// [kDoubleTapTimeout] is the window the platform already uses for a double
+/// tap, which is the interval a person's fingers are calibrated to.
+class _DateGestures extends StatefulWidget {
+  const _DateGestures({
+    required this.child,
+    this.onLongPress,
+    this.onTripleTap,
+  });
+
+  final Widget child;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onTripleTap;
+
+  @override
+  State<_DateGestures> createState() => _DateGesturesState();
+}
+
+class _DateGesturesState extends State<_DateGestures> {
+  int _taps = 0;
+  Timer? _window;
+
+  @override
+  void dispose() {
+    _window?.cancel();
+    super.dispose();
+  }
+
+  void _tapped() {
+    if (widget.onTripleTap == null) return;
+    _taps++;
+    _window?.cancel();
+    if (_taps >= 3) {
+      _taps = 0;
+      widget.onTripleTap!();
+      return;
+    }
+    _window = Timer(kDoubleTapTimeout, () => _taps = 0);
+  }
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: _tapped,
+        onLongPress: widget.onLongPress,
+        behavior: HitTestBehavior.opaque,
+        child: widget.child,
+      );
 }
 
 /// One segment of the day-shortcut pill.

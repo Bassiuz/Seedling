@@ -115,4 +115,78 @@ void main() {
 
     expect(selectedShortcutLabel(tester), isNull);
   });
+
+  group('three taps on the date', () {
+    Widget standupHeader(void Function() onTripleTap) => Scaffold(
+          body: SafeArea(
+            child: DayHeader(
+              dayKey: '2026-07-15',
+              today: '2026-07-15',
+              onJump: (_) {},
+              onToggleReveal: () {},
+              onTripleTapDate: onTripleTap,
+            ),
+          ),
+        );
+
+    testWidgets('open the standup', (tester) async {
+      var opened = 0;
+      await tester.pumpWidget(wrapApp(standupHeader(() => opened++)));
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.text('Wednesday'));
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      expect(opened, 1);
+    });
+
+    testWidgets('two do not, so a stray double tap is harmless',
+        (tester) async {
+      var opened = 0;
+      await tester.pumpWidget(wrapApp(standupHeader(() => opened++)));
+
+      await tester.tap(find.text('Wednesday'));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tap(find.text('Wednesday'));
+      await tester.pumpAndSettle();
+
+      expect(opened, 0);
+    });
+
+    testWidgets('taps too far apart are not a triple tap', (tester) async {
+      var opened = 0;
+      await tester.pumpWidget(wrapApp(standupHeader(() => opened++)));
+
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.text('Wednesday'));
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      expect(opened, 0);
+    });
+
+    testWidgets('long-pressing still reveals rather than counting',
+        (tester) async {
+      var opened = 0, toggles = 0;
+      await tester.pumpWidget(wrapApp(Scaffold(
+        body: SafeArea(
+          child: DayHeader(
+            dayKey: '2026-07-15',
+            today: '2026-07-15',
+            onJump: (_) {},
+            onToggleReveal: () => toggles++,
+            onTripleTapDate: () => opened++,
+          ),
+        ),
+      )));
+
+      await tester.longPress(find.text('Wednesday'));
+      await tester.longPress(find.text('Wednesday'));
+      await tester.longPress(find.text('Wednesday'));
+
+      expect(toggles, 3);
+      expect(opened, 0);
+    });
+  });
 }

@@ -17,6 +17,7 @@ import '../logic/jira_ref.dart';
 import '../logic/event_time.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
+import '../logic/standup.dart';
 import '../logic/week_key.dart';
 import '../logic/widget_payload.dart';
 import '../models/tag.dart';
@@ -26,6 +27,7 @@ import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../models/week_review.dart';
+import 'standup_screen.dart';
 import '../widgets/day_header.dart';
 import '../widgets/month_sheet.dart';
 import '../widgets/note_block.dart';
@@ -690,7 +692,22 @@ class _DayPageState extends State<DayPage> {
           ),
         ),
         onOpenCalendar: () => _openCalendar(day),
+        onTripleTapDate: () => _openStandup(day),
       );
+
+  /// Three taps on the date. Read-only on purpose: it is something to read
+  /// out, not somewhere to tick things off while you are talking.
+  Future<void> _openStandup(String day) async {
+    final tasks = await widget.repo.watchTasks().first;
+    final tagList = await widget.repo.watchTags().first;
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => StandupView(
+        standup: standupFor(tasks, day),
+        tags: {for (final tag in tagList) tag.id: tag},
+      ),
+    ));
+  }
 
   /// The pinned header, with the daily check-offs beside the date once they
   /// have all been answered.
