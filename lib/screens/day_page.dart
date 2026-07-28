@@ -843,8 +843,11 @@ class _DayPageState extends State<DayPage> {
   Future<void> _openMenu(Task task, String day, Map<String, Tag> tags) async {
     final action = await showModalBottomSheet<String>(
       context: context,
+      // The menu has outgrown a fixed sheet; let it scroll rather than clip.
+      isScrollControlled: true,
       builder: (context) => SafeArea(
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
@@ -904,6 +907,7 @@ class _DayPageState extends State<DayPage> {
               onTap: () => Navigator.pop(context, 'delete'),
             ),
           ],
+        ),
         ),
       ),
     );
