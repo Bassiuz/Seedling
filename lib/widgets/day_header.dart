@@ -17,6 +17,7 @@ class DayHeader extends StatelessWidget {
     this.onToggleReveal,
     this.revealing = false,
     this.onOpenSomeday,
+    this.onOpenCalendar,
   });
 
   /// The day being shown.
@@ -40,13 +41,25 @@ class DayHeader extends StatelessWidget {
   /// The someday list, reachable from the day rather than buried in settings.
   final VoidCallback? onOpenSomeday;
 
+  /// Dragging the header down brings the month calendar with it. The gesture
+  /// lives up here rather than on the page: the day's own blocks scroll, and
+  /// a downward drag inside them means scroll, not "show me the month".
+  final VoidCallback? onOpenCalendar;
+
   @override
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     final date = dateOfKey(dayKey);
 
-    return Padding(
+    return GestureDetector(
+      onVerticalDragEnd: onOpenCalendar == null
+          ? null
+          : (details) {
+              if ((details.primaryVelocity ?? 0) > 0) onOpenCalendar!();
+            },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,6 +141,7 @@ class DayHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

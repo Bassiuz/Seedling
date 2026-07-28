@@ -26,6 +26,7 @@ import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../widgets/day_header.dart';
+import '../widgets/month_sheet.dart';
 import '../widgets/note_block.dart';
 import '../widgets/questions_block.dart';
 import '../widgets/tag_chip.dart';
@@ -225,9 +226,11 @@ class DayView extends StatelessWidget {
     this.eventExtras = const {},
     this.now,
     this.onOpenSomeday,
+    this.onOpenCalendar,
   });
 
   final VoidCallback? onOpenSomeday;
+  final VoidCallback? onOpenCalendar;
   final List<DailyQuestion> questions;
   final Map<String, String> answers;
   final void Function(DailyQuestion, String?)? onAnswer;
@@ -280,6 +283,7 @@ class DayView extends StatelessWidget {
                 onToggleReveal: onToggleReveal,
                 revealing: revealing,
                 onOpenSomeday: onOpenSomeday,
+                onOpenCalendar: onOpenCalendar,
               );
               // The daily check-offs belong beside the date where there is
               // room: they are about the day as a whole, not a task among
@@ -409,12 +413,20 @@ class _DayPageState extends State<DayPage> {
   Map<String, EventExtras> _eventExtras = const {};
   StreamSubscription<Map<String, EventExtras>>? _extrasSub;
 
+  /// Days with a note, an answer or a ticked appointment on them, for the
+  /// month calendar. Task completions are folded in when it opens.
+  Set<String> _activeDays = const {};
+  StreamSubscription<Set<String>>? _activeSub;
+
   @override
   void initState() {
     super.initState();
     _loadEvents();
     _extrasSub = widget.repo.watchEventExtras().listen(
         (extras) => setState(() => _eventExtras = extras));
+    _activeSub = widget.repo
+        .watchActiveDays()
+        .listen((days) => setState(() => _activeDays = days));
     _clock = Timer.periodic(const Duration(minutes: 1), (_) {
       final next = clockOf(DateTime.now());
       if (next != _now && mounted) setState(() => _now = next);
@@ -459,6 +471,7 @@ class _DayPageState extends State<DayPage> {
     _noteDebounce?.cancel();
     _clock?.cancel();
     _extrasSub?.cancel();
+    _activeSub?.cancel();
     // Write whatever is still queued: leaving the page should not lose the
     // last sentence to the debounce.
     _mirror?.flush();
@@ -535,11 +548,32 @@ class _DayPageState extends State<DayPage> {
   /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
   void _toggleReveal() => setState(() => _revealing = !_revealing);
 
-  void _jumpTo(int deltaFromToday) => _controller.animateToPage(
-        _anchor + pageForDay(_anchorMonday, addDays(_today, deltaFromToday)),
+  void _jumpTo(int deltaFromToday) =>
+      _jumpToDay(addDays(_today, deltaFromToday));
+
+  void _jumpToDay(String day) => _controller.animateToPage(
+        _anchor + pageForDay(_anchorMonday, day),
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
+
+  /// The month, pulled down over the day. A day is filled in when you did
+  /// something on it — wrote, answered, or ticked anything off.
+  Future<void> _openCalendar(String shownDay) async {
+    final tasks = await widget.repo.watchTasks().first;
+    if (!mounted) return;
+    final picked = await MonthSheet.show(
+      context,
+      selected: shownDay,
+      today: _today,
+      activeDays: {
+        ..._activeDays,
+        for (final task in tasks)
+          if (task.completedOnDate != null) task.completedOnDate!,
+      },
+    );
+    if (picked != null && mounted) _jumpToDay(picked);
+  }
 
 
   String? _exportStatus;
@@ -651,6 +685,7 @@ class _DayPageState extends State<DayPage> {
           builder: (_) => SomedayScreen(repo: widget.repo, today: _today),
         ),
       ),
+      onOpenCalendar: () => _openCalendar(day),
     );
 
     if (questions.isEmpty) return header;

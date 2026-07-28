@@ -324,6 +324,19 @@ class SeedlingRepo {
   Future<void> unhideEvent(String key) => _blacklist.set(
       {'keys': FieldValue.arrayRemove([key])}, SetOptions(merge: true));
 
+  /// The days you actually did something on: wrote a note, answered a daily
+  /// question or ticked an appointment off. Tasks are not read here — the day
+  /// page already has them, and it folds in the days it was checked off on.
+  Stream<Set<String>> watchActiveDays() => _days.snapshots().map((snap) => {
+        for (final doc in snap.docs)
+          if (_hasActivity(doc.data())) doc.id,
+      });
+
+  static bool _hasActivity(Map<String, dynamic> day) =>
+      (day['note'] as String? ?? '').trim().isNotEmpty ||
+      (day['questionAnswers'] as Map<String, dynamic>? ?? const {}).isNotEmpty ||
+      (day['doneEvents'] as List<dynamic>? ?? const []).isNotEmpty;
+
   /// Answers for one day, keyed by question id.
   Stream<Map<String, String>> watchAnswers(String dayKey) =>
       _days.doc(dayKey).snapshots().map((snap) {
