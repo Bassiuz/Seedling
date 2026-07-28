@@ -211,6 +211,8 @@ class DayView extends StatelessWidget {
     this.onOpenSettings,
     this.onOpenReview,
     this.reviewDue = false,
+    this.onToggleReveal,
+    this.revealing = false,
     this.questions = const [],
     this.answers = const {},
     this.onAnswer,
@@ -253,6 +255,8 @@ class DayView extends StatelessWidget {
   final VoidCallback? onOpenSettings;
   final VoidCallback? onOpenReview;
   final bool reviewDue;
+  final VoidCallback? onToggleReveal;
+  final bool revealing;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -265,6 +269,8 @@ class DayView extends StatelessWidget {
             onOpenSettings: onOpenSettings,
             onOpenReview: onOpenReview,
             reviewDue: reviewDue,
+            onToggleReveal: onToggleReveal,
+            revealing: revealing,
           ),
           Expanded(
             child: DayContent(
@@ -683,6 +689,8 @@ class _DayPageState extends State<DayPage> {
                       onOpenSettings:
                           widget.settings == null ? null : _openSettings,
                       onOpenReview: () => _openReview(_dayForPage(_index)),
+                      onToggleReveal: _toggleReveal,
+                      revealing: _revealing,
                       reviewDue: isReviewDay(_dayForPage(_index)) &&
                           !reviewedWeeks
                               .contains(reviewWeekFor(_dayForPage(_index))),

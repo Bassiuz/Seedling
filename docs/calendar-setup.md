@@ -42,8 +42,20 @@ Security → Calendars → Seedling.
 - **Tick it off.** The tick lives in Seedling; your calendar is never written
   to, so nothing leaks back into iCloud or Outlook.
 - **Long-press to hide it.** Repeating events are matched by their series, so
-  hiding "water the plants" once hides every occurrence. ⌘⇧H reveals hidden
-  events with an undo, in case you hid the wrong thing.
+  hiding "water the plants" once hides every occurrence.
+
+### Getting a hidden event back
+
+Two ways, because a long-press is easy to trigger by accident:
+
+- **Long-press the date** at the top of the day page. The header says it is
+  revealing, hidden events reappear greyed with an undo button, and another
+  long-press stops.
+- **⌘⇧H** on the Mac (Ctrl-Shift-H elsewhere). The phone and the BigMe have no
+  such keyboard, which is why the long-press exists.
+
+If appointments seem to be missing on one device, this is the first thing to
+check: they are probably hidden, not un-mirrored.
 
 ## Known limits
 

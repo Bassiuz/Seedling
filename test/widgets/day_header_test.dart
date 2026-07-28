@@ -16,6 +16,56 @@ Widget _header({required String dayKey, void Function(int)? onJump}) => Scaffold
     );
 
 void main() {
+  testWidgets('long-pressing the date asks to show hidden events',
+      (tester) async {
+    var toggles = 0;
+    await tester.pumpWidget(wrapApp(Scaffold(
+      body: SafeArea(
+        child: DayHeader(
+          dayKey: '2026-07-15',
+          today: '2026-07-15',
+          onJump: (_) {},
+          onToggleReveal: () => toggles++,
+        ),
+      ),
+    )));
+
+    await tester.longPress(find.text('Wednesday'));
+
+    expect(toggles, 1, reason: 'the phone and BigMe have no keyboard shortcut');
+  });
+
+  testWidgets('while revealing, the header says so and how to stop',
+      (tester) async {
+    await tester.pumpWidget(wrapApp(Scaffold(
+      body: SafeArea(
+        child: DayHeader(
+          dayKey: '2026-07-15',
+          today: '2026-07-15',
+          onJump: (_) {},
+          onToggleReveal: () {},
+          revealing: true,
+        ),
+      ),
+    )));
+
+    expect(find.textContaining('Showing hidden events'), findsOneWidget);
+  });
+
+  testWidgets('normally there is no reveal notice', (tester) async {
+    await tester.pumpWidget(wrapApp(Scaffold(
+      body: SafeArea(
+        child: DayHeader(
+          dayKey: '2026-07-15',
+          today: '2026-07-15',
+          onJump: (_) {},
+        ),
+      ),
+    )));
+
+    expect(find.textContaining('Showing hidden'), findsNothing);
+  });
+
   goldenForSizes(
     'day header on today',
     'day_header_today',

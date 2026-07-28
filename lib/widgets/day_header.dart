@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../logic/day_key.dart';
+import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 
 /// The top of a day page: the yesterday/today/tomorrow shortcuts, and the date
@@ -15,6 +16,8 @@ class DayHeader extends StatelessWidget {
     this.onOpenSettings,
     this.onOpenReview,
     this.reviewDue = false,
+    this.onToggleReveal,
+    this.revealing = false,
   });
 
   /// The day being shown.
@@ -33,6 +36,11 @@ class DayHeader extends StatelessWidget {
   /// Opens the week review. Badged while one is waiting to be written.
   final VoidCallback? onOpenReview;
   final bool reviewDue;
+
+  /// Long-pressing the date shows hidden calendar events, so a wrong hide can
+  /// be undone on a phone or the BigMe — neither has the keyboard shortcut.
+  final VoidCallback? onToggleReveal;
+  final bool revealing;
 
   @override
   Widget build(BuildContext context) {
@@ -96,10 +104,28 @@ class DayHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Text(DateFormat('EEEE', 'en_US').format(date),
-              style: text.displayMedium),
-          Text(DateFormat('MMMM d, y', 'en_US').format(date),
-              style: text.displaySmall),
+          GestureDetector(
+            onLongPress: onToggleReveal,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(DateFormat('EEEE', 'en_US').format(date),
+                    style: text.displayMedium),
+                Text(DateFormat('MMMM d, y', 'en_US').format(date),
+                    style: text.displaySmall),
+                if (revealing)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Showing hidden events — long-press the date to stop',
+                      style: text.labelMedium
+                          ?.copyWith(color: SeedlingPalette.crimson),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
