@@ -1,3 +1,5 @@
+import '../logic/jira_ref.dart';
+
 /// A to-do item.
 ///
 /// All dates are day keys (`yyyy-MM-dd`, see `lib/logic/day_key.dart`).
@@ -15,6 +17,7 @@ class Task {
     this.time,
     this.completedOnDate,
     this.timeEntries = const {},
+    this.jira,
   });
 
   factory Task.fromMap(String id, Map<String, dynamic> map) => Task(
@@ -25,6 +28,7 @@ class Task {
         tagId: map['tagId'] as String?,
         time: map['time'] as String?,
         completedOnDate: map['completedOnDate'] as String?,
+        jira: JiraRef.fromMap(map['jira'] as Map<String, dynamic>?),
         timeEntries: {
           for (final e
               in (map['timeEntries'] as Map<String, dynamic>? ?? const {})
@@ -42,6 +46,9 @@ class Task {
   /// `HH:mm`, or null for an untimed task.
   final String? time;
   final String? completedOnDate;
+
+  /// The Jira ticket this task is about, if any.
+  final JiraRef? jira;
 
   /// Minutes worked, keyed by the day they were worked on — the admin Bas
   /// needs later is per day, not just a running total.
@@ -64,6 +71,7 @@ class Task {
         'time': time,
         'completedOnDate': completedOnDate,
         'timeEntries': timeEntries,
+        'jira': jira?.toMap(),
       };
 
   /// [clearCompleted] is the only way to set [completedOnDate] back to null:
@@ -75,6 +83,8 @@ class Task {
     String? time,
     String? completedOnDate,
     Map<String, int>? timeEntries,
+    JiraRef? jira,
+    bool clearJira = false,
     bool clearCompleted = false,
   }) =>
       Task(
@@ -87,5 +97,6 @@ class Task {
         completedOnDate:
             clearCompleted ? null : completedOnDate ?? this.completedOnDate,
         timeEntries: timeEntries ?? this.timeEntries,
+        jira: clearJira ? null : jira ?? this.jira,
       );
 }

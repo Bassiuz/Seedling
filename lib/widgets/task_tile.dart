@@ -7,6 +7,7 @@ import '../models/tag.dart';
 import '../models/task.dart';
 import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
+import '../logic/jira_ref.dart';
 import 'tag_chip.dart';
 import 'time_sheet.dart';
 
@@ -25,6 +26,7 @@ class TaskTile extends StatelessWidget {
     required this.onMenu,
     this.tag,
     this.overdue = false,
+    this.onOpenJira,
   });
 
   final Task task;
@@ -34,6 +36,9 @@ class TaskTile extends StatelessWidget {
   final Tag? tag;
   final VoidCallback onToggle;
   final VoidCallback onMenu;
+
+  /// Opens the linked ticket. Null leaves the key as plain text.
+  final void Function(JiraRef)? onOpenJira;
 
   /// Its time has gone by today and it is still open, so it is drawn in red.
   final bool overdue;
@@ -85,10 +90,12 @@ class TaskTile extends StatelessWidget {
                     ),
                   ),
                   _Footnote(
-                      task: task,
-                      shownDay: shownDay,
-                      tag: tag,
-                      overdue: overdue),
+                    task: task,
+                    shownDay: shownDay,
+                    tag: tag,
+                    overdue: overdue,
+                    onOpenJira: onOpenJira,
+                  ),
                 ],
               ),
             ),
@@ -102,16 +109,19 @@ class TaskTile extends StatelessWidget {
 /// The quiet line under a task title: time, tag chip, and origin or completion
 /// note. Renders nothing when there is nothing to say.
 class _Footnote extends StatelessWidget {
-  const _Footnote(
-      {required this.task,
-      required this.shownDay,
-      this.tag,
-      this.overdue = false});
+  const _Footnote({
+    required this.task,
+    required this.shownDay,
+    this.tag,
+    this.overdue = false,
+    this.onOpenJira,
+  });
 
   final Task task;
   final String shownDay;
   final Tag? tag;
   final bool overdue;
+  final void Function(JiraRef)? onOpenJira;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +134,9 @@ class _Footnote extends StatelessWidget {
       ..._originNote(),
     ];
 
-    if (notes.isEmpty && tag == null) return const SizedBox.shrink();
+    if (notes.isEmpty && tag == null && task.jira == null) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 4),
@@ -134,6 +146,8 @@ class _Footnote extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           if (tag != null) TagChip(tag!),
+          if (task.jira != null)
+            _JiraChip(ref: task.jira!, onOpen: onOpenJira),
           if (notes.isNotEmpty)
             Text(
               notes.join(' · '),
@@ -204,6 +218,44 @@ class TaskCheckbox extends StatelessWidget {
                 color:
                     checkedHere ? colors.paper : colors.muted,
               ),
+      ),
+    );
+  }
+}
+
+/// The linked ticket, as a chip you can click straight through to.
+class _JiraChip extends StatelessWidget {
+  const _JiraChip({required this.ref, this.onOpen});
+
+  final JiraRef ref;
+  final void Function(JiraRef)? onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    const colour = SeedlingPalette.azure;
+    return GestureDetector(
+      onTap: onOpen == null ? null : () => onOpen!(ref),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          border: Border.all(color: colour, width: 1.5),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.open_in_new, size: 12, color: colour),
+            const SizedBox(width: 4),
+            Text(
+              ref.key,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colour,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

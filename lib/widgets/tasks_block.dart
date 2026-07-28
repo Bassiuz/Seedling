@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../logic/jira_ref.dart';
 import '../models/someday_item.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
@@ -19,6 +20,7 @@ class TasksBlock extends StatelessWidget {
     required this.onAdd,
     this.someday = const [],
     this.onPullSomeday,
+    this.onOpenJira,
   });
 
   final List<Task> tasks;
@@ -29,6 +31,7 @@ class TasksBlock extends StatelessWidget {
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final List<SomedayItem> someday;
   final void Function(SomedayItem)? onPullSomeday;
+  final void Function(JiraRef)? onOpenJira;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +48,7 @@ class TasksBlock extends StatelessWidget {
               tag: tags[task.tagId],
               onToggle: () => onToggle(task),
               onMenu: () => onMenu(task),
+              onOpenJira: onOpenJira,
             ),
           AddTaskField(
             onAdd: onAdd,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/day_key.dart';
+import '../logic/jira_ref.dart';
 import '../logic/mirror_doc_id.dart';
 import '../logic/recent_emoji.dart';
 import '../models/calendar_event.dart';
@@ -83,6 +84,20 @@ class SeedlingRepo {
   /// Null clears the tag.
   Future<void> setTag(Task t, String? tagId) =>
       _tasks.doc(t.id).update({'tagId': tagId});
+
+  /// Null unlinks the ticket.
+  Future<void> setJira(Task t, JiraRef? ref) =>
+      _tasks.doc(t.id).update({'jira': ref?.toMap()});
+
+  /// The Jira site last used, so a bare key like MAF-1234 is enough next time.
+  Stream<String?> watchJiraSite() => _user
+      .collection('config')
+      .doc('jira')
+      .snapshots()
+      .map((snap) => snap.data()?['site'] as String?);
+
+  Future<void> rememberJiraSite(String site) =>
+      _user.collection('config').doc('jira').set({'site': site});
 
   Future<void> deleteTask(Task t) => _tasks.doc(t.id).delete();
 

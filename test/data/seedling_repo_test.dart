@@ -2,6 +2,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/data/seedling_repo.dart';
 import 'package:seedling/logic/day_key.dart';
+import 'package:seedling/logic/jira_ref.dart';
 import 'package:seedling/models/tag.dart';
 
 void main() {
@@ -121,6 +122,33 @@ void main() {
       expect(after.tagId, 'moxify');
       expect(after.completedOnDate, '2026-07-28');
       expect(after.title, 'Fix promo video');
+    });
+
+    test('a Jira ticket can be linked and unlinked', () async {
+      await repo.addTask('Fix the login bug', date: '2026-07-28');
+      var task = (await repo.watchTasks().first).single;
+      expect(task.jira, isNull);
+
+      await repo.setJira(
+        task,
+        const JiraRef(key: 'MAF-1234', site: 'https://medappnl.atlassian.net'),
+      );
+      task = (await repo.watchTasks().first).single;
+      expect(task.jira!.key, 'MAF-1234');
+      expect(task.jira!.url, 'https://medappnl.atlassian.net/browse/MAF-1234');
+
+      await repo.setJira(task, null);
+      expect((await repo.watchTasks().first).single.jira, isNull);
+    });
+
+    test('the Jira site is remembered so a bare key is enough later',
+        () async {
+      expect(await repo.watchJiraSite().first, isNull);
+
+      await repo.rememberJiraSite('https://medappnl.atlassian.net');
+
+      expect(await repo.watchJiraSite().first,
+          'https://medappnl.atlassian.net');
     });
 
     test('deleteTask removes it', () async {

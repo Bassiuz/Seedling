@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../logic/event_time.dart';
+import '../logic/jira_ref.dart';
 import '../logic/rollover.dart';
 import '../logic/timed_entries.dart';
 import '../models/calendar_event.dart';
@@ -34,6 +35,7 @@ class TimedBlock extends StatelessWidget {
     this.today,
     this.now,
     this.onAdd,
+    this.onOpenJira,
   });
 
   final List<CalendarEvent> events;
@@ -57,6 +59,7 @@ class TimedBlock extends StatelessWidget {
 
   /// Adding something straight into the timed list. Null hides the add line.
   final void Function(String title, {String? tagId, String? time})? onAdd;
+  final void Function(JiraRef)? onOpenJira;
 
   final List<Task> tasks;
   final Map<String, Tag> tags;
@@ -116,6 +119,7 @@ class TimedBlock extends StatelessWidget {
                   overdue: _overdue(entry),
                   onToggle: () => onToggle(entry.task!),
                   onMenu: () => onMenu(entry.task!),
+                  onOpenJira: onOpenJira,
                 ),
           ],
           if (onAdd != null)

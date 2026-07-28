@@ -21,3 +21,6 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   `__…__` shape, either of which is fatal.
 - `duration_input.dart` — reads a typed duration into minutes: a bare number
   under 15 is hours, from 15 up is minutes, and `3.5`, `3:15`, `90m` all work.
+- `jira_ref.dart` — `JiraRef` and `parseJiraRef`: reads a pasted browse URL or a
+  bare key like `MAF-1234` into a ticket reference, remembering the site so a
+  key alone works next time.

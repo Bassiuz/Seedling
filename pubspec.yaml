@@ -17,6 +17,7 @@ dependencies:
   home_widget: ^0.9.3
   intl: ^0.20.3
   shared_preferences: ^2.5.5
+  url_launcher: ^6.3.2
 
 # jni 1.0.1 skips applying the Kotlin plugin on AGP 9 but then uses its
 # `kotlin { }` extension anyway, so every AGP 9 build fails with

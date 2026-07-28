@@ -9,7 +9,10 @@ import '../data/settings_store.dart';
 import '../data/vault_mirror.dart';
 import '../data/vault_service.dart';
 import '../data/widget_publisher.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../logic/day_key.dart';
+import '../logic/jira_ref.dart';
 import '../logic/event_time.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
@@ -61,6 +64,7 @@ class DayContent extends StatelessWidget {
     this.doneEvents = const {},
     this.today,
     this.now,
+    this.onOpenJira,
   });
 
   /// Active questions for this day, and the answers given so far.
@@ -80,6 +84,7 @@ class DayContent extends StatelessWidget {
   /// as overdue. Null in tests that do not care.
   final String? today;
   final String? now;
+  final void Function(JiraRef)? onOpenJira;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -148,6 +153,7 @@ class DayContent extends StatelessWidget {
         today: today,
         now: now,
         onAdd: onAdd,
+        onOpenJira: onOpenJira,
       );
 
   Widget _tasks(List<Task> untimed) => TasksBlock(
@@ -159,6 +165,7 @@ class DayContent extends StatelessWidget {
         onAdd: onAdd,
         someday: someday,
         onPullSomeday: onPullSomeday,
+        onOpenJira: onOpenJira,
       );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
@@ -706,6 +713,72 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  /// Paste a browse URL or type a bare key. The site is remembered from the
+  /// first URL, so afterwards `MAF-1234` on its own is enough.
+  Future<void> _linkJira(Task task) async {
+    final site = await widget.repo.watchJiraSite().first;
+    if (!mounted) return;
+
+    final controller = TextEditingController(text: task.jira?.key ?? '');
+    final typed = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Jira ticket'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          onSubmitted: (value) => Navigator.pop(dialogContext, value),
+          decoration: InputDecoration(
+            hintText: site == null ? 'Paste the ticket URL' : 'MAF-1234',
+            helperText: site == null
+                ? 'The first time, paste a full link so Seedling learns your '
+                    'Jira address.'
+                : 'A key is enough, or paste a link.',
+            helperMaxLines: 3,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Link'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || typed == null) return;
+
+    final ref = parseJiraRef(typed, defaultSite: site);
+    if (ref == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(needsSiteFor(typed, defaultSite: site)
+              ? 'Paste a full ticket link once, so Seedling learns your Jira '
+                  'address.'
+              : 'That does not look like a Jira ticket.'),
+        ),
+      );
+      return;
+    }
+
+    await _write(() => widget.repo.setJira(task, ref), 'link that ticket');
+    if (ref.site != site) await widget.repo.rememberJiraSite(ref.site);
+  }
+
+  Future<void> _openJira(JiraRef ref) async {
+    final uri = Uri.parse(ref.url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not open ${ref.url}')));
+    }
+  }
+
   /// The same list the add line offers, plus a way back to no tag at all.
   Future<void> _pickTagFor(Task task, Map<String, Tag> tags) async {
     if (tags.isEmpty) return;
@@ -802,6 +875,21 @@ class _DayPageState extends State<DayPage> {
               onTap: () => Navigator.pop(context, 'tag'),
             ),
             ListTile(
+              leading: const Icon(Icons.confirmation_number_outlined),
+              title: Text(task.jira == null
+                  ? 'Link a Jira ticket…'
+                  : 'Change the ticket'),
+              subtitle:
+                  task.jira == null ? null : Text(task.jira!.key),
+              onTap: () => Navigator.pop(context, 'jira'),
+            ),
+            if (task.jira != null)
+              ListTile(
+                leading: const Icon(Icons.link_off),
+                title: const Text('Unlink the ticket'),
+                onTap: () => Navigator.pop(context, 'unjira'),
+              ),
+            ListTile(
               leading: const Icon(Icons.schedule),
               title: const Text('Snooze to…'),
               onTap: () => Navigator.pop(context, 'snooze'),
@@ -848,6 +936,16 @@ class _DayPageState extends State<DayPage> {
 
     if (action == 'tag') {
       await _pickTagFor(task, tags);
+      return;
+    }
+
+    if (action == 'unjira') {
+      await _write(() => widget.repo.setJira(task, null), 'unlink that ticket');
+      return;
+    }
+
+    if (action == 'jira') {
+      await _linkJira(task);
       return;
     }
 
@@ -976,6 +1074,7 @@ class _DayPageState extends State<DayPage> {
                                     date: day, tagId: tagId, time: time),
                                 'add that task',
                               ),
+                              onOpenJira: _openJira,
                               onNoteChanged: (text) => _saveNote(day, text),
                               someday: someday,
                               onPullSomeday: (item) => _write(
