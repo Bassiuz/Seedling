@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/logic/standup.dart';
+import 'package:seedling/models/calendar_event.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/screens/standup_screen.dart';
@@ -35,8 +36,23 @@ final _fixture = [
   _task('Book the vet', done: _today),
 ];
 
-Widget _standup(List<Task> tasks) => StandupView(
-      standup: standupFor(tasks, _today),
+CalendarEvent _event(String title,
+        {String day = _today, String? time, bool allDay = false}) =>
+    CalendarEvent(
+        id: title, title: title, dayKey: day, allDay: allDay, time: time);
+
+final _meetings = [
+  _event('Sprint planning', time: '10:00'),
+  _event('1:1 with Sam', time: '14:00'),
+];
+final _attended = [_event('Retro', day: _yesterday, time: '15:30')];
+
+Widget _standup(List<Task> tasks,
+        {List<CalendarEvent> events = const [],
+        List<CalendarEvent> previousEvents = const []}) =>
+    StandupView(
+      standup: standupFor(tasks, _today,
+          events: events, previousEvents: previousEvents),
       tags: _tags,
     );
 
@@ -45,7 +61,8 @@ void main() {
     'standup: yesterday done, today planned',
     'standup',
     [GoldenSize.phone, GoldenSize.eink],
-    () => _standup(_fixture),
+    () => _standup(_fixture,
+        events: _meetings, previousEvents: _attended),
   );
 
   goldenForSizes(
@@ -78,5 +95,24 @@ void main() {
 
     final done = tester.widget<Text>(find.text('Book the vet'));
     expect(done.style?.decoration, TextDecoration.lineThrough);
+  });
+
+  testWidgets('meetings are listed alongside the work', (tester) async {
+    await tester.pumpWidget(wrapApp(
+      _standup(_fixture, events: _meetings, previousEvents: _attended),
+    ));
+
+    expect(find.text('Retro'), findsOneWidget, reason: 'yesterday');
+    expect(find.text('Sprint planning'), findsOneWidget, reason: 'today');
+  });
+
+  testWidgets('a block with only meetings does not read as empty',
+      (tester) async {
+    await tester.pumpWidget(wrapApp(
+      _standup(const [], previousEvents: _attended),
+    ));
+
+    expect(find.text('Retro'), findsOneWidget);
+    expect(find.text('Nothing checked off'), findsNothing);
   });
 }

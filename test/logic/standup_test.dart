@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/logic/standup.dart';
+import 'package:seedling/models/calendar_event.dart';
 import 'package:seedling/models/task.dart';
 
 const _today = '2026-07-28';
@@ -71,5 +72,49 @@ void main() {
 
     expect(standup.planned.map((t) => t.title),
         ['Standup', 'Retro', 'Untimed']);
+  });
+
+  group('meetings', () {
+    CalendarEvent event(String title, {String? time, bool allDay = false}) =>
+        CalendarEvent(
+            id: title,
+            title: title,
+            dayKey: _today,
+            allDay: allDay,
+            time: time);
+
+    test('yesterday and today keep their own', () {
+      final standup = standupFor(
+        const [],
+        _today,
+        events: [event('Planning', time: '10:00')],
+        previousEvents: [event('Retro', time: '15:00')],
+      );
+
+      expect(standup.meetings.map((e) => e.title), ['Planning']);
+      expect(standup.attended.map((e) => e.title), ['Retro']);
+    });
+
+    test('they are read out in the order they happen', () {
+      final standup = standupFor(const [], _today, events: [
+        event('Retro', time: '16:00'),
+        event('Standup', time: '09:30'),
+      ]);
+
+      expect(standup.meetings.map((e) => e.title), ['Standup', 'Retro']);
+    });
+
+    test('an all-day thing comes before the timed ones', () {
+      final standup = standupFor(const [], _today, events: [
+        event('Standup', time: '09:30'),
+        event('Conference', allDay: true),
+      ]);
+
+      expect(standup.meetings.map((e) => e.title), ['Conference', 'Standup']);
+    });
+
+    test('a day with no calendar at all still builds', () {
+      expect(standupFor(const [], _today).meetings, isEmpty);
+    });
   });
 }

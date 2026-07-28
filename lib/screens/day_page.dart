@@ -700,10 +700,22 @@ class _DayPageState extends State<DayPage> {
   Future<void> _openStandup(String day) async {
     final tasks = await widget.repo.watchTasks().first;
     final tagList = await widget.repo.watchTags().first;
+    final hidden = await widget.repo.watchHiddenEvents().first;
     if (!mounted) return;
+
+    // Hidden appointments stay hidden here too — the ones you blacklisted are
+    // exactly the ones nobody wants read out.
+    List<CalendarEvent> on(String key) =>
+        visibleEvents(_events[key] ?? const [], hidden);
+
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => StandupView(
-        standup: standupFor(tasks, day),
+        standup: standupFor(
+          tasks,
+          day,
+          events: on(day),
+          previousEvents: on(addDays(day, -1)),
+        ),
         tags: {for (final tag in tagList) tag.id: tag},
       ),
     ));
