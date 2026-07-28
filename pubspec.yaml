@@ -18,6 +18,13 @@ dependencies:
   intl: ^0.20.3
   shared_preferences: ^2.5.5
 
+# jni 1.0.1 skips applying the Kotlin plugin on AGP 9 but then uses its
+# `kotlin { }` extension anyway, so every AGP 9 build fails with
+# "Could not find method kotlin()". path_provider_android 2.3.x is what pulls
+# jni in; 2.2.x does not. Drop this once jni fixes the guard.
+dependency_overrides:
+  path_provider_android: 2.2.23
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

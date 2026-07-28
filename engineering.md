@@ -37,6 +37,23 @@
   `cloud_firestore` requires it. Flutter's default of 13.0 fails at
   `pod install`; keep the Podfile and the Xcode project in step.
 
+## Android
+
+`pubspec.yaml` pins **`path_provider_android` to 2.2.23** in
+`dependency_overrides`. Version 2.3.x pulls in `jni`, whose `android/build.gradle`
+skips applying the Kotlin plugin on AGP 9 and then uses its `kotlin { }`
+extension anyway:
+
+```groovy
+if (agpMajor < 9) { apply plugin: 'kotlin-android' }
+...
+kotlin { compilerOptions { … } }
+```
+
+That fails every AGP 9 build with *"Could not find method kotlin()"*. Our project
+is on AGP 9.0.1. `path_provider` reaches us only through `home_widget`. Remove
+the override once `jni` guards the usage as well as the plugin.
+
 ## Calendar
 
 `device_calendar` supports **iOS and Android only**. The iPhone reads EventKit
