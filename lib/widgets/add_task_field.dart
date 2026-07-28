@@ -17,7 +17,12 @@ class AddTaskField extends StatefulWidget {
     this.tags = const [],
     this.someday = const [],
     this.onPullSomeday,
+    this.requireTime = false,
   });
+
+  /// The timed list's own add line: submitting without a time asks for one
+  /// rather than quietly dropping the task into the untimed list.
+  final bool requireTime;
 
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final List<Tag> tags;
@@ -45,15 +50,33 @@ class _AddTaskFieldState extends State<AddTaskField> {
     super.dispose();
   }
 
-  void _submit(String raw) {
+  Future<void> _submit(String raw) async {
     final title = raw.trim();
     if (title.isEmpty) return;
-    widget.onAdd(title, tagId: _tag?.id, time: _time);
+
+    var time = _time;
+    if (time == null && widget.requireTime) {
+      time = await _askTime();
+      if (time == null) return;
+    }
+
+    widget.onAdd(title, tagId: _tag?.id, time: time);
     _controller.clear();
     setState(() {
       _tag = null;
       _time = null;
     });
+  }
+
+  /// Returns `HH:mm`, or null if the picker was dismissed.
+  Future<String?> _askTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked == null) return null;
+    return '${picked.hour.toString().padLeft(2, '0')}:'
+        '${picked.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _pickTag() async {
@@ -108,13 +131,9 @@ class _AddTaskFieldState extends State<AddTaskField> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
+    final picked = await _askTime();
     if (picked == null || !mounted) return;
-    setState(() => _time = '${picked.hour.toString().padLeft(2, '0')}:'
-        '${picked.minute.toString().padLeft(2, '0')}');
+    setState(() => _time = picked);
   }
 
   @override
@@ -141,7 +160,8 @@ class _AddTaskFieldState extends State<AddTaskField> {
               textInputAction: TextInputAction.done,
               style: text.bodyLarge,
               decoration: InputDecoration.collapsed(
-                hintText: 'Add a task…',
+                hintText:
+                    widget.requireTime ? 'Add at a time…' : 'Add a task…',
                 hintStyle:
                     text.bodyLarge?.copyWith(color: colors.faint),
               ),

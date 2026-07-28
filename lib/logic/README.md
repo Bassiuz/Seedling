@@ -10,3 +10,7 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   for the vault, plus the paths each file belongs at.
 - `widget_payload.dart` — builds what the home-screen widget shows: the next
   timed thing and the first few open tasks.
+- `event_time.dart` — turning a calendar instant into local wall-clock time
+  (`localEventTime`, `clockOf`) and deciding what counts as overdue.
+- `timed_entries.dart` — merges appointments and timed tasks into the one
+  chronological list the Timed block draws.

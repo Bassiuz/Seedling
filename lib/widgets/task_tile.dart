@@ -5,6 +5,7 @@ import '../logic/day_key.dart';
 import '../logic/rollover.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
+import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import 'tag_chip.dart';
 import 'time_sheet.dart';
@@ -23,6 +24,7 @@ class TaskTile extends StatelessWidget {
     required this.onToggle,
     required this.onMenu,
     this.tag,
+    this.overdue = false,
   });
 
   final Task task;
@@ -32,6 +34,9 @@ class TaskTile extends StatelessWidget {
   final Tag? tag;
   final VoidCallback onToggle;
   final VoidCallback onMenu;
+
+  /// Its time has gone by today and it is still open, so it is drawn in red.
+  final bool overdue;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +56,11 @@ class TaskTile extends StatelessWidget {
           children: [
             TaskCheckbox(
               state: state,
-              color: tag == null ? colors.ink : TagChip.colorOf(tag!),
+              color: overdue
+                  ? SeedlingPalette.red
+                  : tag == null
+                      ? colors.ink
+                      : TagChip.colorOf(tag!),
               onTap: interactive ? onToggle : null,
             ),
             const SizedBox(width: 12),
@@ -72,7 +81,11 @@ class TaskTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _Footnote(task: task, shownDay: shownDay, tag: tag),
+                  _Footnote(
+                      task: task,
+                      shownDay: shownDay,
+                      tag: tag,
+                      overdue: overdue),
                 ],
               ),
             ),
@@ -86,11 +99,16 @@ class TaskTile extends StatelessWidget {
 /// The quiet line under a task title: time, tag chip, and origin or completion
 /// note. Renders nothing when there is nothing to say.
 class _Footnote extends StatelessWidget {
-  const _Footnote({required this.task, required this.shownDay, this.tag});
+  const _Footnote(
+      {required this.task,
+      required this.shownDay,
+      this.tag,
+      this.overdue = false});
 
   final Task task;
   final String shownDay;
   final Tag? tag;
+  final bool overdue;
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +117,7 @@ class _Footnote extends StatelessWidget {
     final notes = <String>[
       if (task.time != null) task.time!,
       if (logged > 0) TimeSheet.format(logged),
+      if (overdue) 'Overdue',
       ..._originNote(),
     ];
 
@@ -113,8 +132,14 @@ class _Footnote extends StatelessWidget {
         children: [
           if (tag != null) TagChip(tag!),
           if (notes.isNotEmpty)
-            Text(notes.join(' · '),
-                style: style?.copyWith(fontStyle: FontStyle.italic)),
+            Text(
+              notes.join(' · '),
+              style: style?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: overdue ? SeedlingPalette.red : null,
+                fontWeight: overdue ? FontWeight.w600 : null,
+              ),
+            ),
         ],
       ),
     );

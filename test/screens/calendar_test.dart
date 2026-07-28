@@ -100,7 +100,6 @@ void main() {
         onMenu: (_) {},
         events: [_event('Bins out', day: day, time: '19:00')],
         hiddenKeys: const {'Bins out'},
-        revealing: true,
         onUnhideEvent: (e) => restored.add(e.hideKey),
       ),
     )));

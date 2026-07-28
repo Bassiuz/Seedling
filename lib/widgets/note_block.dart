@@ -20,9 +20,11 @@ class NoteBlock extends StatefulWidget {
   final int minLines;
 
   /// Font size and line height are fixed here rather than taken from the theme
-  /// because the ruled lines are drawn at exactly this spacing.
+  /// because the ruled lines are drawn at exactly this spacing. Generous
+  /// spacing on purpose — at 24 it read as cramped, like ruled paper with the
+  /// lines too close together.
   static const double fontSize = 16;
-  static const double lineHeight = 24;
+  static const double lineHeight = 30;
 
   @override
   State<NoteBlock> createState() => _NoteBlockState();

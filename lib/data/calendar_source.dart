@@ -1,6 +1,7 @@
 import 'package:device_calendar/device_calendar.dart';
 
 import '../logic/day_key.dart';
+import '../logic/event_time.dart';
 import '../models/calendar_event.dart';
 
 /// Reads appointments from the device calendar.
@@ -84,15 +85,13 @@ class DeviceCalendar implements CalendarSource {
         final start = event.start;
         if (start == null) continue;
         final allDay = event.allDay ?? false;
+        final when = localEventTime(start, allDay: allDay);
         found.add(CalendarEvent(
           id: event.eventId ?? '${calendar.id}-${start.millisecondsSinceEpoch}',
           title: event.title ?? '(no title)',
-          dayKey: dayKeyOf(start.toLocal()),
+          dayKey: when.dayKey,
           allDay: allDay,
-          time: allDay
-              ? null
-              : '${start.toLocal().hour.toString().padLeft(2, '0')}:'
-                  '${start.toLocal().minute.toString().padLeft(2, '0')}',
+          time: when.time,
           calendarName: calendar.name,
           // Repeating events share this, so hiding one hides the series.
           recurringId: event.recurrenceRule == null ? null : event.eventId,

@@ -10,6 +10,7 @@ import '../data/vault_mirror.dart';
 import '../data/vault_service.dart';
 import '../data/widget_publisher.dart';
 import '../logic/day_key.dart';
+import '../logic/event_time.dart';
 import '../logic/blacklist.dart';
 import '../logic/rollover.dart';
 import '../logic/week_key.dart';
@@ -52,9 +53,12 @@ class DayContent extends StatelessWidget {
     this.onPullSomeday,
     this.events = const [],
     this.hiddenKeys = const {},
-    this.revealing = false,
     this.onHideEvent,
     this.onUnhideEvent,
+    this.onToggleEvent,
+    this.doneEvents = const {},
+    this.today,
+    this.now,
   });
 
   /// Active questions for this day, and the answers given so far.
@@ -65,9 +69,15 @@ class DayContent extends StatelessWidget {
   final void Function(SomedayItem)? onPullSomeday;
   final List<CalendarEvent> events;
   final Set<String> hiddenKeys;
-  final bool revealing;
   final void Function(CalendarEvent)? onHideEvent;
   final void Function(CalendarEvent)? onUnhideEvent;
+  final void Function(CalendarEvent, bool done)? onToggleEvent;
+  final Set<String> doneEvents;
+
+  /// Today's key and the current clock, so anything already past can be shown
+  /// as overdue. Null in tests that do not care.
+  final String? today;
+  final String? now;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -120,9 +130,13 @@ class DayContent extends StatelessWidget {
         onMenu: onMenu,
         events: events,
         hiddenKeys: hiddenKeys,
-        revealing: revealing,
         onHideEvent: onHideEvent,
         onUnhideEvent: onUnhideEvent,
+        onToggleEvent: onToggleEvent,
+        doneEvents: doneEvents,
+        today: today,
+        now: now,
+        onAdd: onAdd,
       );
 
   Widget _tasks(List<Task> untimed) => TasksBlock(
@@ -199,9 +213,11 @@ class DayView extends StatelessWidget {
     this.onPullSomeday,
     this.events = const [],
     this.hiddenKeys = const {},
-    this.revealing = false,
     this.onHideEvent,
     this.onUnhideEvent,
+    this.onToggleEvent,
+    this.doneEvents = const {},
+    this.now,
   });
 
   final List<DailyQuestion> questions;
@@ -211,9 +227,14 @@ class DayView extends StatelessWidget {
   final void Function(SomedayItem)? onPullSomeday;
   final List<CalendarEvent> events;
   final Set<String> hiddenKeys;
-  final bool revealing;
   final void Function(CalendarEvent)? onHideEvent;
   final void Function(CalendarEvent)? onUnhideEvent;
+  final void Function(CalendarEvent, bool done)? onToggleEvent;
+  final Set<String> doneEvents;
+
+  /// The current clock, so anything already past shows as overdue. Null in
+  /// tests that do not care.
+  final String? now;
   final List<Task> tasks;
   final Map<String, Tag> tags;
   final String dayKey;
@@ -257,9 +278,12 @@ class DayView extends StatelessWidget {
               onPullSomeday: onPullSomeday,
               events: events,
               hiddenKeys: hiddenKeys,
-              revealing: revealing,
-              onHideEvent: onHideEvent,
+                    onHideEvent: onHideEvent,
               onUnhideEvent: onUnhideEvent,
+              onToggleEvent: onToggleEvent,
+              doneEvents: doneEvents,
+              today: today,
+              now: now,
             ),
           ),
         ],
@@ -313,10 +337,19 @@ class _DayPageState extends State<DayPage> {
   /// While true, hidden events are drawn greyed so a wrong hide can be undone.
   bool _revealing = false;
 
+  /// The current HH:mm, ticked every minute so something becomes overdue while
+  /// you are looking at it rather than only after a restart.
+  String _now = clockOf(DateTime.now());
+  Timer? _clock;
+
   @override
   void initState() {
     super.initState();
     _loadEvents();
+    _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+      final next = clockOf(DateTime.now());
+      if (next != _now && mounted) setState(() => _now = next);
+    });
   }
 
   /// A window around today rather than the whole calendar: paging years back
@@ -335,6 +368,7 @@ class _DayPageState extends State<DayPage> {
   @override
   void dispose() {
     _noteDebounce?.cancel();
+    _clock?.cancel();
     // Write whatever is still queued: leaving the page should not lose the
     // last sentence to the debounce.
     _mirror?.flush();
@@ -639,7 +673,10 @@ class _DayPageState extends State<DayPage> {
                           _publishWidget(
                               tasksForDay(all, day, _today), tags, hidden);
                         }
-                          return StreamBuilder<Map<String, String>>(
+                          return StreamBuilder<Set<String>>(
+                            stream: widget.repo.watchDoneEvents(day),
+                            builder: (context, doneSnap) =>
+                                StreamBuilder<Map<String, String>>(
                             stream: widget.repo.watchAnswers(day),
                             builder: (context, answerSnap) =>
                                 StreamBuilder<String>(
@@ -688,7 +725,6 @@ class _DayPageState extends State<DayPage> {
                                 reveal: _revealing,
                               ),
                               hiddenKeys: hidden,
-                              revealing: _revealing,
                               onHideEvent: (event) => _write(
                                 () => widget.repo.hideEvent(event.hideKey),
                                 'hide that event',
@@ -697,8 +733,17 @@ class _DayPageState extends State<DayPage> {
                                 () => widget.repo.unhideEvent(event.hideKey),
                                 'show that event again',
                               ),
+                              onToggleEvent: (event, done) => _write(
+                                () => widget.repo
+                                    .setEventDone(day, event.id, done),
+                                done ? 'tick that off' : 'untick that',
+                              ),
+                              doneEvents: doneSnap.data ?? const {},
+                              today: _today,
+                              now: _now,
                             );
                             },
+                          ),
                           ),
                           );
                         },

@@ -13,3 +13,5 @@ Golden and behaviour tests for `lib/widgets/`. Goldens live in `goldens/`.
   note adopts text for a new day without resetting the field mid-sentence.
 - `questions_block_test.dart` — goldens for unanswered, half-answered and
   collapsed, plus the collapse/expand rule and chip and check toggling.
+- `timed_block_test.dart` — appointments and tasks in one clock order, ticking
+  an appointment off, the overdue styling, and the add line asking for a time.

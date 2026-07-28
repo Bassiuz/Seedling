@@ -166,6 +166,23 @@ class SeedlingRepo {
       .snapshots()
       .map((snap) => snap.docs.map((d) => d.id).toList()..sort());
 
+  /// Calendar events you have ticked off, per day.
+  ///
+  /// Seedling never writes to your calendar, so "done" lives here. Keyed by
+  /// day as well as event so a repeating event can be done today and still
+  /// waiting tomorrow.
+  Stream<Set<String>> watchDoneEvents(String dayKey) =>
+      _days.doc(dayKey).snapshots().map((snap) =>
+          ((snap.data()?['doneEvents'] as List<dynamic>?) ?? const [])
+              .map((id) => id as String)
+              .toSet());
+
+  Future<void> setEventDone(String dayKey, String eventId, bool done) =>
+      _days.doc(dayKey).set({
+        'doneEvents':
+            done ? FieldValue.arrayUnion([eventId]) : FieldValue.arrayRemove([eventId]),
+      }, SetOptions(merge: true));
+
   // --- hidden calendar events ---
 
   DocumentReference<Map<String, dynamic>> get _blacklist =>

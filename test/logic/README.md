@@ -12,3 +12,8 @@ Tests for the pure logic helpers in `lib/logic/`.
   answered questions, verbatim notes, reviews, and the file paths.
 - `widget_payload_test.dart` — which item counts as "next", completed tasks
   being left off, the overflow count, and the JSON shape the widget reads.
+- `event_time_test.dart` — the UTC-to-local conversion that fixes appointments
+  showing two hours early, all-day events keeping their date, and the overdue
+  rule (today only, and not at the current minute).
+- `timed_entries_test.dart` — interleaving by clock, all-day events first, and
+  ids that do not collide between an event and a task of the same name.

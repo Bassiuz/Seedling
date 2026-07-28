@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 
+import '../logic/event_time.dart';
+import '../logic/rollover.dart';
+import '../logic/timed_entries.dart';
 import '../models/calendar_event.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
+import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
+import 'add_task_field.dart';
 import 'block_frame.dart';
 import 'task_tile.dart';
 
-/// Everything on the day that happens at a time, in clock order.
+/// Everything on the day that happens at a time, in the order it happens.
+///
+/// Appointments and timed tasks are interleaved rather than grouped, and both
+/// can be ticked off — an appointment's tick lives in Seedling, since the
+/// calendar itself is only ever read.
 class TimedBlock extends StatelessWidget {
   const TimedBlock({
     super.key,
@@ -19,19 +28,31 @@ class TimedBlock extends StatelessWidget {
     this.events = const [],
     this.onHideEvent,
     this.onUnhideEvent,
-    this.revealing = false,
+    this.onToggleEvent,
+    this.doneEvents = const {},
     this.hiddenKeys = const {},
+    this.today,
+    this.now,
+    this.onAdd,
   });
 
-  /// Appointments read from the device calendar, already filtered unless
-  /// [revealing].
   final List<CalendarEvent> events;
   final void Function(CalendarEvent)? onHideEvent;
   final void Function(CalendarEvent)? onUnhideEvent;
 
-  /// True while hidden events are being shown so a hide can be undone.
-  final bool revealing;
+  /// Ticking an appointment off. Null leaves them read-only.
+  final void Function(CalendarEvent, bool done)? onToggleEvent;
+  final Set<String> doneEvents;
+
   final Set<String> hiddenKeys;
+
+  /// Today's key and the current `HH:mm`. Both null in tests that do not care;
+  /// nothing is drawn as overdue without them.
+  final String? today;
+  final String? now;
+
+  /// Adding something straight into the timed list. Null hides the add line.
+  final void Function(String title, {String? tagId, String? time})? onAdd;
 
   final List<Task> tasks;
   final Map<String, Tag> tags;
@@ -39,55 +60,95 @@ class TimedBlock extends StatelessWidget {
   final void Function(Task) onToggle;
   final void Function(Task) onMenu;
 
+  bool _overdue(TimedEntry entry) {
+    if (today == null || now == null) return false;
+    final done = entry.isEvent
+        ? doneEvents.contains(entry.event!.id)
+        : entry.task!.isCompleted;
+    if (done) return false;
+    return isOverdue(
+      day: shownDay,
+      time: entry.time,
+      today: today!,
+      now: now!,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final entries = timedEntries(events, tasks);
+
     return BlockFrame(
       title: 'Timed',
       icon: Icons.schedule,
-      child: tasks.isEmpty && events.isEmpty
-          ? const EmptyNote('Nothing timed')
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final event in events)
-                  EventRow(
-                    event: event,
-                    hidden: hiddenKeys.contains(event.hideKey),
-                    onHide:
-                        onHideEvent == null ? null : () => onHideEvent!(event),
-                    onUnhide: onUnhideEvent == null
-                        ? null
-                        : () => onUnhideEvent!(event),
-                  ),
-                for (final task in tasks)
-                  TaskTile(
-                    task: task,
-                    shownDay: shownDay,
-                    tag: tags[task.tagId],
-                    onToggle: () => onToggle(task),
-                    onMenu: () => onMenu(task),
-                  ),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (entries.isEmpty && onAdd == null)
+            const EmptyNote('Nothing timed')
+          else ...[
+            for (final entry in entries)
+              if (entry.isEvent)
+                EventRow(
+                  event: entry.event!,
+                  hidden: hiddenKeys.contains(entry.event!.hideKey),
+                  done: doneEvents.contains(entry.event!.id),
+                  overdue: _overdue(entry),
+                  onToggle: onToggleEvent == null
+                      ? null
+                      : (done) => onToggleEvent!(entry.event!, done),
+                  onHide:
+                      onHideEvent == null ? null : () => onHideEvent!(entry.event!),
+                  onUnhide: onUnhideEvent == null
+                      ? null
+                      : () => onUnhideEvent!(entry.event!),
+                )
+              else
+                TaskTile(
+                  task: entry.task!,
+                  shownDay: shownDay,
+                  tag: tags[entry.task!.tagId],
+                  overdue: _overdue(entry),
+                  onToggle: () => onToggle(entry.task!),
+                  onMenu: () => onMenu(entry.task!),
+                ),
+          ],
+          if (onAdd != null)
+            AddTaskField(
+              onAdd: onAdd!,
+              tags: tags.values.toList(),
+              requireTime: true,
             ),
+        ],
+      ),
     );
   }
 }
 
-/// One appointment. No checkbox: a calendar event is not something you tick
-/// off here, it is context for the day. Long-press hides it for good.
+/// One appointment.
+///
+/// Ticking it marks it done in Seedling only — your calendar is never written
+/// to. Long-press hides it for good.
 class EventRow extends StatelessWidget {
   const EventRow({
     super.key,
     required this.event,
     this.hidden = false,
+    this.done = false,
+    this.overdue = false,
+    this.onToggle,
     this.onHide,
     this.onUnhide,
   });
 
   final CalendarEvent event;
 
-  /// True only while revealing — a hidden event is otherwise never drawn.
+  /// Only ever true while hidden events are being revealed; otherwise a
+  /// hidden event is filtered out before it reaches here.
   final bool hidden;
+  final bool done;
+  final bool overdue;
+  final void Function(bool done)? onToggle;
   final VoidCallback? onHide;
   final VoidCallback? onUnhide;
 
@@ -95,6 +156,11 @@ class EventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
+    final titleColour = hidden
+        ? colors.faint
+        : done
+            ? colors.muted
+            : colors.ink;
 
     return GestureDetector(
       onLongPress: hidden ? onUnhide : onHide,
@@ -104,23 +170,38 @@ class EventRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 28,
-              child: Icon(
-                event.allDay ? Icons.event : Icons.schedule,
-                size: 20,
-                color: hidden ? colors.faint : colors.muted,
+            if (onToggle == null || hidden)
+              SizedBox(
+                width: 28,
+                child: Icon(
+                  event.allDay ? Icons.event : Icons.schedule,
+                  size: 20,
+                  color: hidden ? colors.faint : colors.muted,
+                ),
+              )
+            else
+              TaskCheckbox(
+                state: done
+                    ? TaskCheckState.checkedHere
+                    : TaskCheckState.open,
+                color: overdue ? SeedlingPalette.red : colors.ink,
+                onTap: () => onToggle!(!done),
               ),
-            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    event.title,
-                    style: text.bodyLarge?.copyWith(
-                      color: hidden ? colors.faint : colors.ink,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(
+                      event.title,
+                      style: text.bodyLarge?.copyWith(
+                        color: titleColour,
+                        decoration:
+                            done ? TextDecoration.lineThrough : null,
+                        decorationColor: colors.muted,
+                      ),
                     ),
                   ),
                   Padding(
@@ -128,9 +209,13 @@ class EventRow extends StatelessWidget {
                     child: Text(
                       [
                         if (event.allDay) 'All day' else event.time ?? '',
+                        if (overdue) 'Overdue',
                         if (hidden) 'hidden',
                       ].where((p) => p.isNotEmpty).join(' · '),
-                      style: text.labelSmall,
+                      style: text.labelSmall?.copyWith(
+                        color: overdue ? SeedlingPalette.red : null,
+                        fontWeight: overdue ? FontWeight.w600 : null,
+                      ),
                     ),
                   ),
                 ],

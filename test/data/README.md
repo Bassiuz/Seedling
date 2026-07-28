@@ -13,3 +13,5 @@
   write rather than throwing at the caller.
 - `mirror_live_test.dart` — the mirror driven from real repo data, checking the
   file that lands on disk.
+- `event_done_repo_test.dart` — ticking a calendar event off is stored per day,
+  so a repeating event done today is still waiting tomorrow.
