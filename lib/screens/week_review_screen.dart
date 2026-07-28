@@ -18,6 +18,7 @@ class WeekReviewView extends StatelessWidget {
     required this.onAddMood,
     required this.onRemoveMood,
     this.recentEmoji = const [],
+    this.showBack = true,
   });
 
   final WeekReview review;
@@ -29,6 +30,7 @@ class WeekReviewView extends StatelessWidget {
   /// The quick strip, newest first. Falls back to the template's starters
   /// until something has actually been used.
   final List<String> recentEmoji;
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class WeekReviewView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const BackLine(),
+            if (showBack) const BackLine(),
             Text('Week review', style: text.displayMedium),
             Text(review.weekKey, style: text.displaySmall),
             const SizedBox(height: 28),
@@ -312,10 +314,15 @@ class WeekReviewScreen extends StatelessWidget {
     super.key,
     required this.repo,
     required this.weekKey,
+    this.showBack = true,
   });
 
   final SeedlingRepo repo;
   final String weekKey;
+
+  /// False when the review is a page in the day pager rather than a pushed
+  /// screen — there is nothing to go back to.
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -344,6 +351,7 @@ class WeekReviewScreen extends StatelessWidget {
             return WeekReviewView(
               review: review,
               template: template,
+              showBack: showBack,
               recentEmoji: emojiSnap.data ?? const [],
               onAnswer: (question, answer) => repo.saveReview(
                 WeekReview(

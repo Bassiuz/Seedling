@@ -61,7 +61,9 @@ void main() {
       wrapApp(_block(answers: const {'travel': 'OV', 'gym': 'yes'})),
     );
 
-    expect(find.text('All answered · 2/2'), findsOneWidget);
+    // One line, not a heading with a summary under it — it has to fit beside
+    // the date.
+    expect(find.text('Daily — all answered 2/2'), findsOneWidget);
     expect(find.text('Work travel'), findsNothing);
   });
 
@@ -77,7 +79,7 @@ void main() {
       wrapApp(_block(answers: const {'travel': 'OV', 'gym': 'yes'})),
     );
 
-    await tester.tap(find.text('All answered · 2/2'));
+    await tester.tap(find.text('Daily — all answered 2/2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Work travel'), findsOneWidget);

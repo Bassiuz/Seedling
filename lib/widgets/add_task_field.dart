@@ -181,12 +181,13 @@ class _AddTaskFieldState extends State<AddTaskField> {
               tooltip: 'From someday',
               onTap: _pickSomeday,
             ),
-          _GhostButton(
-            icon: Icons.schedule,
-            active: _time != null,
-            tooltip: 'Set a time',
-            onTap: _pickTime,
-          ),
+          if (widget.requireTime)
+            _GhostButton(
+              icon: Icons.schedule,
+              active: _time != null,
+              tooltip: 'Set a time',
+              onTap: _pickTime,
+            ),
           if (_tag != null)
             Padding(
               padding: const EdgeInsets.only(left: 4),

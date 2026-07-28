@@ -24,3 +24,5 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
 - `jira_ref.dart` — `JiraRef` and `parseJiraRef`: reads a pasted browse URL or a
   bare key like `MAF-1234` into a ticket reference, remembering the site so a
   key alone works next time.
+- `day_pages.dart` — maps a pager index to either a day or a week review. Weeks
+  run Monday to Sunday and each review sits straight after its Sunday.

@@ -65,12 +65,11 @@ class ReviewTemplate {
             block,
       ]);
 
-  /// A new, empty list. A title already in use is left as it is rather than
-  /// duplicated.
-  ReviewTemplate withBlockAdded(String title) =>
-      goalBlocks.any((b) => b.title == title)
-          ? this
-          : _withBlocks([...goalBlocks, GoalBlock(title: title, goals: const [])]);
+  /// Drops a whole list. There are only ever meant to be two — quarterly and
+  /// yearly — so this exists to undo one added by accident rather than to
+  /// curate a collection.
+  ReviewTemplate withBlockRemoved(String title) =>
+      _withBlocks([for (final b in goalBlocks) if (b.title != title) b]);
 
   /// The defaults mirror the review Bas already writes by hand.
   static const starter = ReviewTemplate(

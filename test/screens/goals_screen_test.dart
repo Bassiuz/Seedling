@@ -21,7 +21,7 @@ void main() {
       template: _template,
       onAddGoal: (_, _) {},
       onRemoveGoal: (_, _) {},
-      onAddBlock: (_) {},
+      onRemoveBlock: (_) {},
     ),
   );
 
@@ -47,15 +47,20 @@ void main() {
       );
     });
 
-    test('a new list can be started', () {
-      final after = _template.withBlockAdded('Five year plan');
+    test('a list added by accident can be dropped', () {
+      const withStray = ReviewTemplate(goalBlocks: [
+        GoalBlock(title: 'Quarterly Goals', goals: ['Bike when dry']),
+        GoalBlock(title: 'test list', goals: []),
+      ]);
+
+      final after = withStray.withBlockRemoved('test list');
 
       expect(after.goalBlocks.map((b) => b.title).toList(),
-          ['Quarterly Goals', 'Yearly Goals', 'Five year plan']);
+          ['Quarterly Goals']);
     });
 
-    test('a list title already in use is not duplicated', () {
-      expect(_template.withBlockAdded('Yearly Goals').goalBlocks, hasLength(2));
+    test('removing a list that is not there changes nothing', () {
+      expect(_template.withBlockRemoved('nope').goalBlocks, hasLength(2));
     });
 
     test('editing never touches the questions or the emoji palette', () {
@@ -89,7 +94,7 @@ void main() {
       template: _template,
       onAddGoal: (block, goal) => added.add((block, goal)),
       onRemoveGoal: (_, _) {},
-      onAddBlock: (_) {},
+      onRemoveBlock: (_) {},
     )));
 
     await tester.enterText(

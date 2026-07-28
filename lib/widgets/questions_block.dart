@@ -49,34 +49,42 @@ class _QuestionsBlockState extends State<QuestionsBlock> {
     final complete =
         QuestionsBlock.allAnswered(widget.questions, widget.answers);
 
+    // Collapsed it is a single line: heading, summary and the chevron all in
+    // one row, so it can sit beside the date without stacking.
+    if (complete && !_expandedByHand) {
+      return GestureDetector(
+        onTap: () => setState(() => _expandedByHand = true),
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.task_alt, size: 16, color: colors.muted),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Daily — all answered $answered/${widget.questions.length}',
+                overflow: TextOverflow.ellipsis,
+                style: text.labelLarge?.copyWith(color: colors.muted),
+              ),
+            ),
+            Icon(Icons.expand_more, size: 18, color: colors.muted),
+          ],
+        ),
+      );
+    }
+
     return BlockFrame(
       title: 'Daily',
       icon: Icons.task_alt,
       trailing: complete
           ? IconButton(
-              tooltip: _expandedByHand ? 'Collapse' : 'Expand',
+              tooltip: 'Collapse',
               visualDensity: VisualDensity.compact,
-              onPressed: () =>
-                  setState(() => _expandedByHand = !_expandedByHand),
-              icon: Icon(
-                _expandedByHand ? Icons.expand_less : Icons.expand_more,
-                color: colors.muted,
-              ),
+              onPressed: () => setState(() => _expandedByHand = false),
+              icon: Icon(Icons.expand_less, color: colors.muted),
             )
           : null,
-      child: complete && !_expandedByHand
-          ? GestureDetector(
-              onTap: () => setState(() => _expandedByHand = true),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Text(
-                  'All answered · $answered/${widget.questions.length}',
-                  style: text.bodyMedium?.copyWith(color: colors.muted),
-                ),
-              ),
-            )
-          : Column(
+      child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final question in widget.questions)
@@ -85,8 +93,8 @@ class _QuestionsBlockState extends State<QuestionsBlock> {
                     answer: widget.answers[question.id],
                     onAnswer: (value) => widget.onAnswer(question, value),
                   ),
-              ],
-            ),
+        ],
+      ),
     );
   }
 }

@@ -17,13 +17,13 @@ class GoalsView extends StatelessWidget {
     required this.template,
     required this.onAddGoal,
     required this.onRemoveGoal,
-    required this.onAddBlock,
+    required this.onRemoveBlock,
   });
 
   final ReviewTemplate template;
   final void Function(String blockTitle, String goal) onAddGoal;
   final void Function(String blockTitle, int index) onRemoveGoal;
-  final void Function(String title) onAddBlock;
+  final void Function(String title) onRemoveBlock;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +50,12 @@ class GoalsView extends StatelessWidget {
               BlockFrame(
                 title: block.title,
                 icon: Icons.flag_outlined,
+                trailing: IconButton(
+                  tooltip: 'Remove this list',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => onRemoveBlock(block.title),
+                  icon: Icon(Icons.close, size: 18, color: colors.faint),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -81,7 +87,6 @@ class GoalsView extends StatelessWidget {
               ),
               const SizedBox(height: 28),
             ],
-            _AddLine(hint: 'New list, e.g. Yearly Goals…', onAdd: onAddBlock),
           ],
         ),
       ),
@@ -165,8 +170,8 @@ class GoalsScreen extends StatelessWidget {
               repo.saveReviewTemplate(template.withGoalAdded(blockTitle, goal)),
           onRemoveGoal: (blockTitle, index) => repo
               .saveReviewTemplate(template.withGoalRemoved(blockTitle, index)),
-          onAddBlock: (title) =>
-              repo.saveReviewTemplate(template.withBlockAdded(title)),
+          onRemoveBlock: (title) =>
+              repo.saveReviewTemplate(template.withBlockRemoved(title)),
         );
       },
     );

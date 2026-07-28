@@ -12,6 +12,7 @@ import '../data/widget_publisher.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/day_key.dart';
+import '../logic/day_pages.dart';
 import '../logic/jira_ref.dart';
 import '../logic/event_time.dart';
 import '../logic/blacklist.dart';
@@ -202,8 +203,6 @@ class DayView extends StatelessWidget {
     required this.onAdd,
     required this.onNoteChanged,
     this.onOpenSettings,
-    this.onOpenReview,
-    this.reviewDue = false,
     this.onToggleReveal,
     this.revealing = false,
     this.questions = const [],
@@ -248,8 +247,6 @@ class DayView extends StatelessWidget {
   final void Function(String title, {String? tagId, String? time}) onAdd;
   final void Function(String) onNoteChanged;
   final VoidCallback? onOpenSettings;
-  final VoidCallback? onOpenReview;
-  final bool reviewDue;
   final VoidCallback? onToggleReveal;
   final bool revealing;
 
@@ -270,8 +267,6 @@ class DayView extends StatelessWidget {
                 today: today,
                 onJump: onJump,
                 onOpenSettings: onOpenSettings,
-                onOpenReview: onOpenReview,
-                reviewDue: reviewDue,
                 onToggleReveal: onToggleReveal,
                 revealing: revealing,
                 onOpenSomeday: onOpenSomeday,
@@ -375,11 +370,15 @@ class _DayPageState extends State<DayPage> {
   static const int _anchor = 500000;
 
   final String _today = todayKey();
-  final PageController _controller = PageController(initialPage: _anchor);
+
+  /// Page zero is the Monday of this week; every eighth page is a review.
+  late final String _anchorMonday = weekStartOf(_today);
+  late final PageController _controller =
+      PageController(initialPage: _anchor + pageForDay(_anchorMonday, _today));
 
   /// Which page the header is describing. Kept in step with the PageView so
   /// the pinned header follows both swipes and shortcut taps.
-  int _index = _anchor;
+  late int _index = _anchor + pageForDay(_anchorMonday, _today);
   Timer? _noteDebounce;
 
   /// Appointments for the days around today, keyed by day.
@@ -448,7 +447,17 @@ class _DayPageState extends State<DayPage> {
     super.dispose();
   }
 
-  String _dayForPage(int index) => addDays(_today, index - _anchor);
+  DayPageSlot _slotForPage(int index) =>
+      pageContent(_anchorMonday, index - _anchor);
+
+  /// The day a page shows. A review page names the Sunday it follows, so the
+  /// header still says something true while you are on it.
+  String _dayForPage(int index) {
+    final slot = _slotForPage(index);
+    if (slot.dayKey != null) return slot.dayKey!;
+    return weekEndOf(addDays(_anchorMonday,
+        7 * ((index - _anchor - 7) ~/ slotsPerWeek)));
+  }
 
   final _widget = const WidgetPublisher();
   String? _lastPublished;
@@ -507,19 +516,11 @@ class _DayPageState extends State<DayPage> {
   void _toggleReveal() => setState(() => _revealing = !_revealing);
 
   void _jumpTo(int deltaFromToday) => _controller.animateToPage(
-        _anchor + deltaFromToday,
+        _anchor + pageForDay(_anchorMonday, addDays(_today, deltaFromToday)),
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
 
-  void _openReview(String day) => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => WeekReviewScreen(
-            repo: widget.repo,
-            weekKey: reviewWeekFor(day),
-          ),
-        ),
-      );
 
   String? _exportStatus;
 
@@ -617,14 +618,12 @@ class _DayPageState extends State<DayPage> {
     required String day,
     required List<DailyQuestion> questions,
     required Map<String, String> answers,
-    required List<String> reviewedWeeks,
   }) {
     final header = DayHeader(
       dayKey: day,
       today: _today,
       onJump: _jumpTo,
       onOpenSettings: widget.settings == null ? null : _openSettings,
-      onOpenReview: () => _openReview(day),
       onToggleReveal: _toggleReveal,
       revealing: _revealing,
       onOpenSomeday: () => Navigator.of(context).push(
@@ -632,8 +631,6 @@ class _DayPageState extends State<DayPage> {
           builder: (_) => SomedayScreen(repo: widget.repo, today: _today),
         ),
       ),
-      reviewDue:
-          isReviewDay(day) && !reviewedWeeks.contains(reviewWeekFor(day)),
     );
 
     if (questions.isEmpty) return header;
@@ -647,33 +644,34 @@ class _DayPageState extends State<DayPage> {
       ),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < DayContent.twoColumnWidth) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              header,
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                child: block,
-              ),
-            ],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(child: header),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 12, 24, 16),
-                child: block,
-              ),
-            ),
-          ],
-        );
-      },
+    // Answered, it is one quiet line and tucks in beside the date. Unanswered,
+    // it is something to do and belongs in the flow of the day, under the
+    // header and above the lists.
+    final answeredAll = QuestionsBlock.allAnswered(questions, answers);
+
+    if (!answeredAll) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          header,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+            child: block,
+          ),
+        ],
+      );
+    }
+
+    return Stack(
+      children: [
+        header,
+        // Right of the date, clear of the settings button above it.
+        Positioned(
+          right: 24,
+          bottom: 16,
+          child: block,
+        ),
+      ],
     );
   }
 
@@ -998,7 +996,6 @@ class _DayPageState extends State<DayPage> {
                 return StreamBuilder<List<String>>(
               stream: widget.repo.watchReviewedWeeks(),
               builder: (context, reviewedSnap) {
-                final reviewedWeeks = reviewedSnap.data ?? const <String>[];
                 return StreamBuilder<List<SomedayItem>>(
               stream: widget.repo.watchSomeday(),
               builder: (context, somedaySnap) {
@@ -1020,7 +1017,6 @@ class _DayPageState extends State<DayPage> {
                         day: _dayForPage(_index),
                         questions: questions,
                         answers: headerAnswers.data ?? const {},
-                        reviewedWeeks: reviewedWeeks,
                       ),
                     ),
                     Expanded(
@@ -1029,7 +1025,17 @@ class _DayPageState extends State<DayPage> {
                         onPageChanged: (index) =>
                             setState(() => _index = index),
                         itemBuilder: (context, index) {
-                          final day = _dayForPage(index);
+                          final slot = _slotForPage(index);
+                          // Every eighth page is the review of the week that
+                          // just ended, sitting where you would write it.
+                          if (slot.isReview) {
+                            return WeekReviewScreen(
+                              repo: widget.repo,
+                              weekKey: slot.weekKey!,
+                              showBack: false,
+                            );
+                          }
+                          final day = slot.dayKey!;
                         if (day == _today) {
                           _publishWidget(
                               tasksForDay(all, day, _today), tags, hidden);

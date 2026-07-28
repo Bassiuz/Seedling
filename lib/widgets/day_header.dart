@@ -14,8 +14,6 @@ class DayHeader extends StatelessWidget {
     required this.today,
     required this.onJump,
     this.onOpenSettings,
-    this.onOpenReview,
-    this.reviewDue = false,
     this.onToggleReveal,
     this.revealing = false,
     this.onOpenSomeday,
@@ -33,10 +31,6 @@ class DayHeader extends StatelessWidget {
   /// Null hides the settings button, which is what golden tests of the bare
   /// header want.
   final VoidCallback? onOpenSettings;
-
-  /// Opens the week review. Badged while one is waiting to be written.
-  final VoidCallback? onOpenReview;
-  final bool reviewDue;
 
   /// Long-pressing the date shows hidden calendar events, so a wrong hide can
   /// be undone on a phone or the BigMe — neither has the keyboard shortcut.
@@ -93,16 +87,8 @@ class DayHeader extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onOpenReview != null)
-                IconButton(
-                  onPressed: onOpenReview,
-                  tooltip: 'Week review',
-                  icon: Badge(
-                    isLabelVisible: reviewDue,
-                    child: Icon(Icons.rate_review_outlined,
-                        color: colors.muted),
-                  ),
-                ),
+              // Settings is pinned to the right rather than sharing space
+              // with whatever else is on the row.
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
