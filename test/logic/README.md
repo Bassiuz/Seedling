@@ -17,3 +17,6 @@ Tests for the pure logic helpers in `lib/logic/`.
   rule (today only, and not at the current minute).
 - `timed_entries_test.dart` — interleaving by clock, all-day events first, and
   ids that do not collide between an event and a task of the same name.
+- `recent_emoji_test.dart` — promotion, deduplication, the ten-item cap, and
+  that a flag or skin-toned emoji survives as the single character it looks
+  like.

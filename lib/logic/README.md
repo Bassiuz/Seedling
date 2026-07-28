@@ -14,3 +14,5 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   (`localEventTime`, `clockOf`) and deciding what counts as overdue.
 - `timed_entries.dart` — merges appointments and timed tasks into the one
   chronological list the Timed block draws.
+- `recent_emoji.dart` — the most-recently-used emoji list (`promoteEmoji`) and
+  normalising typed input to one grapheme cluster (`firstEmoji`).

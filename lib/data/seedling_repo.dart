@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/day_key.dart';
+import '../logic/recent_emoji.dart';
 import '../models/daily_question.dart';
 import '../models/someday_item.dart';
 import '../models/review_template.dart';
@@ -161,6 +162,24 @@ class SeedlingRepo {
 
   Future<void> saveReview(WeekReview review) =>
       _reviews.doc(review.weekKey).set(review.toMap());
+
+  DocumentReference<Map<String, dynamic>> get _emoji =>
+      _user.collection('config').doc('recentEmoji');
+
+  /// The emoji you have reached for lately, most recent first. Stored on the
+  /// account rather than the device so the strip is the same everywhere.
+  Stream<List<String>> watchRecentEmoji() => _emoji.snapshots().map((snap) =>
+      ((snap.data()?['emoji'] as List<dynamic>?) ?? const [])
+          .map((e) => e as String)
+          .toList());
+
+  /// Records that [emoji] was just used, keeping the list to ten.
+  Future<void> noteEmojiUsed(String emoji) async {
+    final current = await watchRecentEmoji().first;
+    final next = promoteEmoji(current, emoji);
+    if (next.isEmpty) return;
+    await _emoji.set({'emoji': next});
+  }
 
   Stream<List<String>> watchReviewedWeeks() => _reviews
       .snapshots()

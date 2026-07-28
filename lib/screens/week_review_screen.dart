@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/seedling_repo.dart';
+import '../logic/recent_emoji.dart';
 import '../models/review_template.dart';
 import '../models/week_review.dart';
 import '../theme/seedling_theme.dart';
@@ -16,6 +17,7 @@ class WeekReviewView extends StatelessWidget {
     required this.onAnswer,
     required this.onAddMood,
     required this.onRemoveMood,
+    this.recentEmoji = const [],
   });
 
   final WeekReview review;
@@ -23,6 +25,10 @@ class WeekReviewView extends StatelessWidget {
   final void Function(String question, String answer) onAnswer;
   final void Function(String emoji, String text) onAddMood;
   final void Function(int index) onRemoveMood;
+
+  /// The quick strip, newest first. Falls back to the template's starters
+  /// until something has actually been used.
+  final List<String> recentEmoji;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +88,12 @@ class WeekReviewView extends StatelessWidget {
                   for (final (i, line) in review.moodLines.indexed)
                     _MoodRow(line: line, onRemove: () => onRemoveMood(i)),
                   const SizedBox(height: 8),
-                  _AddMood(palette: template.moodEmoji, onAdd: onAddMood),
+                  _AddMood(
+                    palette: recentEmoji.isEmpty
+                        ? template.moodEmoji
+                        : recentEmoji,
+                    onAdd: onAddMood,
+                  ),
                 ],
               ),
             ),
@@ -171,6 +182,8 @@ class _MoodRow extends StatelessWidget {
 class _AddMood extends StatefulWidget {
   const _AddMood({required this.palette, required this.onAdd});
 
+  /// The quick strip: whatever you have reached for lately, newest first,
+  /// falling back to the template's starters before you have used any.
   final List<String> palette;
   final void Function(String emoji, String text) onAdd;
 
@@ -180,11 +193,13 @@ class _AddMood extends StatefulWidget {
 
 class _AddMoodState extends State<_AddMood> {
   final _controller = TextEditingController();
+  final _emojiController = TextEditingController();
   late String _emoji = widget.palette.isEmpty ? '•' : widget.palette.first;
 
   @override
   void dispose() {
     _controller.dispose();
+    _emojiController.dispose();
     super.dispose();
   }
 
@@ -193,6 +208,21 @@ class _AddMoodState extends State<_AddMood> {
     if (value.isEmpty) return;
     widget.onAdd(_emoji, value);
     _controller.clear();
+  }
+
+  /// Anything typed in the little box wins over the strip, so an emoji you have
+  /// never used is one keystroke away rather than unavailable.
+  void _typed(String raw) {
+    final emoji = firstEmoji(raw);
+    if (emoji == null) return;
+    setState(() => _emoji = emoji);
+    // Keep only the cluster we took, so the box shows what will be used.
+    if (_emojiController.text != emoji) {
+      _emojiController.value = TextEditingValue(
+        text: emoji,
+        selection: TextSelection.collapsed(offset: emoji.length),
+      );
+    }
   }
 
   @override
@@ -204,10 +234,15 @@ class _AddMoodState extends State<_AddMood> {
       children: [
         Wrap(
           spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             for (final emoji in widget.palette)
               GestureDetector(
-                onTap: () => setState(() => _emoji = emoji),
+                onTap: () {
+                  setState(() => _emoji = emoji);
+                  _emojiController.clear();
+                },
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
@@ -220,6 +255,31 @@ class _AddMoodState extends State<_AddMood> {
                   child: Text(emoji, style: text.titleMedium),
                 ),
               ),
+            // Any emoji, not just the ones on the strip.
+            SizedBox(
+              width: 52,
+              child: TextField(
+                controller: _emojiController,
+                onChanged: _typed,
+                textAlign: TextAlign.center,
+                style: text.titleMedium,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: '+',
+                  hintStyle: text.titleMedium?.copyWith(color: colors.faint),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: colors.rule),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: colors.ink),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -272,7 +332,9 @@ class WeekReviewScreen extends StatelessWidget {
             ),
           );
         }
-        return StreamBuilder<WeekReview?>(
+        return StreamBuilder<List<String>>(
+          stream: repo.watchRecentEmoji(),
+          builder: (context, emojiSnap) => StreamBuilder<WeekReview?>(
           stream: repo.watchReview(weekKey),
           builder: (context, reviewSnap) {
             // Creating it lazily on first view is what freezes the goals: the
@@ -282,6 +344,7 @@ class WeekReviewScreen extends StatelessWidget {
             return WeekReviewView(
               review: review,
               template: template,
+              recentEmoji: emojiSnap.data ?? const [],
               onAnswer: (question, answer) => repo.saveReview(
                 WeekReview(
                   weekKey: review.weekKey,
@@ -290,17 +353,21 @@ class WeekReviewScreen extends StatelessWidget {
                   moodLines: review.moodLines,
                 ),
               ),
-              onAddMood: (emoji, text) => repo.saveReview(
-                WeekReview(
-                  weekKey: review.weekKey,
-                  goals: review.goals,
-                  answers: review.answers,
-                  moodLines: [
-                    ...review.moodLines,
-                    MoodLine(emoji: emoji, text: text),
-                  ],
-                ),
-              ),
+              onAddMood: (emoji, text) {
+                repo.saveReview(
+                  WeekReview(
+                    weekKey: review.weekKey,
+                    goals: review.goals,
+                    answers: review.answers,
+                    moodLines: [
+                      ...review.moodLines,
+                      MoodLine(emoji: emoji, text: text),
+                    ],
+                  ),
+                );
+                // Reaching for one is what makes it recent.
+                repo.noteEmojiUsed(emoji);
+              },
               onRemoveMood: (index) => repo.saveReview(
                 WeekReview(
                   weekKey: review.weekKey,
@@ -311,6 +378,7 @@ class WeekReviewScreen extends StatelessWidget {
               ),
             );
           },
+        ),
         );
       },
     );
