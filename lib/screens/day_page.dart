@@ -893,6 +893,12 @@ class _DayPageState extends State<DayPage> {
               onTap: () => Navigator.pop(context, 'snooze'),
             ),
             ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: const Text('Back to someday'),
+              subtitle: const Text('Off the calendar, onto the list'),
+              onTap: () => Navigator.pop(context, 'someday'),
+            ),
+            ListTile(
               leading: const Icon(Icons.delete_outline),
               title: const Text('Delete'),
               onTap: () => Navigator.pop(context, 'delete'),
@@ -944,6 +950,12 @@ class _DayPageState extends State<DayPage> {
 
     if (action == 'jira') {
       await _linkJira(task);
+      return;
+    }
+
+    if (action == 'someday') {
+      await _write(() => widget.repo.demoteToSomeday(task),
+          'move that back to someday');
       return;
     }
 

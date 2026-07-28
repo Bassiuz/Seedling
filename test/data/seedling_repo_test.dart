@@ -151,6 +151,20 @@ void main() {
           'https://medappnl.atlassian.net');
     });
 
+    test('a task can go back to someday, keeping its project', () async {
+      await repo.addTask('Rewrite onboarding',
+          date: '2026-07-28', tagId: 'moxify');
+      final task = (await repo.watchTasks().first).single;
+
+      await repo.demoteToSomeday(task);
+
+      expect(await repo.watchTasks().first, isEmpty,
+          reason: 'it is no longer a thing for a day');
+      final parked = (await repo.watchSomeday().first).single;
+      expect(parked.title, 'Rewrite onboarding');
+      expect(parked.tagId, 'moxify');
+    });
+
     test('deleteTask removes it', () async {
       await repo.addTask('Set out blue can', date: '2026-07-15');
       final task = (await repo.watchTasks().first).single;

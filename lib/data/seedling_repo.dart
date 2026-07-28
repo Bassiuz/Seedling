@@ -162,6 +162,15 @@ class SeedlingRepo {
   Future<void> deleteSomeday(SomedayItem item) =>
       _someday.doc(item.id).delete();
 
+  /// Sends a task back to the someday list. The mirror of promoting one: it
+  /// stops being a thing for a particular day.
+  Future<void> demoteToSomeday(Task task) async {
+    final existing = await watchSomeday().first;
+    await addSomeday(task.title,
+        tagId: task.tagId, priority: existing.length);
+    await deleteTask(task);
+  }
+
   /// Moves a someday item onto a day, and takes it off the someday list — the
   /// whole point is that it stops being "someday".
   Future<void> promoteSomeday(SomedayItem item, String dayKey) async {
