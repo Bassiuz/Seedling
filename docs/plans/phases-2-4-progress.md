@@ -34,7 +34,6 @@ rather than by driving the real window.
 
 ## Still to do
 
-- Automatic debounced vault mirroring (export is manual from Settings today).
 - The Xcode Widget Extension target — `docs/ios-widget-setup.md` has the steps.
 - Run on the BigMe and check e-ink mode on real hardware.
 

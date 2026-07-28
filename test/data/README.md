@@ -8,3 +8,8 @@
   duplicates are ignored, and one user cannot see another's hidden events.
 - `vault_exporter_test.dart` — writes into a temp folder: files land under the
   right paths, rewriting replaces rather than appends, folders are created.
+- `vault_mirror_test.dart` — debouncing a burst of keystrokes into one write,
+  skipping unchanged rebuilds, flushing on the way out, and swallowing a failed
+  write rather than throwing at the caller.
+- `mirror_live_test.dart` — the mirror driven from real repo data, checking the
+  file that lands on disk.

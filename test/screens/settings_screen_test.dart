@@ -82,9 +82,35 @@ void main() {
     expect(find.text('/Users/bassiuz/Seedling Vault'), findsOneWidget);
     expect(find.text('Wrote 42 files'), findsOneWidget);
 
-    await tester.tap(find.text('Export everything now'));
+    final exportTile =
+        find.widgetWithText(ListTile, 'Export everything now');
+    await tester.ensureVisible(exportTile);
+    await tester.pump();
+    await tester.tap(exportTile, warnIfMissed: false);
 
     expect(exports, 1);
+  });
+
+  testWidgets('automatic mirroring can be turned off', (tester) async {
+    final changes = <bool>[];
+    await tester.pumpWidget(wrapApp(SettingsView(
+      einkMode: false,
+      onEinkChanged: (_) {},
+      onOpenTags: () {},
+      onOpenQuestions: () {},
+      onOpenSomeday: () {},
+      onSignOut: () {},
+      onExportVault: () {},
+      vaultPath: '/tmp/vault',
+      mirroring: true,
+      onMirroringChanged: changes.add,
+    )));
+
+    await tester.ensureVisible(find.text('Keep it up to date automatically'));
+    await tester.tap(find.text('Keep it up to date automatically'));
+    await tester.pump();
+
+    expect(changes, [false]);
   });
 
   testWidgets('tags are reachable from settings', (tester) async {

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../data/seedling_repo.dart';
 import '../data/calendar_source.dart';
 import '../data/settings_store.dart';
+import '../data/vault_mirror.dart';
 import '../data/vault_service.dart';
 import '../data/widget_publisher.dart';
 import '../logic/day_key.dart';
@@ -334,6 +335,10 @@ class _DayPageState extends State<DayPage> {
   @override
   void dispose() {
     _noteDebounce?.cancel();
+    // Write whatever is still queued: leaving the page should not lose the
+    // last sentence to the debounce.
+    _mirror?.flush();
+    _mirror?.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -342,6 +347,12 @@ class _DayPageState extends State<DayPage> {
 
   final _widget = const WidgetPublisher();
   String? _lastPublished;
+
+  /// Null where this machine has nowhere to keep a vault.
+  late final VaultMirror? _mirror = () {
+    final vault = defaultVault();
+    return vault == null ? null : VaultMirror(vault);
+  }();
 
   /// Pushes today to the home-screen widget, but only when it actually changed
   /// — this runs inside build, and updating a widget is not free.
@@ -357,6 +368,34 @@ class _DayPageState extends State<DayPage> {
     if (json == _lastPublished) return;
     _lastPublished = json;
     _widget.publish(payload);
+  }
+
+  /// Keeps the Markdown vault in step with the day on screen. Only the visible
+  /// day, because it is the only one whose note and answers are loaded.
+  void _mirrorDay({
+    required String day,
+    required List<Task> tasks,
+    required Map<String, Tag> tags,
+    required String note,
+    required List<DailyQuestion> questions,
+    required Map<String, String> answers,
+    required Set<String> hidden,
+    required List<SomedayItem> someday,
+  }) {
+    final mirror = _mirror;
+    if (mirror == null) return;
+    if (widget.settings?.vaultMirroring == false) return;
+
+    mirror.day(
+      dayKey: day,
+      tasks: tasks,
+      tags: tags,
+      note: note,
+      events: visibleEvents(_events[day] ?? const [], hidden),
+      questions: questions,
+      answers: answers,
+    );
+    mirror.sidecars(tags: tags.values.toList(), someday: someday);
   }
 
   /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
@@ -605,7 +644,20 @@ class _DayPageState extends State<DayPage> {
                             builder: (context, answerSnap) =>
                                 StreamBuilder<String>(
                             stream: widget.repo.watchNote(day),
-                            builder: (context, noteSnap) => DayContent(
+                            builder: (context, noteSnap) {
+                              if (day == _dayForPage(_index)) {
+                                _mirrorDay(
+                                  day: day,
+                                  tasks: tasksForDay(all, day, _today),
+                                  tags: tags,
+                                  note: noteSnap.data ?? '',
+                                  questions: questions,
+                                  answers: answerSnap.data ?? const {},
+                                  hidden: hidden,
+                                  someday: someday,
+                                );
+                              }
+                              return DayContent(
                               questions: questions,
                               answers: answerSnap.data ?? const {},
                               onAnswer: (question, value) => _write(
@@ -645,7 +697,8 @@ class _DayPageState extends State<DayPage> {
                                 () => widget.repo.unhideEvent(event.hideKey),
                                 'show that event again',
                               ),
-                            ),
+                            );
+                            },
                           ),
                           );
                         },

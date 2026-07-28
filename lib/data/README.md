@@ -16,3 +16,6 @@ work with `Task`, `Tag` and plain strings.
   into the vault, and `defaultVault()` for this machine's folder.
 - `widget_publisher.dart` — `WidgetPublisher`: hands the payload to the iOS/
   Android widget. Failures are swallowed; a missing widget must not break the app.
+- `vault_mirror.dart` — `VaultMirror`: keeps the vault in step as you type.
+  Debounced and deduplicated, and only for the day on screen, since that is the
+  only day whose note and answers are loaded.

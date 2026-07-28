@@ -10,6 +10,7 @@ class SettingsStore extends ChangeNotifier {
   SettingsStore(this._prefs);
 
   static const _einkKey = 'display.eink';
+  static const _mirrorKey = 'vault.mirror';
 
   final SharedPreferences _prefs;
 
@@ -20,6 +21,16 @@ class SettingsStore extends ChangeNotifier {
 
   Future<void> setEinkMode(bool on) async {
     await _prefs.setBool(_einkKey, on);
+    notifyListeners();
+  }
+
+  /// Whether the Markdown vault follows the app automatically. On by default
+  /// where a vault is possible: an export you have to remember is an export
+  /// that goes stale.
+  bool get vaultMirroring => _prefs.getBool(_mirrorKey) ?? true;
+
+  Future<void> setVaultMirroring(bool on) async {
+    await _prefs.setBool(_mirrorKey, on);
     notifyListeners();
   }
 }

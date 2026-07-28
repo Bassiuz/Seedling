@@ -16,6 +16,8 @@ class SettingsView extends StatelessWidget {
     this.onExportVault,
     this.vaultPath,
     this.exportStatus,
+    this.mirroring = true,
+    this.onMirroringChanged,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -30,6 +32,10 @@ class SettingsView extends StatelessWidget {
   final VoidCallback? onExportVault;
   final String? vaultPath;
   final String? exportStatus;
+
+  /// Whether the vault follows the app as you type.
+  final bool mirroring;
+  final ValueChanged<bool>? onMirroringChanged;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -109,6 +115,18 @@ class SettingsView extends StatelessWidget {
                             style: text.labelMedium
                                 ?.copyWith(color: colors.muted)),
                       ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: mirroring,
+                      onChanged: onMirroringChanged,
+                      title: Text('Keep it up to date automatically',
+                          style: text.bodyLarge),
+                      subtitle: Text(
+                        'Rewrites a day as you change it. Days you do not '
+                        'open are left alone — use the full export for those.',
+                        style: text.labelMedium,
+                      ),
+                    ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text('Export everything now',
@@ -194,6 +212,8 @@ class SettingsScreen extends StatelessWidget {
         onExportVault: onExportVault,
         vaultPath: vaultPath,
         exportStatus: exportStatus,
+        mirroring: settings.vaultMirroring,
+        onMirroringChanged: settings.setVaultMirroring,
       ),
     );
   }
