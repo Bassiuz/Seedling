@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:seedling/logic/jira_ref.dart';
 import 'package:seedling/models/calendar_event.dart';
+import 'package:seedling/models/event_extras.dart';
+import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/widgets/task_tile.dart';
 import 'package:seedling/widgets/timed_block.dart';
@@ -26,6 +29,8 @@ Widget _block({
   List<CalendarEvent> events = const [],
   List<Task> tasks = const [],
   Set<String> doneEvents = const {},
+  Map<String, EventExtras> eventExtras = const {},
+  Map<String, Tag> tags = const {},
   String? now,
   void Function(CalendarEvent, bool)? onToggleEvent,
   void Function(String, {String? tagId, String? time})? onAdd,
@@ -36,12 +41,13 @@ Widget _block({
           padding: const EdgeInsets.all(20),
           child: TimedBlock(
             tasks: tasks,
-            tags: const {},
+            tags: tags,
             shownDay: _today,
             today: _today,
             now: now,
             events: events,
             doneEvents: doneEvents,
+            eventExtras: eventExtras,
             onToggleEvent: onToggleEvent ?? (_, _) {},
             onToggle: (_) {},
             onMenu: (_) {},
@@ -185,5 +191,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(added, isEmpty);
+  });
+
+  group('what Seedling adds to an appointment', () {
+    const tag = Tag(
+        id: 'moxify', name: 'Moxify', colorIndex: 6, iconIndex: 1,
+        sortOrder: 0);
+
+    testWidgets('the tag, the ticket and the logged time all show up',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(_block(
+        events: [_event('Standup', time: '09:00')],
+        tags: const {'moxify': tag},
+        eventExtras: {
+          'Standup': const EventExtras(
+            tagId: 'moxify',
+            jira: JiraRef(key: 'MAF-12', site: 'https://m.atlassian.net'),
+          ).withMinutes(_today, 45),
+        },
+      )));
+
+      expect(find.text('Moxify'), findsOneWidget);
+      expect(find.text('MAF-12'), findsOneWidget);
+      expect(find.textContaining('45m'), findsOneWidget);
+    });
+
+    testWidgets('time logged on another day is not shown on this one',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(_block(
+        events: [_event('Standup', time: '09:00')],
+        eventExtras: {
+          'Standup': const EventExtras().withMinutes('2026-07-27', 45),
+        },
+      )));
+
+      expect(find.textContaining('45m'), findsNothing);
+    });
   });
 }

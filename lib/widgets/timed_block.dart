@@ -5,13 +5,16 @@ import '../logic/jira_ref.dart';
 import '../logic/rollover.dart';
 import '../logic/timed_entries.dart';
 import '../models/calendar_event.dart';
+import '../models/event_extras.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
 import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import 'add_task_field.dart';
 import 'block_frame.dart';
+import 'tag_chip.dart';
 import 'task_tile.dart';
+import 'time_sheet.dart';
 
 /// Everything on the day that happens at a time, in the order it happens.
 ///
@@ -31,6 +34,7 @@ class TimedBlock extends StatelessWidget {
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
+    this.eventExtras = const {},
     this.hiddenKeys = const {},
     this.today,
     this.now,
@@ -49,6 +53,9 @@ class TimedBlock extends StatelessWidget {
   /// Ticking an appointment off. Null leaves them read-only.
   final void Function(CalendarEvent, bool done)? onToggleEvent;
   final Set<String> doneEvents;
+
+  /// Tag, ticket and logged time per event, keyed by hide key.
+  final Map<String, EventExtras> eventExtras;
 
   final Set<String> hiddenKeys;
 
@@ -98,6 +105,10 @@ class TimedBlock extends StatelessWidget {
               if (entry.isEvent)
                 EventRow(
                   event: entry.event!,
+                  shownDay: shownDay,
+                  extras: eventExtras[entry.event!.hideKey],
+                  tag: tags[eventExtras[entry.event!.hideKey]?.tagId],
+                  onOpenJira: onOpenJira,
                   hidden: hiddenKeys.contains(entry.event!.hideKey),
                   done: doneEvents.contains(entry.event!.id),
                   overdue: _overdue(entry),
@@ -142,6 +153,10 @@ class EventRow extends StatelessWidget {
   const EventRow({
     super.key,
     required this.event,
+    this.shownDay,
+    this.extras,
+    this.tag,
+    this.onOpenJira,
     this.hidden = false,
     this.done = false,
     this.overdue = false,
@@ -151,6 +166,13 @@ class EventRow extends StatelessWidget {
   });
 
   final CalendarEvent event;
+
+  /// What Seedling has added to it, and the day the row is drawn on — needed
+  /// to know how much time was logged against it here.
+  final EventExtras? extras;
+  final String? shownDay;
+  final Tag? tag;
+  final void Function(JiraRef)? onOpenJira;
 
   /// Only ever true while hidden events are being revealed; otherwise a
   /// hidden event is filtered out before it reaches here.
@@ -167,6 +189,8 @@ class EventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
+    final logged =
+        shownDay == null ? 0 : extras?.minutesOn(shownDay!) ?? 0;
     final titleColour = hidden
         ? colors.faint
         : done
@@ -218,16 +242,27 @@ class EventRow extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      [
-                        if (event.allDay) 'All day' else event.time ?? '',
-                        if (overdue) 'Overdue',
-                        if (hidden) 'hidden',
-                      ].where((p) => p.isNotEmpty).join(' · '),
-                      style: text.labelSmall?.copyWith(
-                        color: overdue ? SeedlingPalette.red : null,
-                        fontWeight: overdue ? FontWeight.w600 : null,
-                      ),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (tag != null) TagChip(tag!),
+                        if (extras?.jira != null)
+                          JiraChip(ref: extras!.jira!, onOpen: onOpenJira),
+                        Text(
+                          [
+                            if (event.allDay) 'All day' else event.time ?? '',
+                            if (logged > 0) TimeSheet.format(logged),
+                            if (overdue) 'Overdue',
+                            if (hidden) 'hidden',
+                          ].where((p) => p.isNotEmpty).join(' · '),
+                          style: text.labelSmall?.copyWith(
+                            color: overdue ? SeedlingPalette.red : null,
+                            fontWeight: overdue ? FontWeight.w600 : null,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

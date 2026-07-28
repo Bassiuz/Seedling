@@ -22,6 +22,7 @@ import '../logic/widget_payload.dart';
 import '../models/tag.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
+import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../widgets/day_header.dart';
@@ -63,6 +64,7 @@ class DayContent extends StatelessWidget {
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
+    this.eventExtras = const {},
     this.today,
     this.now,
     this.onOpenJira,
@@ -80,6 +82,9 @@ class DayContent extends StatelessWidget {
   final void Function(CalendarEvent)? onUnhideEvent;
   final void Function(CalendarEvent, bool done)? onToggleEvent;
   final Set<String> doneEvents;
+
+  /// Tag, ticket and logged time per appointment, keyed by hide key.
+  final Map<String, EventExtras> eventExtras;
 
   /// Today's key and the current clock, so anything already past can be shown
   /// as overdue. Null in tests that do not care.
@@ -151,6 +156,7 @@ class DayContent extends StatelessWidget {
         onUnhideEvent: onUnhideEvent,
         onToggleEvent: onToggleEvent,
         doneEvents: doneEvents,
+        eventExtras: eventExtras,
         today: today,
         now: now,
         onAdd: onAdd,
@@ -216,6 +222,7 @@ class DayView extends StatelessWidget {
     this.onUnhideEvent,
     this.onToggleEvent,
     this.doneEvents = const {},
+    this.eventExtras = const {},
     this.now,
     this.onOpenSomeday,
   });
@@ -232,6 +239,9 @@ class DayView extends StatelessWidget {
   final void Function(CalendarEvent)? onUnhideEvent;
   final void Function(CalendarEvent, bool done)? onToggleEvent;
   final Set<String> doneEvents;
+
+  /// Tag, ticket and logged time per appointment, keyed by hide key.
+  final Map<String, EventExtras> eventExtras;
 
   /// The current clock, so anything already past shows as overdue. Null in
   /// tests that do not care.
@@ -323,6 +333,7 @@ class DayView extends StatelessWidget {
               onUnhideEvent: onUnhideEvent,
               onToggleEvent: onToggleEvent,
               doneEvents: doneEvents,
+              eventExtras: eventExtras,
               today: today,
               now: now,
             ),
@@ -392,10 +403,18 @@ class _DayPageState extends State<DayPage> {
   String _now = clockOf(DateTime.now());
   Timer? _clock;
 
+  /// Tags, tickets and logged time on appointments, by hide key. Held here
+  /// rather than in a StreamBuilder — one small collection, and the day page
+  /// is nested deeply enough already.
+  Map<String, EventExtras> _eventExtras = const {};
+  StreamSubscription<Map<String, EventExtras>>? _extrasSub;
+
   @override
   void initState() {
     super.initState();
     _loadEvents();
+    _extrasSub = widget.repo.watchEventExtras().listen(
+        (extras) => setState(() => _eventExtras = extras));
     _clock = Timer.periodic(const Duration(minutes: 1), (_) {
       final next = clockOf(DateTime.now());
       if (next != _now && mounted) setState(() => _now = next);
@@ -439,6 +458,7 @@ class _DayPageState extends State<DayPage> {
   void dispose() {
     _noteDebounce?.cancel();
     _clock?.cancel();
+    _extrasSub?.cancel();
     // Write whatever is still queued: leaving the page should not lose the
     // last sentence to the debounce.
     _mirror?.flush();
@@ -677,32 +697,107 @@ class _DayPageState extends State<DayPage> {
 
   /// An appointment's menu. Hiding is here rather than on the long press
   /// itself, which used to hide it outright with nothing to undo it.
-  Future<void> _openEventMenu(CalendarEvent event, Set<String> hidden) async {
+  ///
+  /// An appointment can carry a tag, a ticket and logged time just like a
+  /// task, because an hour in a meeting is an hour spent. It cannot be
+  /// snoozed, deleted or retimed — the calendar owns all three.
+  Future<void> _openEventMenu(
+    CalendarEvent event,
+    String day,
+    Set<String> hidden,
+    Map<String, Tag> tags,
+  ) async {
     final isHidden = hidden.contains(event.hideKey);
+    final extras = _eventExtras[event.hideKey] ?? const EventExtras();
     final action = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.event_busy_outlined),
-              title: Text(isHidden ? 'Show this again' : 'Hide this'),
-              subtitle: Text(
-                isHidden
-                    ? 'It will appear on your days again.'
-                    : event.recurringId == null
-                        ? 'Hides this appointment. Your calendar is untouched.'
-                        : 'Hides every occurrence of it. Your calendar is '
-                            'untouched.',
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.timer_outlined),
+                title: const Text('Log time'),
+                onTap: () => Navigator.pop(sheetContext, 'log'),
               ),
-              onTap: () => Navigator.pop(sheetContext, 'hide'),
-            ),
-          ],
+              ListTile(
+                leading: const Icon(Icons.label_outline),
+                title:
+                    Text(extras.tagId == null ? 'Set a tag…' : 'Change tag'),
+                subtitle: extras.tagId == null
+                    ? null
+                    : Text(tags[extras.tagId]?.name ?? extras.tagId!),
+                onTap: () => Navigator.pop(sheetContext, 'tag'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.confirmation_number_outlined),
+                title: Text(extras.jira == null
+                    ? 'Link a Jira ticket…'
+                    : 'Change the ticket'),
+                subtitle:
+                    extras.jira == null ? null : Text(extras.jira!.key),
+                onTap: () => Navigator.pop(sheetContext, 'jira'),
+              ),
+              if (extras.jira != null)
+                ListTile(
+                  leading: const Icon(Icons.link_off),
+                  title: const Text('Unlink the ticket'),
+                  onTap: () => Navigator.pop(sheetContext, 'unjira'),
+                ),
+              ListTile(
+                leading: const Icon(Icons.event_busy_outlined),
+                title: Text(isHidden ? 'Show this again' : 'Hide this'),
+                subtitle: Text(
+                  isHidden
+                      ? 'It will appear on your days again.'
+                      : event.recurringId == null
+                          ? 'Hides this appointment. Your calendar is '
+                              'untouched.'
+                          : 'Hides every occurrence of it. Your calendar is '
+                              'untouched.',
+                ),
+                onTap: () => Navigator.pop(sheetContext, 'hide'),
+              ),
+            ],
+          ),
         ),
       ),
     );
     if (!mounted || action == null) return;
+
+    if (action == 'log') {
+      await _logEventTime(event, day);
+      return;
+    }
+
+    if (action == 'tag') {
+      final picked = await _pickTag(current: extras.tagId, tags: tags);
+      if (picked == null) return;
+      await _saveExtras(
+        event,
+        picked.isEmpty
+            ? extras.copyWith(clearTag: true)
+            : extras.copyWith(tagId: picked),
+        'set that tag',
+      );
+      return;
+    }
+
+    if (action == 'unjira') {
+      await _saveExtras(
+          event, extras.copyWith(clearJira: true), 'unlink that ticket');
+      return;
+    }
+
+    if (action == 'jira') {
+      final ref = await _askJira(current: extras.jira);
+      if (ref == null) return;
+      await _saveExtras(event, extras.copyWith(jira: ref), 'link that ticket');
+      return;
+    }
+
     await _write(
       () => isHidden
           ? widget.repo.unhideEvent(event.hideKey)
@@ -711,13 +806,50 @@ class _DayPageState extends State<DayPage> {
     );
   }
 
+  Future<void> _saveExtras(
+          CalendarEvent event, EventExtras extras, String what) =>
+      _write(() => widget.repo.setEventExtras(event.hideKey, extras), what);
+
+  /// The same sheet tasks get. Reads back through [_eventExtras] so the
+  /// stepper follows what has just been written.
+  Future<void> _logEventTime(CalendarEvent event, String day) =>
+      showModalBottomSheet<void>(
+        context: context,
+        builder: (sheetContext) => StreamBuilder<Map<String, EventExtras>>(
+          stream: widget.repo.watchEventExtras(),
+          builder: (context, snapshot) {
+            final extras =
+                (snapshot.data ?? _eventExtras)[event.hideKey] ??
+                    const EventExtras();
+            return TimeSheet(
+              title: event.title,
+              minutes: extras.minutesOn(day),
+              totalMinutes: extras.totalMinutes,
+              onChange: (delta) => _saveExtras(
+                event,
+                extras.withMinutes(day, extras.minutesOn(day) + delta),
+                'log that time',
+              ),
+              onSet: (minutes) => _saveExtras(
+                event,
+                extras.withMinutes(day, minutes),
+                'log that time',
+              ),
+            );
+          },
+        ),
+      );
+
   /// Paste a browse URL or type a bare key. The site is remembered from the
   /// first URL, so afterwards `MAF-1234` on its own is enough.
-  Future<void> _linkJira(Task task) async {
+  ///
+  /// Returns null when it was cancelled or unreadable; the caller decides
+  /// what the ticket gets attached to.
+  Future<JiraRef?> _askJira({JiraRef? current}) async {
     final site = await widget.repo.watchJiraSite().first;
-    if (!mounted) return;
+    if (!mounted) return null;
 
-    final controller = TextEditingController(text: task.jira?.key ?? '');
+    final controller = TextEditingController(text: current?.key ?? '');
     final typed = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -748,11 +880,11 @@ class _DayPageState extends State<DayPage> {
       ),
     );
     controller.dispose();
-    if (!mounted || typed == null) return;
+    if (!mounted || typed == null) return null;
 
     final ref = parseJiraRef(typed, defaultSite: site);
     if (ref == null) {
-      if (!mounted) return;
+      if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(needsSiteFor(typed, defaultSite: site)
@@ -761,11 +893,17 @@ class _DayPageState extends State<DayPage> {
               : 'That does not look like a Jira ticket.'),
         ),
       );
-      return;
+      return null;
     }
 
-    await _write(() => widget.repo.setJira(task, ref), 'link that ticket');
     if (ref.site != site) await widget.repo.rememberJiraSite(ref.site);
+    return ref;
+  }
+
+  Future<void> _linkJira(Task task) async {
+    final ref = await _askJira(current: task.jira);
+    if (ref == null) return;
+    await _write(() => widget.repo.setJira(task, ref), 'link that ticket');
   }
 
   Future<void> _openJira(JiraRef ref) async {
@@ -778,19 +916,24 @@ class _DayPageState extends State<DayPage> {
   }
 
   /// The same list the add line offers, plus a way back to no tag at all.
-  Future<void> _pickTagFor(Task task, Map<String, Tag> tags) async {
-    if (tags.isEmpty) return;
-    final picked = await showModalBottomSheet<String?>(
+  ///
+  /// Returns null when it was dismissed and an empty string for "no tag",
+  /// since null already means cancelled.
+  Future<String?> _pickTag({
+    required String? current,
+    required Map<String, Tag> tags,
+  }) async {
+    if (tags.isEmpty) return null;
+    return showModalBottomSheet<String?>(
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (task.tagId != null)
+            if (current != null)
               ListTile(
                 leading: const Icon(Icons.clear),
                 title: const Text('No tag'),
-                // An empty string means "clear", since null means "cancelled".
                 onTap: () => Navigator.pop(sheetContext, ''),
               ),
             for (final tag in tags.values)
@@ -803,6 +946,10 @@ class _DayPageState extends State<DayPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickTagFor(Task task, Map<String, Tag> tags) async {
+    final picked = await _pickTag(current: task.tagId, tags: tags);
     if (picked == null) return;
     await _write(
       () => widget.repo.setTag(task, picked.isEmpty ? null : picked),
@@ -822,8 +969,9 @@ class _DayPageState extends State<DayPage> {
                 .firstOrNull;
             if (latest == null) return const SizedBox.shrink();
             return TimeSheet(
-              task: latest,
-              dayKey: day,
+              title: latest.title,
+              minutes: latest.minutesOn(day),
+              totalMinutes: latest.totalMinutes,
               onChange: (delta) => _write(
                 () => widget.repo.logTime(latest, day, delta),
                 'log that time',
@@ -1110,7 +1258,7 @@ class _DayPageState extends State<DayPage> {
                               ),
                               hiddenKeys: hidden,
                               onEventMenu: (event) =>
-                                  _openEventMenu(event, hidden),
+                                  _openEventMenu(event, day, hidden, tags),
                               onUnhideEvent: (event) => _write(
                                 () => widget.repo.unhideEvent(event.hideKey),
                                 'show that event again',
@@ -1121,6 +1269,7 @@ class _DayPageState extends State<DayPage> {
                                 done ? 'tick that off' : 'untick that',
                               ),
                               doneEvents: doneSnap.data ?? const {},
+                              eventExtras: _eventExtras,
                               today: _today,
                               now: _now,
                             );

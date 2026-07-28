@@ -6,6 +6,7 @@ import '../logic/mirror_doc_id.dart';
 import '../logic/recent_emoji.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
+import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/review_template.dart';
 import '../models/tag.dart';
@@ -243,6 +244,27 @@ class SeedlingRepo {
         'doneEvents':
             done ? FieldValue.arrayUnion([eventId]) : FieldValue.arrayRemove([eventId]),
       }, SetOptions(merge: true));
+
+  // --- what Seedling adds to a calendar event ---
+
+  CollectionReference<Map<String, dynamic>> get _eventExtras =>
+      _user.collection('eventExtras');
+
+  /// Keyed by the event's hide key, so a repeating event carries one tag
+  /// rather than one per occurrence.
+  Stream<Map<String, EventExtras>> watchEventExtras() =>
+      _eventExtras.snapshots().map((snap) => {
+            for (final doc in snap.docs)
+              (doc.data()['key'] as String? ?? doc.id):
+                  EventExtras.fromMap(doc.data()),
+          });
+
+  Future<void> setEventExtras(String hideKey, EventExtras extras) {
+    final doc = _eventExtras.doc(mirrorDocId(hideKey));
+    // Nothing left to say about it, so stop keeping a record.
+    if (extras.isEmpty) return doc.delete();
+    return doc.set({...extras.toMap(), 'key': hideKey});
+  }
 
   // --- calendar mirror ---
 

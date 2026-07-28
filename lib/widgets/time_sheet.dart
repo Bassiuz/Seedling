@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
 
 import '../logic/duration_input.dart';
-import '../models/task.dart';
 import '../theme/seedling_theme.dart';
 
-/// Logs work against a task in quarter-hour steps.
+/// Logs work against a task or an appointment in quarter-hour steps.
 ///
 /// Quarter hours because that is the unit the admin ends up in — anything
 /// finer would be invented precision.
 class TimeSheet extends StatefulWidget {
   const TimeSheet({
     super.key,
-    required this.task,
-    required this.dayKey,
+    required this.title,
+    required this.minutes,
+    required this.totalMinutes,
     required this.onChange,
     this.onSet,
   });
 
-  final Task task;
-  final String dayKey;
+  final String title;
+
+  /// Minutes already logged on the day being shown, and across every day.
+  final int minutes;
+  final int totalMinutes;
 
   /// Called with the signed number of minutes to add.
   final void Function(int deltaMinutes) onChange;
@@ -63,8 +66,7 @@ class _TimeSheetState extends State<TimeSheet> {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    final task = widget.task;
-    final today = task.minutesOn(widget.dayKey);
+    final today = widget.minutes;
 
     return SafeArea(
       child: Padding(
@@ -73,7 +75,7 @@ class _TimeSheetState extends State<TimeSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(task.title, style: text.titleLarge),
+            Text(widget.title, style: text.titleLarge),
             const SizedBox(height: 4),
             Text('Time logged on this day', style: text.labelMedium),
             const SizedBox(height: 20),
@@ -121,10 +123,10 @@ class _TimeSheetState extends State<TimeSheet> {
                 ),
               ),
             ],
-            if (task.totalMinutes != today) ...[
+            if (widget.totalMinutes != today) ...[
               const SizedBox(height: 16),
               Text(
-                '${TimeSheet.format(task.totalMinutes)} across all days',
+                '${TimeSheet.format(widget.totalMinutes)} across all days',
                 style: text.labelMedium?.copyWith(color: colors.muted),
               ),
             ],

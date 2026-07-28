@@ -147,7 +147,7 @@ class _Footnote extends StatelessWidget {
         children: [
           if (tag != null) TagChip(tag!),
           if (task.jira != null)
-            _JiraChip(ref: task.jira!, onOpen: onOpenJira),
+            JiraChip(ref: task.jira!, onOpen: onOpenJira),
           if (notes.isNotEmpty)
             Text(
               notes.join(' · '),
@@ -224,8 +224,8 @@ class TaskCheckbox extends StatelessWidget {
 }
 
 /// The linked ticket, as a chip you can click straight through to.
-class _JiraChip extends StatelessWidget {
-  const _JiraChip({required this.ref, this.onOpen});
+class JiraChip extends StatelessWidget {
+  const JiraChip({super.key, required this.ref, this.onOpen});
 
   final JiraRef ref;
   final void Function(JiraRef)? onOpen;

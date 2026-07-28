@@ -19,8 +19,9 @@ Widget _sheet(Task task,
         {void Function(int)? onChange, void Function(int)? onSet}) =>
     Scaffold(
       body: TimeSheet(
-        task: task,
-        dayKey: _day,
+        title: task.title,
+        minutes: task.minutesOn(_day),
+        totalMinutes: task.totalMinutes,
         onChange: onChange ?? (_) {},
         onSet: onSet,
       ),
