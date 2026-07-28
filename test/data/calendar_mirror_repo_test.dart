@@ -11,6 +11,30 @@ void main() {
 
   setUp(() => repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas'));
 
+  test('an EventKit id containing a slash round-trips', () async {
+    // This exact shape crashed the app: Firestore read the slash as a path
+    // separator and rejected the reference outright.
+    const realId =
+        '______NativeStorePersistentID_______:gregorian/2DFB19BE-B573-478D';
+    await repo.publishCalendarMirror(
+      [
+        CalendarEvent(
+            id: realId,
+            title: 'Vet appointment',
+            dayKey: '2026-07-28',
+            allDay: false,
+            time: '09:00'),
+      ],
+      from: '2026-07-01',
+      to: '2026-08-31',
+    );
+
+    final read = await repo.readCalendarMirror('2026-07-01', '2026-08-31');
+    expect(read.single.id, realId,
+        reason: 'the real id survives, so ticking it off still matches');
+    expect(read.single.title, 'Vet appointment');
+  });
+
   test('nothing published means nothing to read', () async {
     expect(await repo.readCalendarMirror('2026-07-01', '2026-08-31'), isEmpty);
   });

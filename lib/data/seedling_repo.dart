@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../logic/day_key.dart';
+import '../logic/mirror_doc_id.dart';
 import '../logic/recent_emoji.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
@@ -238,7 +239,7 @@ class SeedlingRepo {
       batch.delete(doc.reference);
     }
     for (final event in events) {
-      batch.set(_calendarMirror.doc(event.id), event.toMap());
+      batch.set(_calendarMirror.doc(mirrorDocId(event.id)), event.toMap());
     }
     await batch.commit();
   }

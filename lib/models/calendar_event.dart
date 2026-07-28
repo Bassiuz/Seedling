@@ -32,6 +32,9 @@ class CalendarEvent {
   String get hideKey => recurringId ?? title;
 
   Map<String, dynamic> toMap() => {
+        // Carried explicitly: in the calendar mirror the document id is an
+        // encoding of this, not the id itself.
+        'id': id,
         'title': title,
         'dayKey': dayKey,
         'allDay': allDay,
@@ -40,9 +43,10 @@ class CalendarEvent {
         'recurringId': recurringId,
       };
 
-  factory CalendarEvent.fromMap(String id, Map<String, dynamic> map) =>
+  /// [fallbackId] is used only when the stored document has no id of its own.
+  factory CalendarEvent.fromMap(String fallbackId, Map<String, dynamic> map) =>
       CalendarEvent(
-        id: id,
+        id: map['id'] as String? ?? fallbackId,
         title: map['title'] as String? ?? '',
         dayKey: map['dayKey'] as String? ?? '',
         allDay: map['allDay'] as bool? ?? false,

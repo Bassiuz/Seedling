@@ -16,3 +16,6 @@ Pure business-logic helpers with no Flutter or Firebase dependencies.
   chronological list the Timed block draws.
 - `recent_emoji.dart` — the most-recently-used emoji list (`promoteEmoji`) and
   normalising typed input to one grapheme cluster (`firstEmoji`).
+- `mirror_doc_id.dart` — encodes a calendar event id into something Firestore
+  will accept as a document id. EventKit ids contain slashes and the reserved
+  `__…__` shape, either of which is fatal.
