@@ -74,6 +74,25 @@ void main() {
   );
 
   goldenForSizes(
+    'timesheet with a day off in the middle of it',
+    'timesheet_day_off',
+    [GoldenSize.mac],
+    () => TimesheetView(
+      anyDay: _monday,
+      signedInAs: 'you@example.com',
+      daysOff: const {'2026-07-29'},
+      onEdit: (_, _, _) {},
+      onToggleDayOff: (_) {},
+      taskLines: [
+        _row('Retry voor Autoclicker', 'AT-4496', [0, 420, 0, 240, 0, 0, 0]),
+      ],
+      topicLines: [
+        _row('Meetings', 'MAF-4319', [120, 120, 0, 0, 60, 0, 0]),
+      ],
+    ),
+  );
+
+  goldenForSizes(
     'timesheet with nothing in it yet',
     'timesheet_empty',
     [GoldenSize.mac],
@@ -226,5 +245,75 @@ void main() {
     expect(posts, 1);
     expect((await repo.watchSentWorklogs().first).values.single.minutes, 120);
     expect(find.text('Jira has this week already.'), findsOneWidget);
+  });
+
+  group('a day off', () {
+    testWidgets('is set by tapping its heading', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final toggled = <String>[];
+      await tester.pumpWidget(wrapApp(TimesheetView(
+        anyDay: _monday,
+        taskLines: [_row('A', 'AT-1', [0, 0, 0, 0, 0, 0, 0])],
+        topicLines: const [],
+        onToggleDayOff: toggled.add,
+      )));
+
+      // Each grid carries its own heading row; either one closes the day.
+      await tester.tap(find.text('Fr').first);
+
+      expect(toggled, ['2026-07-31']);
+    });
+
+    testWidgets('closes its column to typing', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final edits = <String>[];
+      await tester.pumpWidget(wrapApp(TimesheetView(
+        anyDay: _monday,
+        taskLines: [_row('A', 'AT-1', [0, 0, 0, 0, 0, 0, 0])],
+        topicLines: const [],
+        daysOff: const {'2026-07-29'},
+        onEdit: (_, day, _) => edits.add(day),
+      )));
+
+      await tester.tap(find.byKey(const ValueKey('cell:A@2026-07-29')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save'), findsNothing, reason: 'no dialog opened');
+      expect(edits, isEmpty);
+    });
+
+    testWidgets('the days either side still take a number', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final edits = <String>[];
+      await tester.pumpWidget(wrapApp(TimesheetView(
+        anyDay: _monday,
+        taskLines: [_row('A', 'AT-1', [0, 0, 0, 0, 0, 0, 0])],
+        topicLines: const [],
+        daysOff: const {'2026-07-29'},
+        onEdit: (_, day, _) => edits.add(day),
+      )));
+
+      await tester.tap(find.byKey(const ValueKey('cell:A@2026-07-28')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), '2');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(edits, ['2026-07-28']);
+    });
+
+    testWidgets('an hour already logged on it is still shown', (tester) async {
+      // Marking a day off is a guard against typing, not a reason to hide
+      // something you would want to notice and move.
+      configureSize(tester, GoldenSize.mac);
+      await tester.pumpWidget(wrapApp(TimesheetView(
+        anyDay: _monday,
+        taskLines: [_row('A', 'AT-1', [0, 0, 90, 0, 0, 0, 0])],
+        topicLines: const [],
+        daysOff: const {'2026-07-29'},
+      )));
+
+      expect(find.text('1:30'), findsWidgets);
+    });
   });
 }

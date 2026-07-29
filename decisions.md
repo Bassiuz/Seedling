@@ -81,6 +81,7 @@
 - **The timesheet has two grids** — what you did, and what you always do. Meetings and maintenance never become tasks, but they are most of some weeks and the sheet is wrong without them. A standing row is drawn even when empty, because an empty row is where this week's hours go.
 - **A task earns a row if the week touched it** — time logged, checked off, or merely planned. Planned counts because the row has to exist before you can put a number in it.
 - **The grid is Monday to Friday, and a weekend day only when it has hours on it** — nobody wants two empty columns every week, but an hour logged on a Sunday that no grid shows is an hour no button sends. It earns its column rather than being dropped.
+- **Tapping a day's heading closes its column** — a day off, struck through and with nothing to aim at. It is a guard against filling in a Friday you did not work, not a reason to hide anything: an hour already logged on a closed day still shows, greyed, because a stray hour on a day off is exactly what you want to notice and move. Kept on the day document, so every device agrees which Friday you took.
 - **Send only sends the week on screen** — the button says "this week", and a button that quietly does more than it says is a button you stop trusting.
 
 ## The home-screen widget

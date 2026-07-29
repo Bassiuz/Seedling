@@ -473,6 +473,17 @@ class SeedlingRepo {
       (day['questionAnswers'] as Map<String, dynamic>? ?? const {}).isNotEmpty ||
       (day['doneEvents'] as List<dynamic>? ?? const []).isNotEmpty;
 
+  /// The days you did not work. Kept on the day itself, so every device
+  /// agrees about which Friday you took off.
+  Stream<Set<String>> watchDaysOff() => _days.snapshots().map((snap) => {
+        for (final doc in snap.docs)
+          if (doc.data()['dayOff'] == true) doc.id,
+      });
+
+  Future<void> setDayOff(String dayKey, bool off) => _days
+      .doc(dayKey)
+      .set({'dayOff': off ? true : FieldValue.delete()}, SetOptions(merge: true));
+
   /// Answers for one day, keyed by question id.
   Stream<Map<String, String>> watchAnswers(String dayKey) =>
       _days.doc(dayKey).snapshots().map((snap) {

@@ -32,6 +32,8 @@ class TimesheetView extends StatelessWidget {
     required this.topicLines,
     this.onWeek,
     this.onEdit,
+    this.daysOff = const {},
+    this.onToggleDayOff,
     this.onAddTopic,
     this.onEditTopic,
     this.onRemoveTopic,
@@ -54,6 +56,12 @@ class TimesheetView extends StatelessWidget {
 
   /// Sets a cell outright, in minutes.
   final void Function(TimesheetRow row, String dayKey, int minutes)? onEdit;
+
+  /// Days you did not work. Their column is closed for typing — a guard
+  /// against filling in a Friday you took off, not a reason to hide anything
+  /// already logged there.
+  final Set<String> daysOff;
+  final void Function(String dayKey)? onToggleDayOff;
 
   final VoidCallback? onAddTopic;
   final void Function(Topic)? onEditTopic;
@@ -115,6 +123,8 @@ class TimesheetView extends StatelessWidget {
             _Grid(
               days: days,
               columns: columns,
+              daysOff: daysOff,
+              onToggleDayOff: onToggleDayOff,
               blocks: [
                 (
                   title: 'Tasks',
@@ -249,6 +259,8 @@ class _Grid extends StatelessWidget {
   const _Grid({
     required this.days,
     required this.columns,
+    required this.daysOff,
+    this.onToggleDayOff,
     required this.blocks,
     required this.totals,
     this.onEdit,
@@ -263,6 +275,8 @@ class _Grid extends StatelessWidget {
   final List<int> columns;
   final List<_Block> blocks;
   final List<int> totals;
+  final Set<String> daysOff;
+  final void Function(String)? onToggleDayOff;
   final void Function(TimesheetRow, String, int)? onEdit;
   final VoidCallback? onAddTopic;
   final void Function(Topic)? onEditTopic;
@@ -298,13 +312,18 @@ class _Grid extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _HeaderRow(days: days),
+                    _HeaderRow(
+                      days: days,
+                      daysOff: daysOff,
+                      onToggleDayOff: onToggleDayOff,
+                    ),
                     if (block.rows.isEmpty) EmptyNote(block.empty),
                     for (final row in block.rows)
                       _Row(
                         row: row,
                         days: days,
                         columns: columns,
+                        daysOff: daysOff,
                         onEdit: onEdit,
                         onEditTopic: onEditTopic,
                         onRemoveTopic: onRemoveTopic,
@@ -354,9 +373,17 @@ String _short(int minutes) =>
     '${minutes ~/ 60}:${(minutes % 60).toString().padLeft(2, '0')}';
 
 class _HeaderRow extends StatelessWidget {
-  const _HeaderRow({required this.days});
+  const _HeaderRow({
+    required this.days,
+    required this.daysOff,
+    this.onToggleDayOff,
+  });
 
   final List<String> days;
+  final Set<String> daysOff;
+
+  /// Tapping a day's heading closes or opens its column.
+  final void Function(String)? onToggleDayOff;
 
   @override
   Widget build(BuildContext context) {
@@ -372,20 +399,39 @@ class _HeaderRow extends StatelessWidget {
           for (final day in days)
             SizedBox(
               width: TimesheetView._cellWidth,
-              child: Column(
-                children: [
-                  Text(
-                    DateFormat('EEE', 'en_US')
-                        .format(dateOfKey(day))
-                        .substring(0, 2),
-                    style: text.labelSmall?.copyWith(
-                      color: day == today ? colors.ink : colors.muted,
-                      fontWeight: day == today ? FontWeight.w700 : null,
-                    ),
+              child: GestureDetector(
+                onTap: onToggleDayOff == null
+                    ? null
+                    : () => onToggleDayOff!(day),
+                behavior: HitTestBehavior.opaque,
+                child: Tooltip(
+                  message: daysOff.contains(day)
+                      ? 'A day off. Tap to open it again.'
+                      : 'Tap if you did not work this day',
+                  child: Column(
+                    children: [
+                      Text(
+                        DateFormat('EEE', 'en_US')
+                            .format(dateOfKey(day))
+                            .substring(0, 2),
+                        style: text.labelSmall?.copyWith(
+                          color: daysOff.contains(day)
+                              ? colors.faint
+                              : day == today
+                                  ? colors.ink
+                                  : colors.muted,
+                          fontWeight: day == today ? FontWeight.w700 : null,
+                          decoration: daysOff.contains(day)
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      Text('${dateOfKey(day).day}',
+                          style:
+                              text.labelSmall?.copyWith(color: colors.faint)),
+                    ],
                   ),
-                  Text('${dateOfKey(day).day}',
-                      style: text.labelSmall?.copyWith(color: colors.faint)),
-                ],
+                ),
               ),
             ),
           const SizedBox(width: 60),
@@ -400,6 +446,7 @@ class _Row extends StatelessWidget {
     required this.row,
     required this.days,
     required this.columns,
+    required this.daysOff,
     this.onEdit,
     this.onEditTopic,
     this.onRemoveTopic,
@@ -408,6 +455,7 @@ class _Row extends StatelessWidget {
   final TimesheetRow row;
   final List<String> days;
   final List<int> columns;
+  final Set<String> daysOff;
   final void Function(TimesheetRow, String, int)? onEdit;
   final void Function(Topic)? onEditTopic;
   final void Function(Topic)? onRemoveTopic;
@@ -454,9 +502,10 @@ class _Row extends StatelessWidget {
               // than by counting widgets.
               key: ValueKey('cell:${row.sourceId}@$day'),
               minutes: row.minutes[columns[i]],
-              onSet: onEdit == null
+              onSet: onEdit == null || daysOff.contains(day)
                   ? null
                   : (minutes) => onEdit!(row, day, minutes),
+              closed: daysOff.contains(day),
               title: row.title,
               dayKey: day,
             ),
@@ -494,12 +543,17 @@ class _Cell extends StatelessWidget {
     required this.title,
     required this.dayKey,
     this.onSet,
+    this.closed = false,
   });
 
   final int minutes;
   final String title;
   final String dayKey;
   final void Function(int minutes)? onSet;
+
+  /// A day off. Drawn as nothing to aim at, but anything already logged there
+  /// still shows — a stray hour on a day you took off is worth seeing.
+  final bool closed;
 
   Future<void> _edit(BuildContext context) async {
     var entered = minutes == 0 ? '' : _short(minutes);
@@ -554,15 +608,17 @@ class _Cell extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: minutes == 0 ? colors.rule : colors.ink,
-              width: minutes == 0 ? 1 : 1.5,
-            ),
+            border: closed && minutes == 0
+                ? null
+                : Border.all(
+                    color: minutes == 0 ? colors.rule : colors.ink,
+                    width: minutes == 0 ? 1 : 1.5,
+                  ),
           ),
           child: Text(
             minutes == 0 ? '' : _short(minutes),
             style: text.labelMedium?.copyWith(
-              color: colors.ink,
+              color: closed ? colors.faint : colors.ink,
               fontWeight: minutes == 0 ? null : FontWeight.w600,
             ),
           ),
@@ -838,8 +894,10 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
         builder: (context, topicSnap) =>
             StreamBuilder<Map<String, EventExtras>>(
           stream: widget.repo.watchEventExtras(),
-          builder: (context, extraSnap) =>
-              StreamBuilder<Map<String, SentWorklog>>(
+          builder: (context, extraSnap) => StreamBuilder<Set<String>>(
+            stream: widget.repo.watchDaysOff(),
+            builder: (context, offSnap) =>
+                StreamBuilder<Map<String, SentWorklog>>(
             stream: widget.repo.watchSentWorklogs(),
             builder: (context, sentSnap) {
               final tasks = taskSnap.data ?? const <Task>[];
@@ -860,8 +918,12 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                 sent: sentSnap.data ?? const {},
               ).where((a) => days.contains(a.dayKey)).toList();
 
+              final daysOff = offSnap.data ?? const <String>{};
               return TimesheetView(
                 anyDay: _anyDay,
+                daysOff: daysOff,
+                onToggleDayOff: (day) => widget.repo
+                    .setDayOff(day, !daysOff.contains(day)),
                 onTurboTag: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => TurboTaggerScreen(
@@ -884,6 +946,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
                 onSend: () => _send(actions),
               );
             },
+          ),
           ),
         ),
       ),
