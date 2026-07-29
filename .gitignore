@@ -49,3 +49,16 @@ app.*.map.json
 
 # Golden test failure diffs (regenerated on every failing run)
 **/test/**/failures/
+
+# Things that must never be committed. The Firebase config files here are
+# client identifiers and are meant to ship; these are not.
+*.jks
+*.keystore
+key.properties
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+.env
+.env.*
+service-account*.json
