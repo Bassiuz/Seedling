@@ -99,17 +99,23 @@ Flutter 3.44.2, via [fvm](https://fvm.app).
 
 ```bash
 fvm flutter pub get
-fvm flutter run -d macos      # or -d <your iPhone>
-fvm flutter test
+fvm flutter test              # works straight away — no Firebase needed
 ```
 
-You'll need a Firebase project of your own with Firestore and email/password auth
-enabled, then `flutterfire configure`. The rules in [`firestore.rules`](firestore.rules)
-scope everything to `users/{uid}` — there is no shared or public data.
+To actually *run* it you need a Firebase project of your own, with Firestore and
+email/password sign-in enabled:
 
-> The committed Firebase config files are client *identifiers*, not secrets — they
-> ship inside every build of any Firebase app. [`SECURITY.md`](SECURITY.md) explains
-> what protects the data instead, and the one thing worth switching off.
+```bash
+dart pub global activate flutterfire_cli
+flutterfire configure --project=<your-project> --platforms=ios,android,macos
+fvm flutter run -d macos      # or -d <your iPhone>
+```
+
+That writes `lib/firebase_options.dart` and the platform config files, which this
+repository deliberately does not carry — so a clone fails to build with an obvious
+reason rather than quietly running against somebody else's project. Deploy
+[`firestore.rules`](firestore.rules) too; they scope everything to `users/{uid}`,
+and there is no shared or public data. See [`SECURITY.md`](SECURITY.md).
 
 ## How it's built
 
