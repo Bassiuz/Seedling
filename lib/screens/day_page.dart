@@ -378,7 +378,7 @@ class DayPage extends StatefulWidget {
   State<DayPage> createState() => _DayPageState();
 }
 
-class _DayPageState extends State<DayPage> {
+class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   /// Page indexes are offsets from today around this anchor, so you can swipe
   /// years in either direction without the page list having ends.
   static const int _anchor = 500000;
@@ -420,9 +420,14 @@ class _DayPageState extends State<DayPage> {
   bool _questionsOpen = false;
   StreamSubscription<Set<String>>? _activeSub;
 
+  /// True while a read is in flight, so coming back to the app twice in a
+  /// second does not start two.
+  bool _loadingEvents = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadEvents();
     _extrasSub = widget.repo.watchEventExtras().listen(
         (extras) => setState(() => _eventExtras = extras));
@@ -435,9 +440,29 @@ class _DayPageState extends State<DayPage> {
     });
   }
 
+  /// Appointments are read once at startup, which is not often enough: a
+  /// meeting you moved on your laptop stayed on the day it used to be on
+  /// until Seedling was restarted. Coming back to the app is the moment you
+  /// would expect it to have caught up.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) _loadEvents();
+  }
+
   /// A window around today rather than the whole calendar: paging years back
   /// should not mean reading years of appointments.
   Future<void> _loadEvents() async {
+    if (_loadingEvents) return;
+    _loadingEvents = true;
+    try {
+      await _readEvents();
+    } finally {
+      _loadingEvents = false;
+    }
+  }
+
+  Future<void> _readEvents() async {
     final from = addDays(_today, -60);
     final to = addDays(_today, 60);
 
@@ -472,6 +497,7 @@ class _DayPageState extends State<DayPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _noteDebounce?.cancel();
     _clock?.cancel();
     _extrasSub?.cancel();
