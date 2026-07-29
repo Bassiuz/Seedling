@@ -69,7 +69,7 @@ AppIntents. Its checkbox writes the two shared keys itself rather than waking
 Flutter, which keeps CocoaPods out of the target — and a target with no pods is
 one that can be added to the project from a script instead of by hand.
 
-Two things about the build that are easy to undo by accident:
+Three things about the build that are easy to undo by accident:
 
 - The **Embed Foundation Extensions** phase must sit *before* **Thin Binary**
   in the Runner target. Flutter's thinning script re-signs the app bundle, so
@@ -77,6 +77,11 @@ Two things about the build that are easy to undo by accident:
   `Cycle inside Runner`.
 - The widget target is **iOS 17**, because interactive widgets do not exist
   before it. The app itself stays on iOS 15.
+- Its base configuration is `Flutter/Generated.xcconfig`, the same file the app
+  reads its version from. Without it `$(FLUTTER_BUILD_NAME)` resolves to
+  nothing, the extension ships with no `CFBundleShortVersionString`, and iOS
+  refuses to install the app at all — with no message beyond
+  `Could not run build/ios/iphoneos/Runner.app`.
 
 ### If it shows the wrong thing
 
