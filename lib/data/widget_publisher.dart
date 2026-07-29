@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
@@ -20,12 +21,17 @@ class WidgetPublisher {
   /// it. Ignored on Android.
   final String appGroupId;
 
+  /// Where a home screen exists at all. The Mac has no widget, and asking it
+  /// for one logs a missing-plugin error on every publish.
+  static bool get supported => Platform.isIOS || Platform.isAndroid;
+
   static const dataKey = 'seedling_today';
   static const pendingKey = 'seedling_pending';
   static const iosWidgetName = 'SeedlingWidget';
   static const androidWidgetName = 'SeedlingWidgetProvider';
 
   Future<void> publish(WidgetPayload payload) async {
+    if (!supported) return;
     try {
       await HomeWidget.setAppGroupId(appGroupId);
       await HomeWidget.saveWidgetData<String>(dataKey, payload.toJson());
@@ -40,6 +46,7 @@ class WidgetPublisher {
 
   /// What was ticked off on the widget since the app last looked.
   Future<PendingToggles> takePending() async {
+    if (!supported) return PendingToggles.empty;
     try {
       await HomeWidget.setAppGroupId(appGroupId);
       final queued = PendingToggles.parse(
@@ -51,6 +58,20 @@ class WidgetPublisher {
     } catch (_) {
       return PendingToggles.empty;
     }
+  }
+}
+
+/// Listens for checkbox taps, where the platform has any.
+///
+/// Wrapped, because `main` is the one place an exception costs you the whole
+/// app rather than one feature: home_widget has no macOS implementation, and
+/// registering there threw before `runApp` and left a black window.
+Future<void> registerWidgetTaps() async {
+  if (!WidgetPublisher.supported) return;
+  try {
+    await HomeWidget.registerInteractivityCallback(widgetTapped);
+  } catch (error) {
+    debugPrint('Seedling: no home-screen widget on this platform ($error)');
   }
 }
 
