@@ -29,12 +29,28 @@
 
 'use strict';
 
-// The web API key is public by design; it identifies the project, it does not
-// grant access. Security rules are what keep the data yours.
-const FIREBASE_API_KEY = 'REDACTED';
-const PROJECT_ID = 'seedling-461b0';
+// Which Firebase project this talks to. Asked for once and remembered, rather
+// than baked in: the key identifies a project and grants nothing, but a copy
+// of this script that points at somebody else's project by default is a copy
+// that quietly writes into it.
+//
+// Both values are in your app's `lib/firebase_options.dart` after you run
+// `flutterfire configure`.
+function config() {
+  let apiKey = GM_getValue('apiKey');
+  let projectId = GM_getValue('projectId');
+  if (!apiKey || !projectId) {
+    apiKey = prompt('Firebase web API key');
+    projectId = prompt('Firebase project id');
+    if (!apiKey || !projectId) return null;
+    GM_setValue('apiKey', apiKey.trim());
+    GM_setValue('projectId', projectId.trim());
+  }
+  return { apiKey: apiKey.trim(), projectId: projectId.trim() };
+}
 
-const FIRESTORE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const firestoreFor = (projectId) =>
+  `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 
 // ---------------------------------------------------------------- pure bits
 // Everything below this line is testable without a browser; see test/.
@@ -183,7 +199,7 @@ if (typeof window !== 'undefined') {
 
     const res = await request(
       'POST',
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${config().apiKey}`,
       { body: { email, password, returnSecureToken: true } },
     );
     GM_setValue('refreshToken', res.refreshToken);
@@ -203,7 +219,7 @@ if (typeof window !== 'undefined') {
 
     const res = await request(
       'POST',
-      `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+      `https://securetoken.googleapis.com/v1/token?key=${config().apiKey}`,
       { body: { grant_type: 'refresh_token', refresh_token: refreshToken } },
     );
     GM_setValue('idToken', res.id_token);
@@ -243,7 +259,7 @@ if (typeof window !== 'undefined') {
       const uid = GM_getValue('uid');
       const title = taskTitle(page, await fetchSummary(page));
 
-      await request('POST', `${FIRESTORE}/users/${uid}/tasks`, {
+      await request('POST', `${firestoreFor(config().projectId)}/users/${uid}/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
         body: taskDocument({
           title,
