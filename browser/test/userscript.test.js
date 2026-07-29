@@ -16,42 +16,42 @@ test('todayKey matches the app’s day keys', () => {
 });
 
 test('a Jira permalink is recognised', () => {
-  const page = detectPage('https://medapp.atlassian.net/browse/MED-1234');
+  const page = detectPage('https://example.atlassian.net/browse/MED-1234');
   assert.equal(page.kind, 'jira');
   assert.equal(page.key, 'MED-1234');
-  assert.equal(page.origin, 'https://medapp.atlassian.net');
+  assert.equal(page.origin, 'https://example.atlassian.net');
 });
 
 test('a Jira board with an issue selected is recognised', () => {
   const page = detectPage(
-    'https://medapp.atlassian.net/jira/software/projects/MED/boards/3?selectedIssue=MED-99',
+    'https://example.atlassian.net/jira/software/projects/MED/boards/3?selectedIssue=MED-99',
   );
   assert.equal(page.key, 'MED-99');
 });
 
 test('a Jira board with nothing selected is not a ticket page', () => {
   assert.equal(
-    detectPage('https://medapp.atlassian.net/jira/software/projects/MED/boards/3'),
+    detectPage('https://example.atlassian.net/jira/software/projects/MED/boards/3'),
     null,
   );
 });
 
 test('something that only looks like a key is rejected', () => {
-  assert.equal(detectPage('https://medapp.atlassian.net/browse/notakey'), null);
+  assert.equal(detectPage('https://example.atlassian.net/browse/notakey'), null);
 });
 
 test('a Bitbucket pull request is recognised, including deep links', () => {
   const page = detectPage(
-    'https://bitbucket.org/medapp/backend/pull-requests/42/some-slug/diff',
+    'https://bitbucket.org/example/backend/pull-requests/42/some-slug/diff',
   );
   assert.equal(page.kind, 'bitbucket');
-  assert.equal(page.workspace, 'medapp');
+  assert.equal(page.workspace, 'example');
   assert.equal(page.repo, 'backend');
   assert.equal(page.id, '42');
 });
 
 test('a Bitbucket repo page is not a pull request', () => {
-  assert.equal(detectPage('https://bitbucket.org/medapp/backend/src/main'), null);
+  assert.equal(detectPage('https://bitbucket.org/example/backend/src/main'), null);
 });
 
 test('unrelated sites and rubbish are ignored', () => {
@@ -105,19 +105,19 @@ test('titles are looked up through each site’s own API', () => {
     titleEndpoint({
       kind: 'jira',
       key: 'MED-1',
-      origin: 'https://medapp.atlassian.net',
+      origin: 'https://example.atlassian.net',
     }),
-    'https://medapp.atlassian.net/rest/api/3/issue/MED-1?fields=summary',
+    'https://example.atlassian.net/rest/api/3/issue/MED-1?fields=summary',
   );
   assert.equal(
     titleEndpoint({
       kind: 'bitbucket',
-      workspace: 'medapp',
+      workspace: 'example',
       repo: 'backend',
       id: '42',
       origin: 'https://bitbucket.org',
     }),
-    'https://bitbucket.org/!api/2.0/repositories/medapp/backend/pullrequests/42',
+    'https://bitbucket.org/!api/2.0/repositories/example/backend/pullrequests/42',
   );
 });
 
