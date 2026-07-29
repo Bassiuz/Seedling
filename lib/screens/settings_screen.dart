@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../data/seedling_repo.dart';
 
 import '../data/settings_store.dart';
 import '../theme/seedling_theme.dart';
@@ -22,6 +25,7 @@ class SettingsView extends StatelessWidget {
     this.onMirroringChanged,
     this.readsDeviceCalendar = false,
     this.onReadsCalendarChanged,
+    this.calendarShare,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -46,6 +50,10 @@ class SettingsView extends StatelessWidget {
   /// published. Null hides the row where no calendar can be read at all.
   final bool readsDeviceCalendar;
   final ValueChanged<bool>? onReadsCalendarChanged;
+
+  /// What was last shared, so a device that only reads can tell the
+  /// difference between "no appointments" and "nothing ever arrived".
+  final String? calendarShare;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -135,6 +143,12 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
               ),
+              if (calendarShare != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10, left: 4),
+                  child: Text(calendarShare!,
+                      style: text.labelMedium?.copyWith(color: colors.muted)),
+                ),
             ],
             if (onExportVault != null) ...[
               const SizedBox(height: 28),
@@ -227,6 +241,7 @@ class SettingsScreen extends StatelessWidget {
     this.canReadDeviceCalendar = false,
     required this.onSignOut,
     this.signedInAs,
+    required this.repo,
   });
 
   final SettingsStore settings;
@@ -242,14 +257,20 @@ class SettingsScreen extends StatelessWidget {
 
   /// False where the platform has no calendar to read, which hides the row.
   final bool canReadDeviceCalendar;
+
+  /// Reads the last publish, so the row can say what actually arrived.
+  final SeedlingRepo repo;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return StreamBuilder<CalendarShare?>(
+      stream: repo.watchCalendarShare(),
+      builder: (context, shareSnap) => ListenableBuilder(
       listenable: settings,
       builder: (context, _) => SettingsView(
+        calendarShare: _shareLine(shareSnap.data),
         einkMode: settings.einkMode,
         onEinkChanged: settings.setEinkMode,
         onOpenTags: onOpenTags,
@@ -267,6 +288,20 @@ class SettingsScreen extends StatelessWidget {
         onReadsCalendarChanged:
             canReadDeviceCalendar ? settings.setReadsDeviceCalendar : null,
       ),
+      ),
     );
+  }
+
+  /// Nothing at all reads as nothing having arrived, which is the case worth
+  /// being able to see.
+  static String? _shareLine(CalendarShare? share) {
+    if (share == null) return 'No device has shared a calendar yet.';
+    final when = share.at;
+    final stamp = when == null
+        ? ''
+        : ' on ${DateFormat('MMM d, HH:mm', 'en_US').format(when)}';
+    return share.count == 1
+        ? 'Last shared: 1 appointment$stamp.'
+        : 'Last shared: ${share.count} appointments$stamp.';
   }
 }

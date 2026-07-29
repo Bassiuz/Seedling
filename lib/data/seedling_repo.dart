@@ -160,6 +160,12 @@ class SeedlingRepo {
   Future<void> upsertSomeday(SomedayItem item) =>
       _someday.doc(item.id).set(item.toMap());
 
+  /// Refiles an idea under another project, or under none. Written on its own
+  /// rather than through [upsertSomeday] so a drag cannot clobber a title
+  /// edited somewhere else at the same moment.
+  Future<void> setSomedayTag(SomedayItem item, String? tagId) =>
+      _someday.doc(item.id).set({'tagId': tagId}, SetOptions(merge: true));
+
   Future<void> deleteSomeday(SomedayItem item) =>
       _someday.doc(item.id).delete();
 
@@ -296,15 +302,58 @@ class SeedlingRepo {
         .where('dayKey', isLessThanOrEqualTo: to)
         .get();
 
-    final batch = _firestore.batch();
-    for (final doc in existing.docs) {
-      batch.delete(doc.reference);
+    // One document per occurrence, not per event: every Tuesday of a weekly
+    // standup carries the same EventKit id, and keying on that alone kept one
+    // of them and silently dropped the rest.
+    final writes = <void Function(WriteBatch)>[
+      for (final doc in existing.docs) (b) => b.delete(doc.reference),
+      for (final event in events)
+        (b) => b.set(
+              _calendarMirror
+                  .doc(mirrorOccurrenceId(event.id, event.dayKey, event.time)),
+              event.toMap(),
+            ),
+    ];
+
+    // Firestore refuses a batch over 500 operations, and two months of a busy
+    // calendar is well past that — it used to fail the lot rather than write
+    // some of it.
+    for (var i = 0; i < writes.length; i += _batchLimit) {
+      final batch = _firestore.batch();
+      for (final write in writes.skip(i).take(_batchLimit)) {
+        write(batch);
+      }
+      await batch.commit();
     }
-    for (final event in events) {
-      batch.set(_calendarMirror.doc(mirrorDocId(event.id)), event.toMap());
-    }
-    await batch.commit();
+
+    // Only after every batch landed, so a half-written mirror never reports
+    // itself as whole.
+    await _calendarStatus.set({
+      'count': events.length,
+      'at': DateTime.now().toIso8601String(),
+      'from': from,
+      'to': to,
+    });
   }
+
+  DocumentReference<Map<String, dynamic>> get _calendarStatus =>
+      _user.collection('config').doc('calendarMirror');
+
+  /// What the sharing device last managed to publish. Null until one has.
+  /// Sharing used to fail silently, which is a hard thing to notice on the
+  /// device that is only reading.
+  Stream<CalendarShare?> watchCalendarShare() =>
+      _calendarStatus.snapshots().map((snap) {
+        final data = snap.data();
+        if (data == null) return null;
+        return CalendarShare(
+          count: (data['count'] as num?)?.toInt() ?? 0,
+          at: DateTime.tryParse(data['at'] as String? ?? ''),
+        );
+      });
+
+  /// Firestore's own ceiling is 500; the margin costs nothing.
+  static const int _batchLimit = 400;
 
   // --- hidden calendar events ---
 
@@ -352,4 +401,12 @@ class SeedlingRepo {
       _days.doc(dayKey).set({
         'questionAnswers': {questionId: value ?? FieldValue.delete()},
       }, SetOptions(merge: true));
+}
+
+/// The last calendar publish, as the reading devices see it.
+class CalendarShare {
+  const CalendarShare({required this.count, this.at});
+
+  final int count;
+  final DateTime? at;
 }

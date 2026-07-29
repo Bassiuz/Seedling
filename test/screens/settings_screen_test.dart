@@ -142,4 +142,26 @@ void main() {
     expect(eink.eink, isTrue);
     expect(paper.eink, isFalse);
   });
+
+  testWidgets('the calendar row says what was last shared', (tester) async {
+    await tester.pumpWidget(wrapApp(SettingsView(
+      einkMode: false,
+      onEinkChanged: (_) {},
+      onOpenTags: () {},
+      onOpenQuestions: () {},
+      onOpenSomeday: () {},
+      onOpenGoals: () {},
+      onSignOut: () async {},
+      onReadsCalendarChanged: (_) {},
+      calendarShare: 'Last shared: 312 appointments on Jul 29, 07:49.',
+    )));
+
+    // A device that only reads has no other way to tell "no appointments"
+    // from "nothing ever arrived".
+    // The list builds lazily, so the line has to be scrolled to first.
+    await tester.scrollUntilVisible(
+        find.textContaining('312 appointments'), 200);
+
+    expect(find.textContaining('312 appointments'), findsOneWidget);
+  });
 }

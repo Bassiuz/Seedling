@@ -596,6 +596,7 @@ class _DayPageState extends State<DayPage> {
         MaterialPageRoute<void>(
           builder: (_) => StatefulBuilder(
             builder: (context, refresh) => SettingsScreen(
+              repo: widget.repo,
             settings: widget.settings!,
             canReadDeviceCalendar: DeviceCalendar.supported,
             signedInAs: widget.signedInAs,

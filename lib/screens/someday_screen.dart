@@ -20,6 +20,7 @@ class SomedayView extends StatelessWidget {
     required this.onAdd,
     required this.onPromote,
     required this.onDelete,
+    this.onMove,
   });
 
   final List<SomedayItem> items;
@@ -27,6 +28,10 @@ class SomedayView extends StatelessWidget {
   final void Function(String title, String? tagId) onAdd;
   final void Function(SomedayItem) onPromote;
   final void Function(SomedayItem) onDelete;
+
+  /// Drops an idea into another project, or out of one. Null leaves the list
+  /// undraggable, which is what the golden tests want.
+  final void Function(SomedayItem item, String? tagId)? onMove;
 
   /// Items grouped by tag id, each still in priority order. The untagged group
   /// is keyed by null and comes last.
@@ -40,10 +45,14 @@ class SomedayView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
     final grouped = group(items);
-    final keys = grouped.keys.toList()
+    final keys = <String?>{
+      ...grouped.keys,
+      // While you can drag, every project is a place to drop — including the
+      // empty ones and "no project", which otherwise would not be drawn.
+      if (onMove != null) ...[...tags.keys, null],
+    }.toList()
       ..sort((a, b) {
         if (a == null) return 1;
         if (b == null) return -1;
@@ -64,42 +73,17 @@ class SomedayView extends StatelessWidget {
               style: text.labelMedium,
             ),
             const SizedBox(height: 24),
-            if (items.isEmpty) const EmptyNote('Nothing parked yet'),
+            if (items.isEmpty && onMove == null)
+              const EmptyNote('Nothing parked yet'),
             // A tag can be deleted while items still point at it, so never
             // assume the lookup succeeds.
             for (final key in keys) ...[
-              BlockFrame(
-                title: tags[key]?.name ?? 'No project',
-                icon: tags[key] == null
-                    ? Icons.inbox_outlined
-                    : TagChip.iconOf(tags[key]!),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final item in grouped[key]!)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(item.title, style: text.bodyLarge),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              tooltip: 'Do it today',
-                              onPressed: () => onPromote(item),
-                              icon: Icon(Icons.today_outlined,
-                                  color: colors.muted),
-                            ),
-                            IconButton(
-                              tooltip: 'Delete',
-                              onPressed: () => onDelete(item),
-                              icon: Icon(Icons.delete_outline,
-                                  color: colors.faint),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
+              _Project(
+                tag: tags[key],
+                items: grouped[key] ?? const [],
+                onPromote: onPromote,
+                onDelete: onDelete,
+                onMove: onMove,
               ),
               const SizedBox(height: 28),
             ],
@@ -196,6 +180,144 @@ class _AddSomedayState extends State<_AddSomeday> {
   }
 }
 
+/// One project's parked ideas, and somewhere to drop another one.
+class _Project extends StatefulWidget {
+  const _Project({
+    required this.tag,
+    required this.items,
+    required this.onPromote,
+    required this.onDelete,
+    this.onMove,
+  });
+
+  /// Null for the ideas filed under no project at all.
+  final Tag? tag;
+  final List<SomedayItem> items;
+  final void Function(SomedayItem) onPromote;
+  final void Function(SomedayItem) onDelete;
+  final void Function(SomedayItem, String? tagId)? onMove;
+
+  @override
+  State<_Project> createState() => _ProjectState();
+}
+
+class _ProjectState extends State<_Project> {
+  bool _hovering = false;
+
+  bool _takes(SomedayItem? item) =>
+      item != null && item.tagId != widget.tag?.id;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+
+    final block = BlockFrame(
+      title: widget.tag?.name ?? 'No project',
+      icon: widget.tag == null
+          ? Icons.inbox_outlined
+          : TagChip.iconOf(widget.tag!),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.items.isEmpty)
+            EmptyNote(_hovering ? 'Drop it here' : 'Nothing parked'),
+          for (final item in widget.items)
+            _Idea(
+              item: item,
+              onPromote: () => widget.onPromote(item),
+              onDelete: () => widget.onDelete(item),
+              draggable: widget.onMove != null,
+            ),
+        ],
+      ),
+    );
+
+    if (widget.onMove == null) return block;
+
+    return DragTarget<SomedayItem>(
+      onWillAcceptWithDetails: (details) {
+        // Dropping something back where it already is should do nothing at
+        // all, not even light up.
+        if (!_takes(details.data)) return false;
+        setState(() => _hovering = true);
+        return true;
+      },
+      onLeave: (_) => setState(() => _hovering = false),
+      onAcceptWithDetails: (details) {
+        setState(() => _hovering = false);
+        widget.onMove!(details.data, widget.tag?.id);
+      },
+      builder: (context, candidate, _) => AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: _hovering ? colors.rule : null,
+        ),
+        child: block,
+      ),
+    );
+  }
+}
+
+/// One parked idea. Long-press to pick it up: a plain drag would fight the
+/// list's own scrolling on a phone.
+class _Idea extends StatelessWidget {
+  const _Idea({
+    required this.item,
+    required this.onPromote,
+    required this.onDelete,
+    required this.draggable,
+  });
+
+  final SomedayItem item;
+  final VoidCallback onPromote;
+  final VoidCallback onDelete;
+  final bool draggable;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    final text = Theme.of(context).textTheme;
+
+    final tile = ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(item.title, style: text.bodyLarge),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Do it today',
+            onPressed: onPromote,
+            icon: Icon(Icons.today_outlined, color: colors.muted),
+          ),
+          IconButton(
+            tooltip: 'Delete',
+            onPressed: onDelete,
+            icon: Icon(Icons.delete_outline, color: colors.faint),
+          ),
+        ],
+      ),
+    );
+
+    if (!draggable) return tile;
+
+    return LongPressDraggable<SomedayItem>(
+      data: item,
+      feedback: Material(
+        color: colors.paper,
+        elevation: 4,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Text(item.title, style: text.bodyLarge),
+        ),
+      ),
+      childWhenDragging: Opacity(opacity: 0.3, child: tile),
+      child: tile,
+    );
+  }
+}
+
 /// The live someday screen.
 class SomedayScreen extends StatelessWidget {
   const SomedayScreen({super.key, required this.repo, required this.today});
@@ -222,6 +344,7 @@ class SomedayScreen extends StatelessWidget {
                   repo.addSomeday(title, tagId: tagId, priority: items.length),
               onPromote: (item) => repo.promoteSomeday(item, today),
               onDelete: repo.deleteSomeday,
+              onMove: repo.setSomedayTag,
             );
           },
         );

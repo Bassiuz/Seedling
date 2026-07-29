@@ -1,4 +1,5 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/data/seedling_repo.dart';
@@ -26,6 +27,7 @@ Widget _someday({
   List<SomedayItem> items = _items,
   void Function(SomedayItem)? onPromote,
   void Function(SomedayItem)? onDelete,
+  void Function(SomedayItem, String?)? onMove,
 }) =>
     SomedayView(
       items: items,
@@ -33,7 +35,20 @@ Widget _someday({
       onAdd: (_, _) {},
       onPromote: onPromote ?? (_) {},
       onDelete: onDelete ?? (_) {},
+      onMove: onMove,
     );
+
+/// Picks an idea up and drops it on a heading. Long-press, because a plain
+/// drag would fight the list's own scrolling on a phone.
+Future<void> dragOnto(
+    WidgetTester tester, String title, String project) async {
+  final drag = await tester.startGesture(tester.getCenter(find.text(title)));
+  await tester.pump(kLongPressTimeout + const Duration(milliseconds: 20));
+  await drag.moveTo(tester.getCenter(find.text(project)));
+  await tester.pump();
+  await drag.up();
+  await tester.pumpAndSettle();
+}
 
 void main() {
   goldenForSizes('someday', 'someday', [GoldenSize.phone, GoldenSize.mac],
@@ -107,6 +122,70 @@ void main() {
 
       expect((await repo.watchSomeday().first).single.title,
           'Buy a new saddle');
+    });
+  });
+
+  group('refiling by dragging', () {
+    testWidgets('an idea can be dropped onto another project', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final moved = <(String, String?)>[];
+      await tester.pumpWidget(wrapApp(
+        _someday(onMove: (item, tagId) => moved.add((item.id, tagId))),
+      ));
+
+      await dragOnto(tester, 'Fix the shed door', 'Moxify');
+
+      expect(moved, [('3', 'moxify')]);
+    });
+
+    testWidgets('and out of a project entirely', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final moved = <(String, String?)>[];
+      await tester.pumpWidget(wrapApp(
+        _someday(onMove: (item, tagId) => moved.add((item.id, tagId))),
+      ));
+
+      await dragOnto(tester, 'Fix the shed door', 'No project');
+
+      expect(moved, [('3', null)]);
+    });
+
+    testWidgets('dropping it back where it was changes nothing',
+        (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final moved = <(String, String?)>[];
+      await tester.pumpWidget(wrapApp(
+        _someday(onMove: (item, tagId) => moved.add((item.id, tagId))),
+      ));
+
+      await dragOnto(tester, 'Fix the shed door', 'Home');
+
+      expect(moved, isEmpty);
+    });
+
+    testWidgets('an empty project is still somewhere to drop', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final moved = <(String, String?)>[];
+      await tester.pumpWidget(wrapApp(_someday(
+        items: const [
+          SomedayItem(id: '1', title: 'Only idea', tagId: 'moxify',
+              priority: 0),
+        ],
+        onMove: (item, tagId) => moved.add((item.id, tagId)),
+      )));
+
+      expect(find.text('Home'), findsOneWidget,
+          reason: 'you cannot drop onto a heading that is not drawn');
+      await dragOnto(tester, 'Only idea', 'Home');
+
+      expect(moved, [('1', 'home')]);
+    });
+
+    testWidgets('without a handler nothing is draggable', (tester) async {
+      await tester.pumpWidget(wrapApp(_someday()));
+
+      expect(find.byType(LongPressDraggable<SomedayItem>), findsNothing);
+      expect(find.byType(DragTarget<SomedayItem>), findsNothing);
     });
   });
 }
