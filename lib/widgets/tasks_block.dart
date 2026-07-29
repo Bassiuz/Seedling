@@ -21,6 +21,7 @@ class TasksBlock extends StatelessWidget {
     this.someday = const [],
     this.onPullSomeday,
     this.onOpenJira,
+    this.onRename,
   });
 
   final List<Task> tasks;
@@ -32,6 +33,9 @@ class TasksBlock extends StatelessWidget {
   final List<SomedayItem> someday;
   final void Function(SomedayItem)? onPullSomeday;
   final void Function(JiraRef)? onOpenJira;
+
+  /// Tapping a title renames that task. Null leaves them read-only.
+  final void Function(Task)? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +53,7 @@ class TasksBlock extends StatelessWidget {
               onToggle: () => onToggle(task),
               onMenu: () => onMenu(task),
               onOpenJira: onOpenJira,
+              onRename: onRename == null ? null : () => onRename!(task),
             ),
           AddTaskField(
             onAdd: onAdd,

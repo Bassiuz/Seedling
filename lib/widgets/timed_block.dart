@@ -40,6 +40,7 @@ class TimedBlock extends StatelessWidget {
     this.now,
     this.onAdd,
     this.onOpenJira,
+    this.onRename,
   });
 
   final List<CalendarEvent> events;
@@ -67,6 +68,9 @@ class TimedBlock extends StatelessWidget {
   /// Adding something straight into the timed list. Null hides the add line.
   final void Function(String title, {String? tagId, String? time})? onAdd;
   final void Function(JiraRef)? onOpenJira;
+
+  /// Tapping a title renames that task. Null leaves them read-only.
+  final void Function(Task)? onRename;
 
   final List<Task> tasks;
   final Map<String, Tag> tags;
@@ -131,6 +135,8 @@ class TimedBlock extends StatelessWidget {
                   onToggle: () => onToggle(entry.task!),
                   onMenu: () => onMenu(entry.task!),
                   onOpenJira: onOpenJira,
+                  onRename:
+                      onRename == null ? null : () => onRename!(entry.task!),
                 ),
           ],
           if (onAdd != null)

@@ -82,6 +82,11 @@ class SeedlingRepo {
   Future<void> setTime(Task t, String? time) =>
       _tasks.doc(t.id).update({'time': time});
 
+  /// Merges rather than updates, so a rename cannot drop the time entries or
+  /// the completion the task was carrying.
+  Future<void> renameTask(Task t, String title) =>
+      _tasks.doc(t.id).set({'title': title}, SetOptions(merge: true));
+
   /// Null clears the tag.
   Future<void> setTag(Task t, String? tagId) =>
       _tasks.doc(t.id).update({'tagId': tagId});

@@ -72,6 +72,7 @@ class DayContent extends StatelessWidget {
     this.today,
     this.now,
     this.onOpenJira,
+    this.onRename,
   });
 
   /// Active questions for this day, and the answers given so far.
@@ -95,6 +96,9 @@ class DayContent extends StatelessWidget {
   final String? today;
   final String? now;
   final void Function(JiraRef)? onOpenJira;
+
+  /// Tapping a title renames that task.
+  final void Function(Task)? onRename;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -165,6 +169,7 @@ class DayContent extends StatelessWidget {
         now: now,
         onAdd: onAdd,
         onOpenJira: onOpenJira,
+        onRename: onRename,
       );
 
   Widget _tasks(List<Task> untimed) => TasksBlock(
@@ -177,6 +182,7 @@ class DayContent extends StatelessWidget {
         someday: someday,
         onPullSomeday: onPullSomeday,
         onOpenJira: onOpenJira,
+        onRename: onRename,
       );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
@@ -697,6 +703,41 @@ class _DayPageState extends State<DayPage> {
         onOpenCalendar: () => _openCalendar(day),
         onTripleTapDate: () => _openStandup(day),
       );
+
+  /// Tapping a title changes it. The menu is for everything a task *has*;
+  /// the words themselves are edited where they are written.
+  Future<void> _rename(Task task) async {
+    final controller = TextEditingController(text: task.title);
+    final typed = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rename'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          onSubmitted: (value) => Navigator.pop(dialogContext, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || typed == null) return;
+
+    final title = typed.trim();
+    // An empty title would leave a task you cannot see to fix.
+    if (title.isEmpty || title == task.title) return;
+    await _write(() => widget.repo.renameTask(task, title), 'rename that');
+  }
 
   /// Three taps on the date. Read-only on purpose: it is something to read
   /// out, not somewhere to tick things off while you are talking.
@@ -1329,6 +1370,7 @@ class _DayPageState extends State<DayPage> {
                                 'add that task',
                               ),
                               onOpenJira: _openJira,
+                              onRename: _rename,
                               onNoteChanged: (text) => _saveNote(day, text),
                               someday: someday,
                               onPullSomeday: (item) => _write(

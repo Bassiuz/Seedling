@@ -27,6 +27,7 @@ class TaskTile extends StatelessWidget {
     this.tag,
     this.overdue = false,
     this.onOpenJira,
+    this.onRename,
   });
 
   final Task task;
@@ -39,6 +40,10 @@ class TaskTile extends StatelessWidget {
 
   /// Opens the linked ticket. Null leaves the key as plain text.
   final void Function(JiraRef)? onOpenJira;
+
+  /// Tapping the title changes it. Null leaves the words alone, which is what
+  /// the golden tests and the read-only views want.
+  final VoidCallback? onRename;
 
   /// Its time has gone by today and it is still open, so it is drawn in red.
   final bool overdue;
@@ -76,16 +81,20 @@ class TaskTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Text(
-                      task.title,
-                      style: text.bodyLarge?.copyWith(
-                        color: done
-                            ? colors.muted
-                            : colors.ink,
-                        decoration: done ? TextDecoration.lineThrough : null,
-                        decorationColor: colors.muted,
+                  GestureDetector(
+                    onTap: onRename,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(
+                        task.title,
+                        style: text.bodyLarge?.copyWith(
+                          color: done
+                              ? colors.muted
+                              : colors.ink,
+                          decoration: done ? TextDecoration.lineThrough : null,
+                          decorationColor: colors.muted,
+                        ),
                       ),
                     ),
                   ),
