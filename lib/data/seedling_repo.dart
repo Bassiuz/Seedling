@@ -95,8 +95,11 @@ class SeedlingRepo {
       _tasks.doc(t.id).update({'tagId': tagId});
 
   /// Null unlinks the ticket.
-  Future<void> setJira(Task t, JiraRef? ref) =>
-      _tasks.doc(t.id).update({'jira': ref?.toMap()});
+  Future<void> setJira(Task t, JiraRef? ref) async {
+    await _tasks.doc(t.id).update({'jira': ref?.toMap()});
+    // Tagging something is what makes a ticket recent, wherever you did it.
+    if (ref != null) await touchJiraTicket(ref, DateTime.now());
+  }
 
   /// The Jira site last used, so a bare key like MAF-1234 is enough next time.
   Stream<String?> watchJiraSite() => _user

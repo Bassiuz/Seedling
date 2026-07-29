@@ -215,4 +215,63 @@ void main() {
 
     expect(moves, [-1, 1]);
   });
+
+  group('tickets you already used', () {
+    testWidgets('are in the list without pasting anything', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+      // Tagged some time ago, on a day that is not today.
+      await repo.addTask('Old work', date: '2026-07-01');
+      final old = (await repo.watchTasks().first).single;
+      await repo.setJira(old, const JiraRef(key: 'MAF-4319', site: _site));
+      await repo.addTask('Needs one', date: todayKey());
+
+      await tester.pumpWidget(wrapApp(_screen(repo,
+          jira: MockClient((_) async => http.Response('{"issues":[]}', 200)))));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Needs one'));
+      await tester.pumpAndSettle();
+
+      // Unnamed, so it shows as its key in both the label and the title.
+      expect(find.text('MAF-4319'), findsWidgets);
+    });
+
+    testWidgets('get their names looked up on opening', (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+      await repo.addTask('Old work', date: '2026-07-01');
+      final old = (await repo.watchTasks().first).single;
+      await repo.setJira(old, const JiraRef(key: 'MAF-4319', site: _site));
+
+      final jira = MockClient((_) async => http.Response(
+            jsonEncode({
+              'issues': [
+                {'key': 'MAF-4319', 'fields': {'summary': 'Meetings, testing'}}
+              ]
+            }),
+            200,
+          ));
+
+      await tester.pumpWidget(wrapApp(_screen(repo, jira: jira)));
+      await tester.pumpAndSettle();
+
+      final stored = await repo.watchJiraTickets().first;
+      expect(stored.single.summary, 'Meetings, testing');
+    });
+
+    testWidgets('without a Jira account they still appear, just unnamed',
+        (tester) async {
+      configureSize(tester, GoldenSize.mac);
+      final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+      await repo.addTask('Old work', date: '2026-07-01');
+      final old = (await repo.watchTasks().first).single;
+      await repo.setJira(old, const JiraRef(key: 'AT-9', site: _site));
+
+      await tester.pumpWidget(wrapApp(_screen(repo, account: false)));
+      await tester.pumpAndSettle();
+
+      expect((await repo.watchJiraTickets().first).single.key, 'AT-9');
+    });
+  });
 }

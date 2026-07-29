@@ -97,6 +97,8 @@
 
 - **Keys are parsed loosely and filtered by Jira** — the paste regex also matches `UTF-8` and `COVID-19`, and that is the right trade: whatever Jira does not recognise is dropped, while guessing at project prefixes here would silently lose real tickets. The one screen where a false positive costs nothing and a false negative costs a paste.
 - **Only untagged work is listed** — the screen exists to empty that list, and a row that disappears when you deal with it is the whole feeling of the thing.
+- **The list seeds itself from work you have already done** — every ticket ever put on a task, a standing topic or an appointment is harvested when the tagger opens, dated by the last day it actually carried time, was finished, or was planned for. A list that starts empty until you paste something is a list you have to feed before it can help you.
+- **The names are looked up on opening, not behind a button** — a list of bare keys is not a list you can pick from, and you should not have to know that a lookup is a thing that exists.
 - **The ticket list is ordered by when you last used it** — the ticket you touched an hour ago is the one you are about to touch again. Imported-but-never-used ones sort last, alphabetically.
 - **An hour is offered by default** — it is the answer most of the time, and a wrong hour you can see beats a blank you have to remember to come back to.
 - **A ticket can be tagged without logging any time** — "No time" is a first-class answer, not a cancel.

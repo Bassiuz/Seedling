@@ -7,6 +7,7 @@ import '../data/seedling_repo.dart';
 import '../logic/day_key.dart';
 import '../logic/duration_input.dart';
 import '../logic/jira_keys.dart';
+import '../logic/jira_usage.dart';
 import '../logic/rollover.dart';
 import '../models/jira_ticket.dart';
 import '../models/task.dart';
@@ -291,6 +292,79 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
   late final JiraAccount _account = widget.account ?? JiraAccount.standard();
   late String _day = widget.today;
   String? _status;
+  bool _catchingUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _catchUp();
+  }
+
+  /// Two things the list would otherwise be missing: every ticket you have
+  /// already used somewhere in the app, and the names of the ones nobody has
+  /// looked up yet.
+  ///
+  /// Done on opening rather than behind a button — a list of bare keys is not
+  /// a list you can pick from, and you should not have to know that.
+  Future<void> _catchUp() async {
+    if (_catchingUp) return;
+    _catchingUp = true;
+    try {
+      final used = ticketsInUse(
+        tasks: await widget.repo.watchTasks().first,
+        topics: await widget.repo.watchTopics().first,
+        events: await widget.repo.watchEventExtras().first,
+      );
+      final known = await widget.repo.watchJiraTickets().first;
+      final byKey = {for (final ticket in known) ticket.key: ticket};
+
+      // Only what is new: rememberJiraTickets merges, but writing every
+      // ticket on every open is a write per ticket per open.
+      final fresh = [
+        for (final ticket in used)
+          if (!byKey.containsKey(ticket.key)) ticket,
+      ];
+      if (fresh.isNotEmpty) await widget.repo.rememberJiraTickets(fresh);
+
+      final nameless = [
+        for (final ticket in [...known, ...fresh])
+          if (ticket.summary == null || ticket.summary!.isEmpty) ticket,
+      ];
+      if (nameless.isEmpty) return;
+      await _fillNames(nameless);
+    } finally {
+      _catchingUp = false;
+    }
+  }
+
+  /// Asks Jira what the nameless ones are called, a site at a time.
+  Future<void> _fillNames(List<JiraTicket> nameless) async {
+    final bySite = <String, List<JiraTicket>>{};
+    for (final ticket in nameless) {
+      if (ticket.site.isEmpty) continue;
+      bySite.putIfAbsent(ticket.site, () => []).add(ticket);
+    }
+
+    var named = 0;
+    for (final entry in bySite.entries) {
+      for (final batch in inBatches([for (final t in entry.value) t.key])) {
+        final found = await _lookUp(entry.key, batch);
+        if (found == null) return;
+        final learned = [
+          for (final key in batch)
+            if (found[key] != null && found[key]!.isNotEmpty)
+              JiraTicket(key: key, site: entry.key, summary: found[key]),
+        ];
+        if (learned.isNotEmpty) {
+          await widget.repo.rememberJiraTickets(learned);
+          named += learned.length;
+        }
+      }
+    }
+    if (mounted && named > 0) {
+      setState(() => _status = 'Looked up $named ticket names.');
+    }
+  }
 
   /// Paste anything. Whatever looks like a key is looked up, and whatever
   /// Jira does not recognise is quietly dropped.
