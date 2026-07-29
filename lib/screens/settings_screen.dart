@@ -345,7 +345,7 @@ class SettingsScreen extends StatelessWidget {
 
 /// The name the copied standup is headed with.
 ///
-/// Typed rather than taken from the email address: "devaan.bas" is not what
+/// Typed rather than taken from the email address: "a.person" is not what
 /// anyone calls you, and a wrong name pasted into Slack is worse than none.
 class _StandupName extends StatefulWidget {
   const _StandupName({required this.initial, required this.onChanged});

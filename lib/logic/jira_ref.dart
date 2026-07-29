@@ -8,7 +8,7 @@ class JiraRef {
 
   final String key;
 
-  /// The Jira origin, e.g. `https://medappnl.atlassian.net`.
+  /// The Jira origin, e.g. `https://example.atlassian.net`.
   final String site;
 
   String get url => '$site/browse/$key';

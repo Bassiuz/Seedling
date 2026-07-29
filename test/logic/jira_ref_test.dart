@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/logic/jira_ref.dart';
 
-const _site = 'https://medappnl.atlassian.net';
+const _site = 'https://example.atlassian.net';
 
 void main() {
   group('a pasted URL', () {

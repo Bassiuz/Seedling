@@ -17,7 +17,7 @@ import 'package:seedling/screens/timesheet_screen.dart';
 import '../util/golden/golden_utils.dart';
 
 const _monday = '2026-07-27';
-const _site = 'https://medappnl.atlassian.net';
+const _site = 'https://example.atlassian.net';
 
 TimesheetRow _row(String title, String key, List<int> minutes,
         {Topic? topic}) =>
@@ -53,7 +53,7 @@ void main() {
     [GoldenSize.mac, GoldenSize.eink],
     () => TimesheetView(
       anyDay: _monday,
-      signedInAs: 'bas@medapp.nl',
+      signedInAs: 'you@example.com',
       pending: 3,
       onSend: () {},
       onEdit: (_, _, _) {},
@@ -81,7 +81,7 @@ void main() {
       anyDay: _monday,
       taskLines: [],
       topicLines: [],
-      signedInAs: 'bas@medapp.nl',
+      signedInAs: 'you@example.com',
     ),
   );
 
@@ -133,7 +133,7 @@ void main() {
       anyDay: _monday,
       taskLines: [_row('A', 'AT-1', [60, 0, 0, 0, 0, 0, 0])],
       topicLines: [_row('Meetings', 'MAF-1', [30, 90, 0, 0, 0, 0, 0])],
-      signedInAs: 'bas@medapp.nl',
+      signedInAs: 'you@example.com',
     )));
 
     // Monday: 1:00 of task work plus 0:30 of meetings. The week: 3:00.
@@ -167,7 +167,7 @@ void main() {
       anyDay: _monday,
       taskLines: [],
       topicLines: [],
-      signedInAs: 'bas@medapp.nl',
+      signedInAs: 'you@example.com',
     )));
 
     expect(find.text('Jira has this week already.'), findsOneWidget);
@@ -207,7 +207,7 @@ void main() {
     var posts = 0;
     await tester.pumpWidget(wrapApp(TimesheetScreen(
       repo: repo,
-      account: _FakeAccount((email: 'bas@medapp.nl', token: 'secret')),
+      account: _FakeAccount((email: 'you@example.com', token: 'secret')),
       clientFor: (site, email, token) => JiraClient(
         site: site,
         email: email,

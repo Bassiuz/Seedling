@@ -5,7 +5,7 @@ import 'package:seedling/models/event_extras.dart';
 import 'package:seedling/models/task.dart';
 
 const _day = '2026-07-28';
-const _site = 'https://medappnl.atlassian.net';
+const _site = 'https://example.atlassian.net';
 const _maf = JiraRef(key: 'MAF-1', site: _site);
 
 Task _task({

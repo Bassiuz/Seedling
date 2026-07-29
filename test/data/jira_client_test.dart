@@ -7,7 +7,7 @@ import 'package:seedling/data/jira_client.dart';
 import 'package:seedling/logic/jira_ref.dart';
 import 'package:seedling/logic/worklog.dart';
 
-const _site = 'https://medappnl.atlassian.net';
+const _site = 'https://example.atlassian.net';
 const _day = '2026-07-28';
 
 WorklogAction _action({
@@ -27,7 +27,7 @@ WorklogAction _action({
 
 JiraClient _client(MockClient mock) => JiraClient(
       site: _site,
-      email: 'bas@medapp.nl',
+      email: 'you@example.com',
       apiToken: 'secret',
       httpClient: mock,
     );
@@ -78,7 +78,7 @@ void main() {
     await client.create(_action(), offset: Duration.zero);
 
     expect(sent.headers['Authorization'],
-        'Basic ${base64Encode(utf8.encode('bas@medapp.nl:secret'))}');
+        'Basic ${base64Encode(utf8.encode('you@example.com:secret'))}');
     expect(sent.body, isNot(contains('secret')));
   });
 

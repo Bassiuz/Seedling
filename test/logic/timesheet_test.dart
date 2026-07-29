@@ -6,7 +6,7 @@ import 'package:seedling/models/topic.dart';
 
 const _monday = '2026-07-27';
 const _wednesday = '2026-07-29';
-const _site = 'https://medappnl.atlassian.net';
+const _site = 'https://example.atlassian.net';
 const _maf = JiraRef(key: 'MAF-1', site: _site);
 
 Task _task({

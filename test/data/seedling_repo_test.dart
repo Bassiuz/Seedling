@@ -131,11 +131,11 @@ void main() {
 
       await repo.setJira(
         task,
-        const JiraRef(key: 'MAF-1234', site: 'https://medappnl.atlassian.net'),
+        const JiraRef(key: 'MAF-1234', site: 'https://example.atlassian.net'),
       );
       task = (await repo.watchTasks().first).single;
       expect(task.jira!.key, 'MAF-1234');
-      expect(task.jira!.url, 'https://medappnl.atlassian.net/browse/MAF-1234');
+      expect(task.jira!.url, 'https://example.atlassian.net/browse/MAF-1234');
 
       await repo.setJira(task, null);
       expect((await repo.watchTasks().first).single.jira, isNull);
@@ -145,10 +145,10 @@ void main() {
         () async {
       expect(await repo.watchJiraSite().first, isNull);
 
-      await repo.rememberJiraSite('https://medappnl.atlassian.net');
+      await repo.rememberJiraSite('https://example.atlassian.net');
 
       expect(await repo.watchJiraSite().first,
-          'https://medappnl.atlassian.net');
+          'https://example.atlassian.net');
     });
 
     test('a task can go back to someday, keeping its project', () async {
