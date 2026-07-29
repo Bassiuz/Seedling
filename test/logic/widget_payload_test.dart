@@ -63,11 +63,11 @@ void main() {
 
     test('more than fits is counted, not crammed in', () {
       final payload = _payload(events: [
-        for (var i = 0; i < 7; i++) _event('Meeting $i', time: '0$i:00'),
+        for (var i = 0; i < 9; i++) _event('Meeting $i', time: '0$i:00'),
       ]);
 
       expect(payload.events, hasLength(WidgetPayload.lines));
-      expect(payload.moreEvents, 3);
+      expect(payload.moreEvents, 9 - WidgetPayload.lines);
     });
 
     test('an empty day says so with a zero, not a negative', () {
@@ -141,5 +141,14 @@ void main() {
     });
     expect(json['moreEvents'], 0);
     expect(json['moreTasks'], 0);
+  });
+
+  test('the task column fills up and counts the rest the same way', () {
+    final payload = _payload(tasks: [
+      for (var i = 0; i < 9; i++) _task('Task $i'),
+    ]);
+
+    expect(payload.tasks, hasLength(WidgetPayload.lines));
+    expect(payload.moreTasks, 9 - WidgetPayload.lines);
   });
 }

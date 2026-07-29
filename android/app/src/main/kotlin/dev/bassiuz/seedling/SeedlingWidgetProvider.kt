@@ -20,6 +20,10 @@ import org.json.JSONObject
  */
 class SeedlingWidgetProvider : HomeWidgetProvider() {
 
+    /** Must match `WidgetPayload.lines` on the Dart side. */
+    private val ROWS = 6
+
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -47,9 +51,9 @@ class SeedlingWidgetProvider : HomeWidgetProvider() {
 
     private fun renderEvents(views: RemoteViews, data: JSONObject?) {
         val events = data?.optJSONArray("events")
-        val rows = listOf(R.id.event_0, R.id.event_1, R.id.event_2, R.id.event_3)
-        val times = listOf(R.id.event_time_0, R.id.event_time_1, R.id.event_time_2, R.id.event_time_3)
-        val titles = listOf(R.id.event_title_0, R.id.event_title_1, R.id.event_title_2, R.id.event_title_3)
+        val rows = (0 until ROWS).map { R.id::class.java.getField("event_$it").getInt(null) }
+        val times = (0 until ROWS).map { R.id::class.java.getField("event_time_$it").getInt(null) }
+        val titles = (0 until ROWS).map { R.id::class.java.getField("event_title_$it").getInt(null) }
 
         rows.indices.forEach { i ->
             val event = events?.optJSONObject(i)
@@ -69,9 +73,9 @@ class SeedlingWidgetProvider : HomeWidgetProvider() {
 
     private fun renderTasks(context: Context, views: RemoteViews, data: JSONObject?) {
         val tasks = data?.optJSONArray("tasks")
-        val rows = listOf(R.id.task_0, R.id.task_1, R.id.task_2, R.id.task_3)
-        val titles = listOf(R.id.task_title_0, R.id.task_title_1, R.id.task_title_2, R.id.task_title_3)
-        val boxes = listOf(R.id.task_box_0, R.id.task_box_1, R.id.task_box_2, R.id.task_box_3)
+        val rows = (0 until ROWS).map { R.id::class.java.getField("task_$it").getInt(null) }
+        val titles = (0 until ROWS).map { R.id::class.java.getField("task_title_$it").getInt(null) }
+        val boxes = (0 until ROWS).map { R.id::class.java.getField("task_box_$it").getInt(null) }
 
         rows.indices.forEach { i ->
             val task = tasks?.optJSONObject(i)

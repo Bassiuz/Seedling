@@ -8,6 +8,7 @@ import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
 import '../logic/worklog.dart';
 import '../models/event_extras.dart';
+import '../models/jira_ticket.dart';
 import '../models/topic.dart';
 import '../models/someday_item.dart';
 import '../models/review_template.dart';
@@ -278,6 +279,38 @@ class SeedlingRepo {
     if (extras.isEmpty) return doc.delete();
     return doc.set({...extras.toMap(), 'key': hideKey});
   }
+
+  // --- the tickets you tag things with ---
+
+  CollectionReference<Map<String, dynamic>> get _jiraTickets =>
+      _user.collection('jiraTickets');
+
+  /// Most recently used first, so tagging is a tap rather than a search.
+  Stream<List<JiraTicket>> watchJiraTickets() =>
+      _jiraTickets.snapshots().map((snap) =>
+          snap.docs.map((d) => JiraTicket.fromMap(d.id, d.data())).toList()
+            ..sort(JiraTicket.byRecency));
+
+  /// Merges, so importing a batch cannot wipe the last-used times that make
+  /// the list worth reading.
+  Future<void> rememberJiraTickets(List<JiraTicket> tickets) async {
+    for (final ticket in tickets) {
+      await _jiraTickets.doc(ticket.key).set({
+        'key': ticket.key,
+        'site': ticket.site,
+        if (ticket.summary != null) 'summary': ticket.summary,
+        if (ticket.lastUsed != null)
+          'lastUsed': ticket.lastUsed!.toIso8601String(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  Future<void> touchJiraTicket(JiraRef ref, DateTime when) =>
+      _jiraTickets.doc(ref.key).set({
+        'key': ref.key,
+        'site': ref.site,
+        'lastUsed': when.toIso8601String(),
+      }, SetOptions(merge: true));
 
   // --- standing topics ---
 

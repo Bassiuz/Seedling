@@ -41,10 +41,13 @@ class WidgetPayload {
     required this.moreTasks,
   });
 
-  /// How many lines fit in one column of a four-by-two widget. Four is what
-  /// fits without the text shrinking to something you would not read across a
-  /// room, which is the only way a widget is ever read.
-  static const int lines = 4;
+  /// How many lines fit in one column of a four-by-two widget.
+  ///
+  /// Six, packed tight. A widget is read at a glance and the thing that makes
+  /// a glance useful is how much of the day is on it — so the padding is down
+  /// to almost nothing and the rows are as close as they can be while staying
+  /// separate lines.
+  static const int lines = 6;
 
   final String dayKey;
   final List<WidgetEvent> events;

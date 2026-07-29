@@ -141,16 +141,17 @@ struct SeedlingWidgetView: View {
   let day: SeedlingDay
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
+    HStack(alignment: .top, spacing: 6) {
       column(title: "Today") {
         if day.events.isEmpty {
-          Text("Nothing scheduled").font(.caption).foregroundStyle(faint)
+          Text("Nothing scheduled").font(.system(size: 11)).foregroundStyle(faint)
         }
         ForEach(day.events) { event in
-          HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(event.time).font(.caption2).foregroundStyle(muted)
-              .frame(width: 42, alignment: .leading)
-            Text(event.title).font(.caption).foregroundStyle(ink).lineLimit(1)
+          HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Text(event.time).font(.system(size: 9)).foregroundStyle(muted)
+              .frame(width: 30, alignment: .leading)
+            Text(event.title).font(.system(size: 11)).foregroundStyle(ink)
+              .lineLimit(1)
           }
         }
         more(day.moreEvents)
@@ -160,45 +161,51 @@ struct SeedlingWidgetView: View {
 
       column(title: "To do") {
         if day.tasks.isEmpty {
-          Text("All done").font(.caption).foregroundStyle(faint)
+          Text("All done").font(.system(size: 11)).foregroundStyle(faint)
         }
         ForEach(day.tasks) { task in
-          HStack(spacing: 6) {
+          HStack(spacing: 3) {
             checkbox(for: task)
-            Text(task.title).font(.caption).foregroundStyle(ink).lineLimit(1)
+            Text(task.title).font(.system(size: 11)).foregroundStyle(ink)
+              .lineLimit(1)
           }
         }
         more(day.moreTasks)
       }
     }
-    .padding(14)
+    .padding(4)
   }
 
   @ViewBuilder
   private func checkbox(for task: SeedlingTask) -> some View {
     if #available(iOS 17.0, *) {
       Button(intent: ToggleTaskIntent(taskId: task.id)) {
-        Circle().strokeBorder(ink, lineWidth: 2).frame(width: 16, height: 16)
+        // Still the easiest thing on the widget to hit: the tap target is
+        // padded well past the circle you can see.
+        Circle().strokeBorder(ink, lineWidth: 1.5).frame(width: 11, height: 11)
+          .padding(3)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
     } else {
       // Before iOS 17 a widget cannot act; tapping opens the app instead.
-      Circle().strokeBorder(faint, lineWidth: 2).frame(width: 16, height: 16)
+      Circle().strokeBorder(faint, lineWidth: 1.5).frame(width: 11, height: 11)
+        .padding(3)
     }
   }
 
   @ViewBuilder
   private func more(_ count: Int) -> some View {
     if count > 0 {
-      Text("+\(count) more").font(.caption2).foregroundStyle(faint)
+      Text("+\(count) more").font(.system(size: 9)).foregroundStyle(faint)
     }
   }
 
   private func column<Content: View>(
     title: String, @ViewBuilder content: () -> Content
   ) -> some View {
-    VStack(alignment: .leading, spacing: 3) {
-      Text(title).font(.caption2.bold()).foregroundStyle(muted)
+    VStack(alignment: .leading, spacing: 1) {
+      Text(title).font(.system(size: 9).bold()).foregroundStyle(muted)
       content()
       Spacer(minLength: 0)
     }

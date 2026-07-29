@@ -17,6 +17,7 @@ import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
+import 'turbo_tagger_screen.dart';
 
 /// A week of logged time, as a grid, and the button that puts it in Jira.
 ///
@@ -36,6 +37,7 @@ class TimesheetView extends StatelessWidget {
     this.onRemoveTopic,
     this.onSend,
     this.onSignIn,
+    this.onTurboTag,
     this.signedInAs,
     this.pending = 0,
     this.busy = false,
@@ -59,6 +61,10 @@ class TimesheetView extends StatelessWidget {
 
   final VoidCallback? onSend;
   final VoidCallback? onSignIn;
+
+  /// The screen for the work that has no ticket yet, which is what stops a
+  /// week's timesheet from being finishable.
+  final VoidCallback? onTurboTag;
   final String? signedInAs;
 
   /// How many worklogs this week is out of step by.
@@ -88,7 +94,17 @@ class TimesheetView extends StatelessWidget {
             child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const BackLine(),
+            Row(
+              children: [
+                const Expanded(child: BackLine()),
+                if (onTurboTag != null)
+                  TextButton.icon(
+                    onPressed: onTurboTag,
+                    icon: Icon(Icons.bolt, size: 18, color: colors.muted),
+                    label: const Text('Turbo tagger'),
+                  ),
+              ],
+            ),
             Text('Timesheet', style: text.displaySmall),
             const SizedBox(height: 12),
             _WeekBar(anyDay: anyDay, onWeek: onWeek),
@@ -843,6 +859,12 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
 
               return TimesheetView(
                 anyDay: _anyDay,
+                onTurboTag: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => TurboTaggerScreen(
+                        repo: widget.repo, today: todayKey()),
+                  ),
+                ),
                 taskLines: taskRows(tasks, _anyDay),
                 topicLines: topicRows(topics, _anyDay),
                 onWeek: (delta) => setState(() => _week += delta),

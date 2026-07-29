@@ -92,3 +92,11 @@
 - **Embed the extension before Flutter thins the binary** — the thinning script re-signs the app bundle, so the extension has to already be inside it. Ordered the other way, Xcode reports `Cycle inside Runner` and the build simply stops.
 - **A late tap can only ever complete, never un-complete** — the queue is drained against the current state, so a tap on something already done somewhere else is dropped rather than toggled back.
 - **Nothing in `main()` may throw** — registering the widget callback did, on the Mac, where home_widget has no implementation, and an exception before `runApp` is not a missing feature but a black window. Anything the widget touches is now skipped outright where there is no home screen, and wrapped besides.
+
+## The turbo tagger
+
+- **Keys are parsed loosely and filtered by Jira** — the paste regex also matches `UTF-8` and `COVID-19`, and that is the right trade: whatever Jira does not recognise is dropped, while guessing at project prefixes here would silently lose real tickets. The one screen where a false positive costs nothing and a false negative costs a paste.
+- **Only untagged work is listed** — the screen exists to empty that list, and a row that disappears when you deal with it is the whole feeling of the thing.
+- **The ticket list is ordered by when you last used it** — the ticket you touched an hour ago is the one you are about to touch again. Imported-but-never-used ones sort last, alphabetically.
+- **An hour is offered by default** — it is the answer most of the time, and a wrong hour you can see beats a blank you have to remember to come back to.
+- **A ticket can be tagged without logging any time** — "No time" is a first-class answer, not a cancel.

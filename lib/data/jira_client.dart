@@ -83,6 +83,34 @@ class JiraClient {
         'comment': action.title,
       };
 
+  /// What Jira calls each of [keys]. Anything it does not recognise is simply
+  /// absent from the result — which is how a loose paste gets filtered.
+  Future<Map<String, String>> summaries(List<String> keys) async {
+    if (keys.isEmpty) return {};
+    final jql = 'key in (${keys.join(',')})';
+    final response = await _http.get(
+      Uri.parse('$site/rest/api/2/search').replace(queryParameters: {
+        'jql': jql,
+        'fields': 'summary',
+        'maxResults': '${keys.length}',
+        // One bad key would otherwise fail the whole query, and a paste is
+        // expected to contain rubbish.
+        'validateQuery': 'none',
+      }),
+      headers: _headers,
+    );
+    if (response.statusCode == 400) return {};
+    _check(response, 'look those tickets up');
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return {
+      for (final issue in body['issues'] as List<dynamic>? ?? const [])
+        (issue as Map<String, dynamic>)['key'] as String:
+            ((issue['fields'] as Map<String, dynamic>?)?['summary'] as String?) ??
+                '',
+    };
+  }
+
   void _check(http.Response response, String what) {
     if (response.statusCode >= 200 && response.statusCode < 300) return;
     throw JiraException(
