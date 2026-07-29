@@ -447,7 +447,9 @@ class _DayPageState extends State<DayPage> {
 
     // Only the device that reads a real calendar shares it. Publishing from a
     // device that cannot see iCloud would replace what the phone sent.
-    if (widget.publishesCalendar && events.isNotEmpty) {
+    if (widget.publishesCalendar &&
+        widget.calendar.worthSharing &&
+        events.isNotEmpty) {
       unawaited(_write(
         () => widget.repo.publishCalendarMirror(events, from: from, to: to),
         'share your calendar with your other devices',

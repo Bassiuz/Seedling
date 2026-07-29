@@ -19,11 +19,19 @@ abstract class CalendarSource {
   /// Whether this platform can read a calendar at all. The BigMe cannot see
   /// iCloud, so it falls back to whatever the Apple devices mirrored.
   Future<bool> get available;
+
+  /// Whether what was last returned came off this device, and so is worth
+  /// sharing with the others. False once a source has read a mirror instead —
+  /// republishing a mirror back over itself helps nobody.
+  bool get worthSharing => true;
 }
 
 /// Always empty — used where no calendar is reachable, and in tests.
 class NoCalendar implements CalendarSource {
   const NoCalendar();
+
+  @override
+  bool get worthSharing => false;
 
   @override
   Future<List<CalendarEvent>> eventsBetween(String from, String to) async =>
@@ -38,6 +46,9 @@ class FakeCalendar implements CalendarSource {
   const FakeCalendar(this.events);
 
   final List<CalendarEvent> events;
+
+  @override
+  bool get worthSharing => true;
 
   @override
   Future<List<CalendarEvent>> eventsBetween(String from, String to) async =>
@@ -60,6 +71,9 @@ class DeviceCalendar implements CalendarSource {
       : _plugin = plugin ?? DeviceCalendarPlugin();
 
   final DeviceCalendarPlugin _plugin;
+
+  @override
+  bool get worthSharing => true;
 
   /// Where a calendar can actually be read from the device.
   static bool get supported => Platform.isIOS || Platform.isAndroid;
@@ -125,6 +139,9 @@ class DeviceCalendar implements CalendarSource {
 class MirrorCalendar implements CalendarSource {
   const MirrorCalendar(this.read);
 
+  @override
+  bool get worthSharing => false;
+
   /// Usually `SeedlingRepo.readCalendarMirror`.
   final Future<List<CalendarEvent>> Function(String from, String to) read;
 
@@ -134,4 +151,42 @@ class MirrorCalendar implements CalendarSource {
   @override
   Future<List<CalendarEvent>> eventsBetween(String from, String to) =>
       read(from, to);
+}
+
+/// This device's own calendar, falling back to what another device shared.
+///
+/// The BigMe runs Android, so it *can* read a calendar — it just has no
+/// account in it, and an empty read is indistinguishable from a quiet day.
+/// Rather than making that a setting you have to know to change, an empty
+/// read falls through to the mirror. A device with its own appointments never
+/// reaches the fallback, so nothing is lost by trying.
+class DeviceOrMirror implements CalendarSource {
+  DeviceOrMirror(this.device, this.mirror);
+
+  final CalendarSource device;
+  final CalendarSource mirror;
+
+  bool _readOwn = false;
+
+  @override
+  Future<bool> get available async => true;
+
+  @override
+  bool get worthSharing => _readOwn;
+
+  @override
+  Future<List<CalendarEvent>> eventsBetween(String from, String to) async {
+    _readOwn = false;
+    try {
+      final own = await device.eventsBetween(from, to);
+      if (own.isNotEmpty) {
+        _readOwn = true;
+        return own;
+      }
+    } catch (_) {
+      // No calendar here, or permission refused. The mirror is the answer to
+      // both.
+    }
+    return mirror.eventsBetween(from, to);
+  }
 }

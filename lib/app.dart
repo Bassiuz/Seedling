@@ -55,7 +55,11 @@ class SeedlingApp extends StatelessWidget {
               // Android is not enough — the BigMe has no iCloud account.
               calendar: settings.readsDeviceCalendar &&
                       DeviceCalendar.supported
-                  ? calendar
+                  // Falls back to the mirror when this device's own calendar
+                  // turns out to be empty, which is the BigMe's whole
+                  // situation and not worth a setting nobody remembers.
+                  ? DeviceOrMirror(
+                      calendar, MirrorCalendar(repo.readCalendarMirror))
                   : MirrorCalendar(repo.readCalendarMirror),
               publishesCalendar:
                   settings.readsDeviceCalendar && DeviceCalendar.supported,
