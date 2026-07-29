@@ -72,8 +72,11 @@ class TimesheetView extends StatelessWidget {
   final bool busy;
   final String? status;
 
-  static const double _labelWidth = 150;
-  static const double _cellWidth = 52;
+  // Sized for a working week. Five columns instead of seven left room, and a
+  // task title you have to guess at from its first three words is not worth
+  // the two days nobody logs against.
+  static const double _labelWidth = 230;
+  static const double _cellWidth = 64;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +93,7 @@ class TimesheetView extends StatelessWidget {
         // arrows end up a foot apart from the week they move.
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
+            constraints: const BoxConstraints(maxWidth: 780),
             child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
@@ -271,7 +274,7 @@ class _Grid extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final width = TimesheetView._labelWidth +
         TimesheetView._cellWidth * days.length +
-        60;
+        68;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -332,7 +335,7 @@ class _Grid extends StatelessWidget {
                         ),
                       ),
                     ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Text(_short(totals.fold(0, (a, b) => a + b)),
                       style: text.titleMedium),
                 ],
@@ -415,7 +418,7 @@ class _Row extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           SizedBox(
@@ -458,7 +461,7 @@ class _Row extends StatelessWidget {
               dayKey: day,
             ),
           SizedBox(
-            width: 40,
+            width: 48,
             child: Text(
               row.total == 0 ? '' : _short(row.total),
               textAlign: TextAlign.right,
@@ -546,8 +549,8 @@ class _Cell extends StatelessWidget {
         onTap: onSet == null ? null : () => _edit(context),
         behavior: HitTestBehavior.opaque,
         child: Container(
-          height: 34,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
+          height: 40,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
