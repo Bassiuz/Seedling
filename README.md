@@ -107,6 +107,10 @@ You'll need a Firebase project of your own with Firestore and email/password aut
 enabled, then `flutterfire configure`. The rules in [`firestore.rules`](firestore.rules)
 scope everything to `users/{uid}` — there is no shared or public data.
 
+> The committed Firebase config files are client *identifiers*, not secrets — they
+> ship inside every build of any Firebase app. [`SECURITY.md`](SECURITY.md) explains
+> what protects the data instead, and the one thing worth switching off.
+
 ## How it's built
 
 No state-management package, no code generation, no architecture astronautics.
