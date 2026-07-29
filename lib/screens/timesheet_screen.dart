@@ -73,9 +73,10 @@ class TimesheetView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    final days = weekDays(anyDay);
     final all = [...taskLines, ...topicLines];
-    final totals = dayTotals(all);
+    final columns = shownDays(all);
+    final days = [for (final i in columns) weekDays(anyDay)[i]];
+    final totals = [for (final i in columns) dayTotals(all)[i]];
 
     return Scaffold(
       body: SafeArea(
@@ -94,6 +95,7 @@ class TimesheetView extends StatelessWidget {
             const SizedBox(height: 24),
             _Grid(
               days: days,
+              columns: columns,
               blocks: [
                 (
                   title: 'Tasks',
@@ -227,6 +229,7 @@ typedef _Block = ({
 class _Grid extends StatelessWidget {
   const _Grid({
     required this.days,
+    required this.columns,
     required this.blocks,
     required this.totals,
     this.onEdit,
@@ -236,6 +239,9 @@ class _Grid extends StatelessWidget {
   });
 
   final List<String> days;
+
+  /// Which of the seven weekdays these columns are.
+  final List<int> columns;
   final List<_Block> blocks;
   final List<int> totals;
   final void Function(TimesheetRow, String, int)? onEdit;
@@ -247,8 +253,9 @@ class _Grid extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    const width =
-        TimesheetView._labelWidth + TimesheetView._cellWidth * 7 + 60;
+    final width = TimesheetView._labelWidth +
+        TimesheetView._cellWidth * days.length +
+        60;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -278,6 +285,7 @@ class _Grid extends StatelessWidget {
                       _Row(
                         row: row,
                         days: days,
+                        columns: columns,
                         onEdit: onEdit,
                         onEditTopic: onEditTopic,
                         onRemoveTopic: onRemoveTopic,
@@ -372,6 +380,7 @@ class _Row extends StatelessWidget {
   const _Row({
     required this.row,
     required this.days,
+    required this.columns,
     this.onEdit,
     this.onEditTopic,
     this.onRemoveTopic,
@@ -379,6 +388,7 @@ class _Row extends StatelessWidget {
 
   final TimesheetRow row;
   final List<String> days;
+  final List<int> columns;
   final void Function(TimesheetRow, String, int)? onEdit;
   final void Function(Topic)? onEditTopic;
   final void Function(Topic)? onRemoveTopic;
@@ -424,7 +434,7 @@ class _Row extends StatelessWidget {
               // Addressable, so a cell can be found by what it is rather
               // than by counting widgets.
               key: ValueKey('cell:${row.sourceId}@$day'),
-              minutes: row.minutes[i],
+              minutes: row.minutes[columns[i]],
               onSet: onEdit == null
                   ? null
                   : (minutes) => onEdit!(row, day, minutes),
@@ -815,7 +825,12 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
             builder: (context, sentSnap) {
               final tasks = taskSnap.data ?? const <Task>[];
               final topics = topicSnap.data ?? const <Topic>[];
-              final days = weekDays(_anyDay);
+              final lines = [
+                ...taskRows(tasks, _anyDay),
+                ...topicRows(topics, _anyDay),
+              ];
+              final all = weekDays(_anyDay);
+              final days = [for (final i in shownDays(lines)) all[i]];
               // Only this week goes when you press send: the button says
               // "this week", and a button that quietly does more than it says
               // is a button you stop trusting.

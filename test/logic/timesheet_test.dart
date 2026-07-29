@@ -115,4 +115,39 @@ void main() {
     expect(totals.first, 90);
     expect(totals.skip(1), everyElement(0));
   });
+
+  group('which columns are drawn', () {
+    TimesheetRow row(List<int> minutes) =>
+        TimesheetRow(sourceId: 'x', title: 'x', minutes: minutes);
+
+    test('the working week, and no more, when the weekend is empty', () {
+      expect(shownDays([row(const [60, 0, 0, 0, 0, 0, 0])]), [0, 1, 2, 3, 4]);
+    });
+
+    test('a weekday with nothing on it still gets its column', () {
+      // The grid is where you type; a missing Wednesday is a Wednesday you
+      // cannot log.
+      expect(shownDays([row(const [0, 0, 0, 0, 0, 0, 0])]), hasLength(5));
+    });
+
+    test('a Saturday you did work earns its column back', () {
+      // Otherwise it is an hour no grid shows and no button sends.
+      expect(shownDays([row(const [0, 0, 0, 0, 0, 90, 0])]),
+          [0, 1, 2, 3, 4, 5]);
+    });
+
+    test('a Sunday alone brings only Sunday', () {
+      expect(shownDays([row(const [0, 0, 0, 0, 0, 0, 90])]),
+          [0, 1, 2, 3, 4, 6]);
+    });
+
+    test('the weekend counts across every row, not just the first', () {
+      expect(
+          shownDays([
+            row(const [0, 0, 0, 0, 0, 0, 0]),
+            row(const [0, 0, 0, 0, 0, 30, 0]),
+          ]),
+          contains(5));
+    });
+  });
 }

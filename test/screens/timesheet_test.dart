@@ -101,6 +101,32 @@ void main() {
     expect(moves, [-1, 1]);
   });
 
+  testWidgets('the weekend is not drawn when nothing was logged on it',
+      (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    await tester.pumpWidget(wrapApp(TimesheetView(
+      anyDay: _monday,
+      taskLines: [_row('A', 'AT-1', [60, 0, 0, 0, 0, 0, 0])],
+      topicLines: const [],
+    )));
+
+    expect(find.text('Fr'), findsWidgets);
+    expect(find.text('Sa'), findsNothing);
+    expect(find.text('Su'), findsNothing);
+  });
+
+  testWidgets('a Saturday you did work gets its column back', (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    await tester.pumpWidget(wrapApp(TimesheetView(
+      anyDay: _monday,
+      taskLines: [_row('A', 'AT-1', [0, 0, 0, 0, 0, 90, 0])],
+      topicLines: const [],
+    )));
+
+    expect(find.text('Sa'), findsWidgets);
+    expect(find.text('Su'), findsNothing);
+  });
+
   testWidgets('the totals add both grids up, day by day', (tester) async {
     configureSize(tester, GoldenSize.mac);
     await tester.pumpWidget(wrapApp(TimesheetView(

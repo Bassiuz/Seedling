@@ -78,8 +78,22 @@ List<TimesheetRow> topicRows(List<Topic> topics, String anyDay) {
   ];
 }
 
-/// Minutes per day across every row, and the week's total.
+/// Minutes per day across every row.
 List<int> dayTotals(List<TimesheetRow> rows) => [
       for (var day = 0; day < 7; day++)
         rows.fold(0, (sum, row) => sum + row.minutes[day]),
     ];
+
+/// Which of the seven columns to draw: the working week, plus a weekend day
+/// only if something is on it.
+///
+/// Nobody wants two empty columns every week, but an hour logged on a Sunday
+/// that no grid shows is an hour that never reaches Jira — so it earns its
+/// column rather than being dropped.
+List<int> shownDays(List<TimesheetRow> rows) {
+  final totals = dayTotals(rows);
+  return [
+    for (var day = 0; day < 7; day++)
+      if (day < 5 || totals[day] > 0) day,
+  ];
+}
