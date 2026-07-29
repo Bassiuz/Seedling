@@ -14,11 +14,22 @@ class SettingsStore extends ChangeNotifier {
   static const _einkKey = 'display.eink';
   static const _mirrorKey = 'vault.mirror';
   static const _readsCalendarKey = 'calendar.readsDevice';
+  static const _standupNameKey = 'standup.name';
 
   final SharedPreferences _prefs;
 
   static Future<SettingsStore> open() async =>
       SettingsStore(await SharedPreferences.getInstance());
+
+  /// The name the copied standup is headed with, as your colleagues know
+  /// you. Empty leaves the heading off rather than guessing it out of an
+  /// email address.
+  String get standupName => _prefs.getString(_standupNameKey) ?? '';
+
+  Future<void> setStandupName(String name) async {
+    await _prefs.setString(_standupNameKey, name.trim());
+    notifyListeners();
+  }
 
   bool get einkMode => _prefs.getBool(_einkKey) ?? false;
 

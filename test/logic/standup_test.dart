@@ -117,4 +117,45 @@ void main() {
       expect(standupFor(const [], _today).meetings, isEmpty);
     });
   });
+
+  group('as text for Slack', () {
+    CalendarEvent meeting(String title, {String day = _today}) => CalendarEvent(
+        id: title, title: title, dayKey: day, allDay: false, time: '10:00');
+
+    Standup full() => standupFor(
+          [
+            _task('Bugboard', date: _yesterday, done: _yesterday),
+            _task('Desk tickets'),
+          ],
+          _today,
+          events: [meeting('NPS review')],
+          previousEvents: [meeting('Retro', day: _yesterday)],
+        );
+
+    test('reads as two bulleted sections', () {
+      expect(standupText(full(), name: 'Bas'), '''
+Bas:
+- Gisteren:
+    - Retro
+    - Bugboard
+- Vandaag:
+    - NPS review
+    - Desk tickets''');
+    });
+
+    test('no name means no name line', () {
+      expect(standupText(full()).startsWith('- Gisteren:'), isTrue);
+    });
+
+    test('a blank name is the same as none', () {
+      expect(standupText(full(), name: '   ').startsWith('- Gisteren:'), isTrue);
+    });
+
+    test('an empty day still carries its heading', () {
+      // A standup that says nothing is still a standup you have to give.
+      expect(standupText(standupFor(const [], _today)), '''
+- Gisteren:
+- Vandaag:''');
+    });
+  });
 }

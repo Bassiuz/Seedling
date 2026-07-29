@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../logic/day_key.dart';
@@ -18,10 +19,18 @@ import '../widgets/tag_chip.dart';
 /// a tap — no checkboxes, no menus, nothing to change by accident while you
 /// are talking.
 class StandupView extends StatelessWidget {
-  const StandupView({super.key, required this.standup, this.tags = const {}});
+  const StandupView({
+    super.key,
+    required this.standup,
+    this.tags = const {},
+    this.name = '',
+  });
 
   final Standup standup;
   final Map<String, Tag> tags;
+
+  /// Heads the copied text. Empty leaves it off.
+  final String name;
 
   static String _heading(String dayKey) =>
       DateFormat('EEEE', 'en_US').format(dateOfKey(dayKey));
@@ -35,7 +44,12 @@ class StandupView extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const BackLine(),
+            Row(
+              children: [
+                const Expanded(child: BackLine()),
+                _CopyButton(text: standupText(standup, name: name)),
+              ],
+            ),
             Text('Standup', style: text.displayMedium),
             Text(DateFormat('MMMM d, y', 'en_US').format(dateOfKey(standup.day)),
                 style: text.displaySmall),
@@ -176,6 +190,29 @@ class _Line extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Puts the whole standup on the clipboard, ready to paste into Slack.
+class _CopyButton extends StatelessWidget {
+  const _CopyButton({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    return IconButton(
+      tooltip: 'Copy for Slack',
+      onPressed: () async {
+        await Clipboard.setData(ClipboardData(text: text));
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Standup copied')),
+        );
+      },
+      icon: Icon(Icons.copy_all_outlined, color: colors.muted),
     );
   }
 }

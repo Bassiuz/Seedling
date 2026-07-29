@@ -26,6 +26,8 @@ class SettingsView extends StatelessWidget {
     this.readsDeviceCalendar = false,
     this.onReadsCalendarChanged,
     this.calendarShare,
+    this.standupName = '',
+    this.onStandupNameChanged,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -54,6 +56,10 @@ class SettingsView extends StatelessWidget {
   /// What was last shared, so a device that only reads can tell the
   /// difference between "no appointments" and "nothing ever arrived".
   final String? calendarShare;
+
+  /// Heads the standup you copy for Slack. Null hides the field.
+  final String standupName;
+  final ValueChanged<String>? onStandupNameChanged;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -149,6 +155,17 @@ class SettingsView extends StatelessWidget {
                   child: Text(calendarShare!,
                       style: text.labelMedium?.copyWith(color: colors.muted)),
                 ),
+            ],
+            if (onStandupNameChanged != null) ...[
+              const SizedBox(height: 28),
+              BlockFrame(
+                title: 'Standup',
+                icon: Icons.groups_outlined,
+                child: _StandupName(
+                  initial: standupName,
+                  onChanged: onStandupNameChanged!,
+                ),
+              ),
             ],
             if (onExportVault != null) ...[
               const SizedBox(height: 28),
@@ -284,6 +301,8 @@ class SettingsScreen extends StatelessWidget {
         exportStatus: exportStatus,
         mirroring: settings.vaultMirroring,
         onMirroringChanged: settings.setVaultMirroring,
+        standupName: settings.standupName,
+        onStandupNameChanged: settings.setStandupName,
         readsDeviceCalendar: settings.readsDeviceCalendar,
         onReadsCalendarChanged:
             canReadDeviceCalendar ? settings.setReadsDeviceCalendar : null,
@@ -303,5 +322,52 @@ class SettingsScreen extends StatelessWidget {
     return share.count == 1
         ? 'Last shared: 1 appointment$stamp.'
         : 'Last shared: ${share.count} appointments$stamp.';
+  }
+}
+
+/// The name the copied standup is headed with.
+///
+/// Typed rather than taken from the email address: "devaan.bas" is not what
+/// anyone calls you, and a wrong name pasted into Slack is worse than none.
+class _StandupName extends StatefulWidget {
+  const _StandupName({required this.initial, required this.onChanged});
+
+  final String initial;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_StandupName> createState() => _StandupNameState();
+}
+
+class _StandupNameState extends State<_StandupName> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _controller,
+          onChanged: widget.onChanged,
+          style: text.bodyLarge,
+          decoration: InputDecoration.collapsed(
+            hintText: 'Your name…',
+            hintStyle: text.bodyLarge?.copyWith(color: colors.faint),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text('Heads the standup you copy for Slack. Leave it empty to copy '
+            'just the two lists.', style: text.labelMedium),
+      ],
+    );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/logic/standup.dart';
 import 'package:seedling/models/calendar_event.dart';
@@ -54,6 +55,7 @@ Widget _standup(List<Task> tasks,
       standup: standupFor(tasks, _today,
           events: events, previousEvents: previousEvents),
       tags: _tags,
+      name: 'Bas',
     );
 
 void main() {
@@ -114,5 +116,33 @@ void main() {
 
     expect(find.text('Retro'), findsOneWidget);
     expect(find.text('Nothing checked off'), findsNothing);
+  });
+
+  testWidgets('the copy button puts the whole standup on the clipboard',
+      (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    await tester.pumpWidget(wrapApp(
+      _standup(_fixture, events: _meetings, previousEvents: _attended),
+    ));
+
+    await tester.tap(find.byTooltip('Copy for Slack'));
+    await tester.pump();
+
+    expect(copied, startsWith('Bas:'));
+    expect(copied, contains('    - Retro'), reason: "yesterday's meeting");
+    expect(copied, contains('    - Sprint planning'));
+    expect(copied, contains('- Vandaag:'));
   });
 }

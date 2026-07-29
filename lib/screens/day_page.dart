@@ -780,6 +780,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => StandupView(
+        name: widget.settings?.standupName ?? '',
         standup: standupFor(
           tasks,
           day,

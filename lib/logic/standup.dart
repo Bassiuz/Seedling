@@ -65,3 +65,32 @@ List<CalendarEvent> _inOrder(List<CalendarEvent> events) =>
       if (a.allDay != b.allDay) return a.allDay ? -1 : 1;
       return (a.time ?? '').compareTo(b.time ?? '');
     });
+
+/// The standup as a block of text to paste into Slack.
+///
+/// Slack turns "- " into a bullet and a four-space indent into a sub-bullet,
+/// which is the shape a standup is read in. Meetings come first in each
+/// section, same as on screen, and without their times: nobody reads the
+/// clock out.
+String standupText(Standup standup, {String name = ''}) {
+  final buffer = StringBuffer();
+  if (name.trim().isNotEmpty) buffer.writeln('${name.trim()}:');
+
+  void section(String heading, List<String> lines) {
+    buffer.writeln('- $heading');
+    for (final line in lines) {
+      buffer.writeln('    - $line');
+    }
+  }
+
+  section('Gisteren:', [
+    for (final event in standup.attended) event.title,
+    for (final task in standup.done) task.title,
+  ]);
+  section('Vandaag:', [
+    for (final event in standup.meetings) event.title,
+    for (final task in standup.planned) task.title,
+  ]);
+
+  return buffer.toString().trimRight();
+}
