@@ -9,6 +9,10 @@
 One page per day: what's on your calendar, what you mean to do, and how it went.
 Paper and serif, big round checkboxes, and nothing that blinks at you.
 
+*Largely inspired by [Parchment](https://www.youtube.com/watch?v=cgG9abre3wM) —
+the day page, the three blocks and the notebook feel are all its idea. This is a
+from-scratch build of that shape, with the bits my own week needed.*
+
 </div>
 
 <div align="center">
