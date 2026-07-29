@@ -3,10 +3,9 @@
 Four cells wide, two high: today's appointments on the left, what is left to do
 on the right, with a checkbox beside each task.
 
-The Dart half is done, tested and shared by both platforms
-(`lib/logic/widget_payload.dart`, `lib/data/widget_publisher.dart`). Android is
-done too. iOS needs one manual step, below, because an Xcode *target* cannot be
-created from a command line.
+The Dart half is shared by both platforms (`lib/logic/widget_payload.dart`,
+`lib/data/widget_publisher.dart`). Both native halves are in the repository and
+build with the app; there is nothing to set up by hand.
 
 ## What the app sends
 
@@ -52,32 +51,39 @@ Long-press the home screen → **Widgets** → Seedling.
 provider hides the ones it does not need. That is cheaper than a collection
 widget for a list that is never long.
 
-## iPhone — the five-minute manual bit
+## iPhone
 
-1. Open `ios/Runner.xcworkspace` in Xcode.
-2. **File → New → Target… → Widget Extension**. Name it exactly
-   `SeedlingWidget`. Untick "Include Live Activity" and "Include Configuration
-   App Intent". When asked, do **not** activate the scheme.
-3. Delete the `SeedlingWidget.swift` Xcode generated and drag in
-   `ios/SeedlingWidget/SeedlingWidget.swift` from this repo instead — untick
-   "Copy items if needed", and add it to the `SeedlingWidget` target only.
-4. Select the **Runner** target → Signing & Capabilities → **+ Capability** →
-   **App Groups** → add `group.dev.bassiuz.seedling`.
-5. Do the same for the **SeedlingWidget** target. Both must have the identical
-   group, or the widget reads an empty container.
-6. Add the `home_widget` package to the widget target: **File → Add Package
-   Dependencies… → Add Local…** and pick
-   `ios/.symlinks/plugins/home_widget/ios`. The checkbox intent needs it.
-7. Set the widget target's deployment target to **iOS 17** — interactive
-   widgets do not exist before it. The app itself stays on iOS 15; below 17 the
-   widget still renders, with the checkboxes drawn faint and inert.
+Nothing to do either — the `SeedlingWidget` extension target is in the Xcode
+project, embedded in the app, and signed with the App Group.
+
+- `ios/SeedlingWidget/SeedlingWidget.swift` — SwiftUI, and an `AppIntent`
+  behind each checkbox
+- `ios/SeedlingWidget/Info.plist`, `SeedlingWidget.entitlements`
+- `ios/Runner/Runner.entitlements` — the app's half of the same group
+
+Long-press the home screen → **+** → Seedling → Today, and pick the medium
+size.
+
+The extension deliberately depends on nothing but WidgetKit, SwiftUI and
+AppIntents. Its checkbox writes the two shared keys itself rather than waking
+Flutter, which keeps CocoaPods out of the target — and a target with no pods is
+one that can be added to the project from a script instead of by hand.
+
+Two things about the build that are easy to undo by accident:
+
+- The **Embed Foundation Extensions** phase must sit *before* **Thin Binary**
+  in the Runner target. Flutter's thinning script re-signs the app bundle, so
+  the extension has to already be inside it; after it, Xcode reports
+  `Cycle inside Runner`.
+- The widget target is **iOS 17**, because interactive widgets do not exist
+  before it. The app itself stays on iOS 15.
 
 ### If it shows the wrong thing
 
 - **"Sprint planning" and two invented tasks** — that is the placeholder. The
   App Group is missing or misspelled on one of the two targets, which is nearly
   always the cause.
-- **Checkboxes do nothing** — the widget target is below iOS 17, or step 6 was
-  skipped.
+- **Checkboxes do nothing** — the phone is below iOS 17, where a widget cannot
+  act at all. It still renders, with the checkboxes drawn faint and inert.
 - **Nothing updates** — the app publishes only when the day page is open on
   today. Open it once.

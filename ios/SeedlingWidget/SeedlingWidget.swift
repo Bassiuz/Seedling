@@ -1,7 +1,6 @@
 import AppIntents
 import SwiftUI
 import WidgetKit
-import home_widget
 
 // Today at a glance: appointments on the left, what is left to do on the
 // right. Four rows a side, which is what fits without the text shrinking to
@@ -9,6 +8,7 @@ import home_widget
 
 private let appGroup = "group.dev.bassiuz.seedling"
 private let dataKey = "seedling_today"
+private let pendingKey = "seedling_pending"
 
 // MARK: - What the app sends
 
@@ -63,9 +63,13 @@ struct SeedlingDay: Decodable {
 
 // MARK: - Ticking one off
 
-/// Hands the tap to the Dart background isolate, which queues it. The widget
-/// does not write to the database itself — see `lib/data/widget_publisher.dart`
-/// for why.
+/// Queues the tap in the shared container and redraws without that row.
+///
+/// Deliberately self-contained: no Flutter, no plugin, no background isolate.
+/// The widget only ever writes these two keys, and the app turns the queue
+/// into real check-offs the next time it runs. That also keeps this target
+/// free of CocoaPods, which is what makes it possible to add it to the Xcode
+/// project without a person doing it by hand.
 @available(iOS 17.0, *)
 struct ToggleTaskIntent: AppIntent {
   static var title: LocalizedStringResource = "Check off a task"
@@ -77,13 +81,52 @@ struct ToggleTaskIntent: AppIntent {
   init(taskId: String) { self.taskId = taskId }
 
   func perform() async throws -> some IntentResult {
-    let escaped =
-      taskId.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? taskId
-    await HomeWidgetBackgroundWorker.run(
-      url: URL(string: "seedling://toggle?id=\(escaped)"),
-      appGroup: appGroup
-    )
+    guard let defaults = UserDefaults(suiteName: appGroup) else { return .result() }
+
+    var queued = (defaults.string(forKey: pendingKey)?.jsonStringArray) ?? []
+    if !queued.contains(taskId) { queued.append(taskId) }
+    defaults.set(queued.jsonString, forKey: pendingKey)
+
+    // Drop the row so the tap feels like it did something. The app rebuilds
+    // this properly the moment it opens.
+    if let shown = defaults.string(forKey: dataKey) {
+      defaults.set(shown.withoutTask(taskId), forKey: dataKey)
+    }
+
+    WidgetCenter.shared.reloadAllTimelines()
     return .result()
+  }
+}
+
+private extension String {
+  var jsonStringArray: [String]? {
+    guard let data = data(using: .utf8),
+      let list = try? JSONSerialization.jsonObject(with: data) as? [Any]
+    else { return nil }
+    return list.compactMap { $0 as? String }
+  }
+
+  /// Removes one task from the published payload without understanding the
+  /// rest of it, so a change to the shape cannot break the checkbox.
+  func withoutTask(_ taskId: String) -> String {
+    guard let data = data(using: .utf8),
+      var map = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let tasks = map["tasks"] as? [[String: Any]]
+    else { return self }
+    map["tasks"] = tasks.filter { ($0["id"] as? String) != taskId }
+    guard let out = try? JSONSerialization.data(withJSONObject: map),
+      let text = String(data: out, encoding: .utf8)
+    else { return self }
+    return text
+  }
+}
+
+private extension Array where Element == String {
+  var jsonString: String {
+    guard let data = try? JSONSerialization.data(withJSONObject: self),
+      let text = String(data: data, encoding: .utf8)
+    else { return "[]" }
+    return text
   }
 }
 
