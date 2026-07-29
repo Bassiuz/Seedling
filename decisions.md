@@ -71,3 +71,13 @@
 - **Appointments are re-read when the app comes back to the front** — reading them once at startup meant a meeting you moved elsewhere stayed on the day it used to be on until Seedling was restarted. Coming back to the app is the moment you would expect it to have caught up; on the phone that re-read is also what republishes the mirror the other devices read.
 - **The standup copies as Slack markup** — "- " for a bullet, four spaces for a sub-bullet, meetings before tasks in each half. The two headings are Dutch (`Gisteren:` / `Vandaag:`) because that is the language the standup is given in, even though the app is English.
 - **The name is typed, not derived** — an email's local part is not what anyone calls you, and a wrong name pasted into Slack is worse than no name. Empty leaves the heading off entirely.
+
+## Jira time tracking
+
+- **Seedling writes native Jira worklogs, not Clockwork's own** — Clockwork reports on Jira's worklogs rather than keeping a store of its own, so the ordinary `POST /rest/api/2/issue/{key}/worklog` is what makes the timesheet fill in. API v2 rather than v3: v3 wants the comment as an Atlassian Document Format tree, and a sentence is a sentence.
+- **Every sent worklog is recorded by source and day** — the same hour logged twice is far worse for a timesheet than an hour never sent, so nothing goes without a record coming back, and each one is written the moment Jira accepts it rather than at the end of the run. A connection that drops halfway must not leave hours that are in Jira but not marked as sent.
+- **Time taken back to zero deletes the worklog** — logging an hour, sending it, and then deciding you had not worked it must not leave the hour sitting in someone's report.
+- **The API token lives in the device keychain, never in Firestore** — it is a credential for someone else's system, and a credential that syncs is a credential in more places than it needs to be.
+- **The timesheet has two grids** — what you did, and what you always do. Meetings and maintenance never become tasks, but they are most of some weeks and the sheet is wrong without them. A standing row is drawn even when empty, because an empty row is where this week's hours go.
+- **A task earns a row if the week touched it** — time logged, checked off, or merely planned. Planned counts because the row has to exist before you can put a number in it.
+- **Send only sends the week on screen** — the button says "this week", and a button that quietly does more than it says is a button you stop trusting.

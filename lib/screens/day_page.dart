@@ -27,6 +27,7 @@ import '../models/event_extras.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../models/week_review.dart';
+import 'timesheet_screen.dart';
 import 'standup_screen.dart';
 import '../widgets/day_header.dart';
 import '../widgets/month_sheet.dart';
@@ -631,6 +632,11 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
           builder: (_) => StatefulBuilder(
             builder: (context, refresh) => SettingsScreen(
               repo: widget.repo,
+              onOpenTimesheet: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TimesheetScreen(repo: widget.repo),
+                ),
+              ),
             settings: widget.settings!,
             canReadDeviceCalendar: DeviceCalendar.supported,
             signedInAs: widget.signedInAs,
@@ -947,7 +953,12 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
   Future<void> _saveExtras(
           CalendarEvent event, EventExtras extras, String what) =>
-      _write(() => widget.repo.setEventExtras(event.hideKey, extras), what);
+      // The title travels with it, so the Jira export has words to show
+      // rather than a repeating event's opaque series id.
+      _write(
+          () => widget.repo
+              .setEventExtras(event.hideKey, extras.copyWith(title: event.title)),
+          what);
 
   /// The same sheet tasks get. Reads back through [_eventExtras] so the
   /// stepper follows what has just been written.

@@ -7,10 +7,20 @@ import '../logic/jira_ref.dart';
 /// there is one — because tagging "[Daily] standup" is a statement about the
 /// series, not about Tuesday. Time is still logged per day inside it.
 class EventExtras {
-  const EventExtras({this.tagId, this.jira, this.minutes = const {}});
+  const EventExtras({
+    this.tagId,
+    this.jira,
+    this.title,
+    this.minutes = const {},
+  });
 
   final String? tagId;
   final JiraRef? jira;
+
+  /// The appointment's own words, kept so anything reading this later — the
+  /// Jira export, say — has something to show besides a hide key, which for a
+  /// repeating event is an opaque id.
+  final String? title;
 
   /// Minutes logged, by day key. ponytail: two occurrences of one series on
   /// the same day would share a total; split by event id if that ever happens.
@@ -25,6 +35,7 @@ class EventExtras {
   factory EventExtras.fromMap(Map<String, dynamic> map) => EventExtras(
         tagId: map['tagId'] as String?,
         jira: JiraRef.fromMap(map['jira'] as Map<String, dynamic>?),
+        title: map['title'] as String?,
         minutes: {
           for (final e in (map['minutes'] as Map<String, dynamic>? ?? {}).entries)
             e.key: (e.value as num).toInt(),
@@ -34,12 +45,14 @@ class EventExtras {
   Map<String, dynamic> toMap() => {
         'tagId': tagId,
         'jira': jira?.toMap(),
+        'title': title,
         'minutes': minutes,
       };
 
   EventExtras copyWith({
     String? tagId,
     JiraRef? jira,
+    String? title,
     Map<String, int>? minutes,
     bool clearTag = false,
     bool clearJira = false,
@@ -47,6 +60,7 @@ class EventExtras {
       EventExtras(
         tagId: clearTag ? null : tagId ?? this.tagId,
         jira: clearJira ? null : jira ?? this.jira,
+        title: title ?? this.title,
         minutes: minutes ?? this.minutes,
       );
 

@@ -1255,6 +1255,9 @@ PODS:
     - leveldb-library (~> 1.22)
     - nanopb (~> 3.30910.0)
   - FirebaseSharedSwift (12.15.0)
+  - flutter_secure_storage_darwin (10.0.0):
+    - Flutter
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - GoogleUtilities/AppDelegateSwizzler (8.1.1):
     - GoogleUtilities/Environment
@@ -1386,6 +1389,7 @@ DEPENDENCIES:
   - cloud_firestore (from `Flutter/ephemeral/.symlinks/plugins/cloud_firestore/macos`)
   - firebase_auth (from `Flutter/ephemeral/.symlinks/plugins/firebase_auth/macos`)
   - firebase_core (from `Flutter/ephemeral/.symlinks/plugins/firebase_core/macos`)
+  - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
@@ -1418,6 +1422,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/firebase_auth/macos
   firebase_core:
     :path: Flutter/ephemeral/.symlinks/plugins/firebase_core/macos
+  flutter_secure_storage_darwin:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
   FlutterMacOS:
     :path: Flutter/ephemeral
   shared_preferences_foundation:
@@ -1441,6 +1447,7 @@ SPEC CHECKSUMS:
   FirebaseFirestore: 55d10a70baf9eb77fb2d6cd059dde508d28b5bcc
   FirebaseFirestoreInternal: dd4800b1a2f0ca15c496092e9eaf037e89e34281
   FirebaseSharedSwift: 3f5c2758484d32099d693f269f110d3249c3f7e3
+  flutter_secure_storage_darwin: 557817588b80e60213cbecb573c45c76b788018d
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
   "gRPC-C++": cc207623316fb041a7a3e774c252cf68a058b9e8

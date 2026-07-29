@@ -14,7 +14,9 @@ dependencies:
   firebase_core: ^4.12.1
   flutter:
     sdk: flutter
+  flutter_secure_storage: ^10.3.1
   home_widget: ^0.9.3
+  http: ^1.6.0
   intl: ^0.20.3
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2

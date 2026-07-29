@@ -28,6 +28,7 @@ class SettingsView extends StatelessWidget {
     this.calendarShare,
     this.standupName = '',
     this.onStandupNameChanged,
+    this.onOpenTimesheet,
     required this.onSignOut,
     this.signedInAs,
   });
@@ -60,6 +61,9 @@ class SettingsView extends StatelessWidget {
   /// Heads the standup you copy for Slack. Null hides the field.
   final String standupName;
   final ValueChanged<String>? onStandupNameChanged;
+
+  /// Sends the hours logged against a ticket to its Jira worklog.
+  final VoidCallback? onOpenTimesheet;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -124,6 +128,17 @@ class SettingsView extends StatelessWidget {
                     trailing: Icon(Icons.chevron_right, color: colors.muted),
                     onTap: onOpenGoals,
                   ),
+                  if (onOpenTimesheet != null)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Timesheet', style: text.bodyLarge),
+                      subtitle: Text(
+                          'The week as a grid, and the way into Jira',
+                          style: text.labelMedium),
+                      trailing:
+                          Icon(Icons.chevron_right, color: colors.muted),
+                      onTap: onOpenTimesheet,
+                    ),
                 ],
               ),
             ),
@@ -259,6 +274,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onSignOut,
     this.signedInAs,
     required this.repo,
+    this.onOpenTimesheet,
   });
 
   final SettingsStore settings;
@@ -277,6 +293,7 @@ class SettingsScreen extends StatelessWidget {
 
   /// Reads the last publish, so the row can say what actually arrived.
   final SeedlingRepo repo;
+  final VoidCallback? onOpenTimesheet;
   final VoidCallback onSignOut;
   final String? signedInAs;
 
@@ -301,6 +318,7 @@ class SettingsScreen extends StatelessWidget {
         exportStatus: exportStatus,
         mirroring: settings.vaultMirroring,
         onMirroringChanged: settings.setVaultMirroring,
+        onOpenTimesheet: onOpenTimesheet,
         standupName: settings.standupName,
         onStandupNameChanged: settings.setStandupName,
         readsDeviceCalendar: settings.readsDeviceCalendar,

@@ -6,7 +6,9 @@ import '../logic/mirror_doc_id.dart';
 import '../logic/recent_emoji.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
+import '../logic/worklog.dart';
 import '../models/event_extras.dart';
+import '../models/topic.dart';
 import '../models/someday_item.dart';
 import '../models/review_template.dart';
 import '../models/tag.dart';
@@ -276,6 +278,50 @@ class SeedlingRepo {
     if (extras.isEmpty) return doc.delete();
     return doc.set({...extras.toMap(), 'key': hideKey});
   }
+
+  // --- standing topics ---
+
+  CollectionReference<Map<String, dynamic>> get _topics =>
+      _user.collection('topics');
+
+  /// The rows on the timesheet that are not tasks: meetings, maintenance,
+  /// the work that recurs forever.
+  Stream<List<Topic>> watchTopics() => _topics.snapshots().map((snap) =>
+      snap.docs.map((d) => Topic.fromMap(d.id, d.data())).toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder)));
+
+  Future<void> upsertTopic(Topic topic) =>
+      _topics.doc(topic.id).set(topic.toMap());
+
+  Future<void> deleteTopic(Topic topic) => _topics.doc(topic.id).delete();
+
+  Future<void> setTopicMinutes(Topic topic, String dayKey, int minutes) =>
+      _topics.doc(topic.id).set({
+        'minutes': {
+          dayKey: minutes <= 0 ? FieldValue.delete() : minutes.clamp(0, 24 * 60),
+        },
+      }, SetOptions(merge: true));
+
+  // --- time already sent to Jira ---
+
+  CollectionReference<Map<String, dynamic>> get _sentWorklogs =>
+      _user.collection('sentWorklogs');
+
+  /// Keyed by source and day, so pressing send twice cannot log the same hour
+  /// twice. Kept on the account rather than the device: the time might be
+  /// logged on the phone and sent from the Mac.
+  Stream<Map<String, SentWorklog>> watchSentWorklogs() =>
+      _sentWorklogs.snapshots().map((snap) => {
+            for (final doc in snap.docs)
+              (doc.data()['key'] as String? ?? doc.id):
+                  SentWorklog.fromMap(doc.data()),
+          });
+
+  Future<void> recordSentWorklog(String key, SentWorklog worklog) =>
+      _sentWorklogs.doc(mirrorDocId(key)).set({...worklog.toMap(), 'key': key});
+
+  Future<void> forgetSentWorklog(String key) =>
+      _sentWorklogs.doc(mirrorDocId(key)).delete();
 
   // --- calendar mirror ---
 
