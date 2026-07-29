@@ -430,6 +430,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadEvents();
+    _drainWidgetTaps();
     _extrasSub = widget.repo.watchEventExtras().listen(
         (extras) => setState(() => _eventExtras = extras));
     _activeSub = widget.repo
@@ -448,7 +449,10 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) _loadEvents();
+    if (state == AppLifecycleState.resumed) {
+      _loadEvents();
+      _drainWidgetTaps();
+    }
   }
 
   /// A window around today rather than the whole calendar: paging years back
@@ -546,6 +550,24 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
     if (json == _lastPublished) return;
     _lastPublished = json;
     _widget.publish(payload);
+  }
+
+  /// Writes down whatever was ticked off on the home-screen widget.
+  ///
+  /// The widget could only queue the tap; this is where it becomes true. Done
+  /// on today, because that is the day the widget was showing.
+  Future<void> _drainWidgetTaps() async {
+    final queued = await _widget.takePending();
+    if (queued.isEmpty) return;
+
+    final tasks = await widget.repo.watchTasks().first;
+    for (final id in queued.taskIds) {
+      final task = tasks.where((t) => t.id == id).firstOrNull;
+      // Already gone, or already done somewhere else. Either way, nothing to
+      // do — a tap that arrives late must not un-check anything.
+      if (task == null || task.isCompleted) continue;
+      await widget.repo.setCompleted(task, _today);
+    }
   }
 
   /// Keeps the Markdown vault in step with the day on screen. Only the visible

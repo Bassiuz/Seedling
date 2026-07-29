@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's oversized round checkbox, small enough for a home screen but
+     still the easiest thing on the widget to hit. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <stroke android:width="2dp" android:color="@color/seedling_ink" />
+    <solid android:color="@android:color/transparent" />
+    <size android:width="20dp" android:height="20dp" />
+</shape>

@@ -13,7 +13,7 @@ piece lands. Branch `phase-1`.
 | 5 | Calendar (EventKit) agenda + blacklist with reveal | **done** |
 | 6 | Week review templates with goal snapshots | **done** |
 | 7 | Markdown vault export (macOS) | **done** |
-| 8 | iPhone home-screen widget | **done** — Dart side built and tested; Xcode target needs adding by hand, see `docs/ios-widget-setup.md` |
+| 8 | iPhone home-screen widget | **done** — Dart side built and tested; Xcode target needs adding by hand, see `docs/widget-setup.md` |
 
 ## Conventions (unchanged from phase 1)
 
@@ -34,7 +34,7 @@ rather than by driving the real window.
 
 ## Still to do
 
-- The Xcode Widget Extension target — `docs/ios-widget-setup.md` has the steps.
+- The Xcode Widget Extension target — `docs/widget-setup.md` has the steps.
 - Run on the BigMe and check e-ink mode on real hardware.
 
 ## Notes for whoever picks this up

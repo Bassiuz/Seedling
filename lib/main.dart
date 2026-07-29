@@ -3,8 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'package:home_widget/home_widget.dart';
+
 import 'app.dart';
 import 'data/calendar_source.dart';
+import 'data/widget_publisher.dart';
 import 'data/settings_store.dart';
 import 'firebase_options.dart';
 
@@ -20,6 +23,9 @@ Future<void> main() async {
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
+
+  // Ticking something off on the home screen wakes a background isolate.
+  await HomeWidget.registerInteractivityCallback(widgetTapped);
 
   runApp(
     SeedlingApp(

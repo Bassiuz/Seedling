@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The paper the app is drawn on, so the widget belongs to it. -->
+    <color name="seedling_paper">#FAF4EC</color>
+    <color name="seedling_ink">#1C1917</color>
+    <color name="seedling_muted">#6B6560</color>
+    <color name="seedling_faint">#A8A29A</color>
+    <color name="seedling_rule">#E4DBCE</color>
+</resources>

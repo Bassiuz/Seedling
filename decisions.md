@@ -20,7 +20,7 @@
 - **Export is desktop-only** — a phone has nowhere useful to put a vault.
 - **Automatic mirroring covers only the day on screen** — it is the one day whose note and answers are loaded, so rewriting it costs nothing extra. Mirroring every day on every change would mean a Firestore read per day per keystroke. "Export everything now" still does a full sweep, which is what a backfill needs.
 - **Mirror writes are debounced and fingerprinted** — typing a sentence produces one file write, and a rebuild that changed nothing produces none. A failed write is swallowed: a vault that cannot be written must never break the app.
-- **The widget's payload is a pure function** — `buildWidgetPayload` is fully tested without a device, so the only untestable part left is the SwiftUI rendering itself. The Xcode Widget Extension target must be added by hand (see `docs/ios-widget-setup.md`); extension targets cannot be created from the command line.
+- **The widget's payload is a pure function** — `buildWidgetPayload` is fully tested without a device, so the only untestable part left is the SwiftUI rendering itself. The Xcode Widget Extension target must be added by hand (see `docs/widget-setup.md`); extension targets cannot be created from the command line.
 - **The browser integration is a userscript, not two extensions** — Tampermonkey and Greasemonkey both run one file unchanged, so Chrome and Firefox cost one thing to maintain instead of two manifests and two packaging paths. Revisit if it ever needs more than adding a task.
 - **The userscript talks to Firestore directly over REST** — the same path the app uses, so there is no server in between. It signs in once and keeps only the refresh token; the password is never stored. The embedded API key is public by design and grants nothing on its own — `firestore.rules` is what protects the data.
 - **Titles come from Jira and Bitbucket's own APIs, not the DOM** — same-origin calls with your existing session survive their UI being rewritten, with the tab title as a fallback.
@@ -82,3 +82,9 @@
 - **A task earns a row if the week touched it** — time logged, checked off, or merely planned. Planned counts because the row has to exist before you can put a number in it.
 - **The grid is Monday to Friday, and a weekend day only when it has hours on it** — nobody wants two empty columns every week, but an hour logged on a Sunday that no grid shows is an hour no button sends. It earns its column rather than being dropped.
 - **Send only sends the week on screen** — the button says "this week", and a button that quietly does more than it says is a button you stop trusting.
+
+## The home-screen widget
+
+- **Four cells wide, two high: appointments beside what is left to do** — the two halves of a day you would want without unlocking anything. Four rows a side is what fits before the text shrinks past reading across a room, which is the only way a widget is ever read.
+- **A checkbox on the widget queues the tap; it does not write it** — the tap runs in a background isolate, and a second isolate opening Firestore's offline database while the app holds it is exactly what produced `LOCK: Resource temporarily unavailable` earlier on. So the id is queued, the widget redraws without that row so the tap feels like it did something, and the app makes it true on its next launch or resume. The cost is a task ticked on the widget not reaching the cloud until you open the app.
+- **A late tap can only ever complete, never un-complete** — the queue is drained against the current state, so a tap on something already done somewhere else is dropped rather than toggled back.
