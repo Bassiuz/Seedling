@@ -12,7 +12,7 @@ import '../util/golden/golden_utils.dart';
 const _template = ReviewTemplate(
   goalBlocks: [
     GoalBlock(title: 'Quarterly Goals', goals: [
-      'Implement a YOLO 26 model and increase Android scanning speed',
+      'Rework the importer and speed up the first sync',
       'Bike when dry and not freezing',
     ]),
     GoalBlock(title: 'Yearly Goals', goals: ['100 monthly users for Moxify']),
@@ -77,7 +77,7 @@ void main() {
     expect(WeekReview.from('2026-W32', later).goals.first.goals,
         ['Something new']);
     expect(review.goals.first.goals.first,
-        startsWith('Implement a YOLO 26 model'));
+        startsWith('Rework the importer'));
   });
 
   test('a review with nothing written in it counts as empty', () {
@@ -89,7 +89,7 @@ void main() {
     configureSize(tester, GoldenSize.mac);
     await tester.pumpWidget(wrapApp(_view()));
 
-    expect(find.textContaining('YOLO 26'), findsOneWidget);
+    expect(find.textContaining('Rework the importer'), findsOneWidget);
     expect(find.text('Quarterly Goals'), findsOneWidget);
   });
 

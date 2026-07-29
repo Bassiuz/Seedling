@@ -51,13 +51,13 @@ void main() {
   });
 
   test('typing repeatedly produces one write, not one per keystroke', () async {
-    for (final note in ['P', 'Pa', 'Par', 'Parchment day']) {
+    for (final note in ['P', 'Pa', 'Par', 'Release day']) {
       mirror.day(dayKey: _day, tasks: const [], tags: const {}, note: note);
     }
     await settle();
 
     expect(mirror.writes, 1);
-    expect(read('days/2026/2026-07-27.md'), contains('Parchment day'));
+    expect(read('days/2026/2026-07-27.md'), contains('Release day'));
   });
 
   test('a rebuild that changed nothing writes nothing', () async {
@@ -109,13 +109,13 @@ void main() {
         Tag(id: 'moxify', name: 'Moxify', colorIndex: 0, iconIndex: 0, sortOrder: 0),
       ],
       someday: const [
-        SomedayItem(id: '1', title: 'YOLO 26', tagId: 'moxify', priority: 0),
+        SomedayItem(id: '1', title: 'Importer rewrite', tagId: 'moxify', priority: 0),
       ],
     );
     await settle();
 
     expect(read('tags.md'), contains('- Moxify'));
-    expect(read('someday/moxify.md'), contains('YOLO 26'));
+    expect(read('someday/moxify.md'), contains('Importer rewrite'));
   });
 
   test('a week review lands in the vault as it is written', () async {

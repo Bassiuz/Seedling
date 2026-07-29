@@ -47,14 +47,14 @@ void main() {
         dayKey: _day,
         tasks: [
           _task('Afwas doen'),
-          _task('Give Riley bath', completedOnDate: _day),
+          _task('Water the greenhouse', completedOnDate: _day),
         ],
         tags: _tags,
         note: '',
       );
 
       expect(md, contains('- [ ] Afwas doen'));
-      expect(md, contains('- [x] Give Riley bath'));
+      expect(md, contains('- [x] Water the greenhouse'));
     });
 
     test('annotates tag, time, logged minutes and where it came from', () {
@@ -96,10 +96,10 @@ void main() {
         note: '',
         events: const [
           CalendarEvent(
-              id: '1', title: "Joan's birthday", dayKey: _day, allDay: true),
+              id: '1', title: "Sam's birthday", dayKey: _day, allDay: true),
           CalendarEvent(
               id: '2',
-              title: 'Vet appointment',
+              title: 'Dentist appointment',
               dayKey: _day,
               allDay: false,
               time: '09:00'),
@@ -107,11 +107,11 @@ void main() {
       );
 
       expect(md, contains('- All day — '));
-      expect(md, contains('- 09:00 — Vet appointment'));
+      expect(md, contains('- 09:00 — Dentist appointment'));
     });
 
     test('writes the note through untouched', () {
-      const note = 'Parchment release day!!!\n\n- a list\n- **bold**';
+      const note = 'Release day!!!\n\n- a list\n- **bold**';
       final md = dayMarkdown(
           dayKey: _day, tasks: const [], tags: _tags, note: note);
 
@@ -187,11 +187,11 @@ void main() {
   group('someday and tags', () {
     test('a project list names the project', () {
       final md = somedayMarkdown(_tags['moxify'], const [
-        SomedayItem(id: '1', title: 'YOLO 26', priority: 0),
+        SomedayItem(id: '1', title: 'Importer rewrite', priority: 0),
       ]);
 
       expect(md, contains('# Someday — Moxify'));
-      expect(md, contains('- YOLO 26'));
+      expect(md, contains('- Importer rewrite'));
     });
 
     test('the untagged list still has a heading', () {

@@ -45,8 +45,8 @@ void main() {
             onToggle: (_) {},
             onMenu: (_) {},
             events: [
-              _event("Joan's birthday", day: day, allDay: true),
-              _event('Vet appointment', day: day, time: '09:00'),
+              _event("Sam's birthday", day: day, allDay: true),
+              _event('Dentist appointment', day: day, time: '09:00'),
               _event('Bins out', day: day, time: '19:00'),
             ],
           ),
@@ -64,7 +64,7 @@ void main() {
         shownDay: day,
         onToggle: (_) {},
         onMenu: (_) {},
-        events: [_event("Joan's birthday", day: day, allDay: true)],
+        events: [_event("Sam's birthday", day: day, allDay: true)],
       ),
     )));
 
@@ -149,14 +149,14 @@ void main() {
     configureSize(tester, GoldenSize.phone);
     final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
     final calendar = FakeCalendar([
-      _event('Vet appointment', day: todayKey(), time: '09:00'),
+      _event('Dentist appointment', day: todayKey(), time: '09:00'),
       _event('Far future thing', day: addDays(todayKey(), 400), time: '09:00'),
     ]);
 
     await tester.pumpWidget(wrapApp(DayPage(repo: repo, calendar: calendar)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Vet appointment'), findsOneWidget);
+    expect(find.text('Dentist appointment'), findsOneWidget);
     // Outside the loaded window, so never read.
     expect(find.text('Far future thing'), findsNothing);
   });

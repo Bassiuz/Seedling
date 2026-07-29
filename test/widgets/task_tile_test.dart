@@ -13,7 +13,7 @@ const _moxify =
     Tag(id: 'moxify', name: 'Moxify', colorIndex: 6, iconIndex: 1, sortOrder: 0);
 
 Task _task({
-  String title = 'Edit Cozy Zone',
+  String title = 'Edit the onboarding copy',
   String date = _today,
   String? time,
   String? tagId,
@@ -53,12 +53,12 @@ Widget _gallery() => Scaffold(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _tile(_task()),
-              _tile(_task(title: 'Vet appointment', time: '09:00')),
+              _tile(_task(title: 'Dentist appointment', time: '09:00')),
               _tile(_task(title: 'Make Shorts clip', tagId: 'moxify'),
                   tag: _moxify),
               _tile(_task(title: 'Afwas doen', date: _tuesday)),
               _tile(_task(
-                  title: 'Give Riley bath', completedOnDate: _today)),
+                  title: 'Water the greenhouse', completedOnDate: _today)),
               _tile(_task(
                   title: 'Set out blue can',
                   date: _tuesday,
@@ -138,7 +138,7 @@ void main() {
       wrapApp(Scaffold(body: _tile(_task(), onMenu: () => menus++))),
     );
 
-    await tester.longPress(find.text('Edit Cozy Zone'));
+    await tester.longPress(find.text('Edit the onboarding copy'));
 
     expect(menus, 1);
   });

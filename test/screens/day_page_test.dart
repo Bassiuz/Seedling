@@ -18,8 +18,8 @@ import '../util/shortcut_finder.dart';
 const _today = '2026-07-15';
 
 const _tags = {
-  'riley': Tag(
-      id: 'riley', name: 'Riley', colorIndex: 9, iconIndex: 10, sortOrder: 0),
+  'garden': Tag(
+      id: 'garden', name: 'Garden', colorIndex: 9, iconIndex: 4, sortOrder: 0),
   'moxify': Tag(
       id: 'moxify', name: 'Moxify', colorIndex: 6, iconIndex: 1, sortOrder: 1),
 };
@@ -40,12 +40,12 @@ Task _task(String id, String title,
     );
 
 final _fixture = [
-  _task('1', 'Vet appointment', time: '09:00'),
-  _task('2', 'Fix Shipaton promo video', time: '17:00', tagId: 'moxify'),
-  _task('3', 'Give Riley bath', time: '18:00', tagId: 'riley'),
-  _task('4', 'Edit Cozy Zone', date: '2026-07-13'),
-  _task('5', 'Make Shorts clip for CF and CZ', tagId: 'moxify'),
-  _task('6', 'Set out blue and green can', completedOnDate: _today),
+  _task('1', 'Dentist appointment', time: '09:00'),
+  _task('2', 'Fix the launch trailer', time: '17:00', tagId: 'moxify'),
+  _task('3', 'Water the greenhouse', time: '18:00', tagId: 'garden'),
+  _task('4', 'Edit the onboarding copy', date: '2026-07-13'),
+  _task('5', 'Draft the newsletter', tagId: 'moxify'),
+  _task('6', 'Take the bins out', completedOnDate: _today),
 ];
 
 const _questions = [
@@ -94,7 +94,7 @@ void main() {
     'day_view',
     GoldenSize.values,
     () => _day(
-      note: 'Parchment release day!!!\n\nTook Riley to the vet this morning.',
+      note: 'Release day!!!\n\nRepotted the seedlings this morning.',
     ),
   );
 
@@ -127,7 +127,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: SeedlingTheme.eink(),
-      home: _day(note: 'Took Riley to the vet this morning.'),
+      home: _day(note: 'Repotted the seedlings this morning.'),
     ));
     await tester.pumpAndSettle();
     await expectLater(find.byType(MaterialApp),
@@ -139,8 +139,8 @@ void main() {
     configureSize(tester, GoldenSize.phone);
     await tester.pumpWidget(wrapApp(_day()));
 
-    expect(find.text('Vet appointment'), findsOneWidget);
-    expect(find.text('Edit Cozy Zone'), findsOneWidget);
+    expect(find.text('Dentist appointment'), findsOneWidget);
+    expect(find.text('Edit the onboarding copy'), findsOneWidget);
     expect(find.text('Nothing timed'), findsNothing);
   });
 
@@ -166,7 +166,7 @@ void main() {
 
     await tester.tap(find.byType(TaskCheckbox).first);
 
-    expect(toggled, ['Vet appointment']);
+    expect(toggled, ['Dentist appointment']);
   });
 
   group('wired to Firestore', () {

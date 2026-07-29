@@ -9,7 +9,7 @@ import '../util/golden/golden_utils.dart';
 
 const _tags = [
   Tag(id: 'moxify', name: 'Moxify', colorIndex: 6, iconIndex: 1, sortOrder: 0),
-  Tag(id: 'riley', name: 'Riley', colorIndex: 9, iconIndex: 10, sortOrder: 1),
+  Tag(id: 'garden', name: 'Garden', colorIndex: 9, iconIndex: 4, sortOrder: 1),
   Tag(id: 'health', name: 'Health', colorIndex: 1, iconIndex: 3, sortOrder: 2),
 ];
 
@@ -45,9 +45,9 @@ void main() {
       TagsView(tags: _tags, onEdit: (t) => edited.add(t.name), onAdd: () {}),
     ));
 
-    await tester.tap(find.text('Riley'));
+    await tester.tap(find.text('Garden'));
 
-    expect(edited, ['Riley']);
+    expect(edited, ['Garden']);
   });
 
   testWidgets('the editor hands back the name, colour and icon',
@@ -110,10 +110,10 @@ void main() {
     )));
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Add to Riley…'), 'New collar');
+        find.widgetWithText(TextField, 'Add to Garden…'), 'New collar');
     await tester.tap(find.byTooltip('Park it on someday').at(1));
 
-    expect(parked, [('riley', 'New collar')]);
+    expect(parked, [('garden', 'New collar')]);
   });
 
   testWidgets('the add lines are hidden when there is nowhere to add to',

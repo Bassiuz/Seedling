@@ -65,13 +65,13 @@ void main() {
     () => _block(
       now: '14:00',
       events: [
-        _event("Joan's birthday", allDay: true),
-        _event('Vet appointment', time: '09:00'),
+        _event("Sam's birthday", allDay: true),
+        _event('Dentist appointment', time: '09:00'),
         _event('Standup', time: '17:00'),
       ],
       tasks: [
-        _task('Give Riley bath', time: '12:00'),
-        _task('Set out the bins', time: '19:00'),
+        _task('Water the greenhouse', time: '12:00'),
+        _task('Take the bins out', time: '19:00'),
       ],
       onAdd: (_, {tagId, time}) {},
     ),
@@ -94,33 +94,33 @@ void main() {
   testWidgets('an appointment can be ticked off', (tester) async {
     final ticks = <(String, bool)>[];
     await tester.pumpWidget(wrapApp(_block(
-      events: [_event('Vet appointment', time: '09:00')],
+      events: [_event('Dentist appointment', time: '09:00')],
       onToggleEvent: (e, done) => ticks.add((e.title, done)),
     )));
 
     await tester.tap(find.byType(TaskCheckbox));
 
-    expect(ticks, [('Vet appointment', true)]);
+    expect(ticks, [('Dentist appointment', true)]);
   });
 
   testWidgets('a ticked appointment can be unticked', (tester) async {
     final ticks = <(String, bool)>[];
     await tester.pumpWidget(wrapApp(_block(
-      events: [_event('Vet appointment', time: '09:00')],
-      doneEvents: const {'Vet appointment'},
+      events: [_event('Dentist appointment', time: '09:00')],
+      doneEvents: const {'Dentist appointment'},
       onToggleEvent: (e, done) => ticks.add((e.title, done)),
     )));
 
     await tester.tap(find.byType(TaskCheckbox));
 
-    expect(ticks, [('Vet appointment', false)]);
+    expect(ticks, [('Dentist appointment', false)]);
   });
 
   testWidgets('something still open whose time has passed reads as overdue',
       (tester) async {
     await tester.pumpWidget(wrapApp(_block(
       now: '14:00',
-      events: [_event('Vet appointment', time: '09:00')],
+      events: [_event('Dentist appointment', time: '09:00')],
       tasks: [_task('Later thing', time: '17:00')],
     )));
 
@@ -130,8 +130,8 @@ void main() {
   testWidgets('a ticked-off appointment is not overdue', (tester) async {
     await tester.pumpWidget(wrapApp(_block(
       now: '14:00',
-      events: [_event('Vet appointment', time: '09:00')],
-      doneEvents: const {'Vet appointment'},
+      events: [_event('Dentist appointment', time: '09:00')],
+      doneEvents: const {'Dentist appointment'},
     )));
 
     expect(find.textContaining('Overdue'), findsNothing);
@@ -148,7 +148,7 @@ void main() {
 
   testWidgets('nothing is overdue when the clock is unknown', (tester) async {
     await tester.pumpWidget(wrapApp(_block(
-      events: [_event('Vet appointment', time: '09:00')],
+      events: [_event('Dentist appointment', time: '09:00')],
     )));
 
     expect(find.textContaining('Overdue'), findsNothing);

@@ -20,12 +20,12 @@ void main() {
         colorIndex: 6,
         iconIndex: 1,
         sortOrder: 0));
-    await repo.addTask('Edit Cozy Zone', date: todayKey());
+    await repo.addTask('Edit the onboarding copy', date: todayKey());
 
     await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
     await tester.pumpAndSettle();
 
-    await tester.longPress(find.text('Edit Cozy Zone'));
+    await tester.longPress(find.text('Edit the onboarding copy'));
     await tester.pumpAndSettle();
     expect(find.text('Set a tag…'), findsOneWidget);
 
@@ -41,12 +41,12 @@ void main() {
       (tester) async {
     configureSize(tester, GoldenSize.phone);
     final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
-    await repo.addTask('Vet appointment', date: todayKey(), time: '09:00');
+    await repo.addTask('Dentist appointment', date: todayKey(), time: '09:00');
 
     await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
     await tester.pumpAndSettle();
 
-    await tester.longPress(find.text('Vet appointment'));
+    await tester.longPress(find.text('Dentist appointment'));
     await tester.pumpAndSettle();
 
     expect(find.text('Change time'), findsOneWidget);
@@ -58,12 +58,12 @@ void main() {
       (tester) async {
     configureSize(tester, GoldenSize.phone);
     final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
-    await repo.addTask('Vet appointment', date: todayKey(), time: '09:00');
+    await repo.addTask('Dentist appointment', date: todayKey(), time: '09:00');
 
     await tester.pumpWidget(wrapApp(DayPage(repo: repo)));
     await tester.pumpAndSettle();
 
-    await tester.longPress(find.text('Vet appointment'));
+    await tester.longPress(find.text('Dentist appointment'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove the time'));
     await tester.pumpAndSettle();

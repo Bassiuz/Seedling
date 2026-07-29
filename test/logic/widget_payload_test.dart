@@ -24,18 +24,18 @@ void main() {
   test('the next timed thing can be an appointment or a task', () {
     final payload = buildWidgetPayload(
       dayKey: _day,
-      tasks: [_task('Give Riley bath', time: '18:00')],
-      events: [_event('Vet appointment', time: '09:00')],
+      tasks: [_task('Water the greenhouse', time: '18:00')],
+      events: [_event('Dentist appointment', time: '09:00')],
     );
 
-    expect(payload.next, '09:00 Vet appointment');
+    expect(payload.next, '09:00 Dentist appointment');
   });
 
   test('a task earlier than every appointment wins', () {
     final payload = buildWidgetPayload(
       dayKey: _day,
       tasks: [_task('Early start', time: '07:00')],
-      events: [_event('Vet appointment', time: '09:00')],
+      events: [_event('Dentist appointment', time: '09:00')],
     );
 
     expect(payload.next, '07:00 Early start');
@@ -45,7 +45,7 @@ void main() {
     final payload = buildWidgetPayload(
       dayKey: _day,
       tasks: const [],
-      events: [_event("Joan's birthday", allDay: true)],
+      events: [_event("Sam's birthday", allDay: true)],
     );
 
     expect(payload.next, isNull);

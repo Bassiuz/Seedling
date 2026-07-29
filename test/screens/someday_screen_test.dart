@@ -17,7 +17,7 @@ const _tags = {
 };
 
 const _items = [
-  SomedayItem(id: '1', title: 'YOLO 26 scanning speed', tagId: 'moxify', priority: 0),
+  SomedayItem(id: '1', title: 'Importer rewrite', tagId: 'moxify', priority: 0),
   SomedayItem(id: '2', title: 'Rewrite the onboarding', tagId: 'moxify', priority: 1),
   SomedayItem(id: '3', title: 'Fix the shed door', tagId: 'home', priority: 2),
   SomedayItem(id: '4', title: 'Read that retirement book', priority: 3),
@@ -62,7 +62,7 @@ void main() {
 
     expect(grouped.keys.toSet(), {'moxify', 'home', null});
     expect(grouped['moxify']!.map((i) => i.title).toList(),
-        ['YOLO 26 scanning speed', 'Rewrite the onboarding']);
+        ['Importer rewrite', 'Rewrite the onboarding']);
     expect(grouped[null]!.single.title, 'Read that retirement book');
   });
 
@@ -84,7 +84,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Do it today').first);
 
-    expect(promoted, ['YOLO 26 scanning speed']);
+    expect(promoted, ['Importer rewrite']);
   });
 
   group('wired to Firestore', () {

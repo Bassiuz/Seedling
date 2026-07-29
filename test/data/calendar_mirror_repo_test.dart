@@ -20,7 +20,7 @@ void main() {
       [
         CalendarEvent(
             id: realId,
-            title: 'Vet appointment',
+            title: 'Dentist appointment',
             dayKey: '2026-07-28',
             allDay: false,
             time: '09:00'),
@@ -32,7 +32,7 @@ void main() {
     final read = await repo.readCalendarMirror('2026-07-01', '2026-08-31');
     expect(read.single.id, realId,
         reason: 'the real id survives, so ticking it off still matches');
-    expect(read.single.title, 'Vet appointment');
+    expect(read.single.title, 'Dentist appointment');
   });
 
   test('nothing published means nothing to read', () async {
@@ -41,14 +41,14 @@ void main() {
 
   test('what the phone publishes is what another device reads', () async {
     await repo.publishCalendarMirror(
-      [_event('Vet appointment', '2026-07-28', time: '09:00')],
+      [_event('Dentist appointment', '2026-07-28', time: '09:00')],
       from: '2026-07-01',
       to: '2026-08-31',
     );
 
     final read = await repo.readCalendarMirror('2026-07-01', '2026-08-31');
     expect(read, hasLength(1));
-    expect(read.single.title, 'Vet appointment');
+    expect(read.single.title, 'Dentist appointment');
     expect(read.single.time, '09:00');
     expect(read.single.dayKey, '2026-07-28');
   });

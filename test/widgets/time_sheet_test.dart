@@ -9,7 +9,7 @@ const _day = '2026-07-27';
 
 Task _task({Map<String, int> entries = const {}}) => Task(
       id: 't',
-      title: 'Fix Shipaton promo video',
+      title: 'Fix the launch trailer',
       date: _day,
       createdDate: _day,
       timeEntries: entries,

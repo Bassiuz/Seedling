@@ -20,7 +20,7 @@ void main() {
 
     const today = '2026-07-28';
     await repo.addTask('Afwas doen', date: today);
-    await repo.saveNote(today, 'Parchment release day!!!');
+    await repo.saveNote(today, 'Release day!!!');
     await repo.setAnswer(today, 'travel', 'Bike');
 
     final tasks = await repo.watchTasks().first;
@@ -39,7 +39,7 @@ void main() {
 
     final contents = file.readAsStringSync();
     expect(contents, contains('- [ ] Afwas doen'));
-    expect(contents, contains('Parchment release day!!!'));
+    expect(contents, contains('Release day!!!'));
     expect(contents, startsWith('---\ndate: 2026-07-28'));
   });
 }

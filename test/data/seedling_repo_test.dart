@@ -16,18 +16,18 @@ void main() {
 
   group('tasks', () {
     test('addTask stores it and watchTasks emits it', () async {
-      await repo.addTask('Give Riley bath', date: '2026-07-15', time: '18:00');
+      await repo.addTask('Water the greenhouse', date: '2026-07-15', time: '18:00');
 
       final tasks = await repo.watchTasks().first;
       expect(tasks, hasLength(1));
-      expect(tasks.single.title, 'Give Riley bath');
+      expect(tasks.single.title, 'Water the greenhouse');
       expect(tasks.single.date, '2026-07-15');
       expect(tasks.single.time, '18:00');
       expect(tasks.single.tagId, isNull);
     });
 
     test('addTask stamps createdDate with today', () async {
-      await repo.addTask('Edit Cozy Zone', date: '2026-08-01');
+      await repo.addTask('Edit the onboarding copy', date: '2026-08-01');
 
       final task = (await repo.watchTasks().first).single;
       expect(task.createdDate, todayKey());
@@ -214,9 +214,9 @@ void main() {
 
   group('daily note', () {
     test('saveNote and watchNote roundtrip', () async {
-      await repo.saveNote('2026-07-15', 'Parchment release day!!!');
+      await repo.saveNote('2026-07-15', 'Release day!!!');
       expect(await repo.watchNote('2026-07-15').first,
-          'Parchment release day!!!');
+          'Release day!!!');
     });
 
     test('watchNote emits an empty string for a day with no document',

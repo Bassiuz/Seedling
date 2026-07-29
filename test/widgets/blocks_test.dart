@@ -12,8 +12,8 @@ import '../util/golden/golden_utils.dart';
 const _today = '2026-07-15';
 
 const _tags = {
-  'riley': Tag(
-      id: 'riley', name: 'Riley', colorIndex: 9, iconIndex: 10, sortOrder: 0),
+  'garden': Tag(
+      id: 'garden', name: 'Garden', colorIndex: 9, iconIndex: 4, sortOrder: 0),
   'moxify': Tag(
       id: 'moxify', name: 'Moxify', colorIndex: 6, iconIndex: 1, sortOrder: 1),
 };
@@ -30,14 +30,14 @@ Task _task(String id, String title,
     );
 
 final _timed = [
-  _task('1', 'Vet appointment', time: '09:00'),
-  _task('2', 'Fix Shipaton promo video', time: '17:00', tagId: 'moxify'),
-  _task('3', 'Give Riley bath', time: '18:00', tagId: 'riley'),
+  _task('1', 'Dentist appointment', time: '09:00'),
+  _task('2', 'Fix the launch trailer', time: '17:00', tagId: 'moxify'),
+  _task('3', 'Water the greenhouse', time: '18:00', tagId: 'garden'),
 ];
 
 final _untimed = [
-  _task('4', 'Edit Cozy Zone', date: '2026-07-13'),
-  _task('5', 'Make Shorts clip for CF and CZ', tagId: 'moxify'),
+  _task('4', 'Edit the onboarding copy', date: '2026-07-13'),
+  _task('5', 'Draft the newsletter', tagId: 'moxify'),
 ];
 
 Widget _blocks({required bool filled}) => Scaffold(
@@ -66,7 +66,7 @@ Widget _blocks({required bool filled}) => Scaffold(
               const SizedBox(height: 28),
               NoteBlock(
                 text: filled
-                    ? 'Parchment release day!!!\n\nIt has been great. Got some '
+                    ? 'Release day!!!\n\nIt has been great. Got some '
                         'really nice messages from people saying this is what '
                         'they had been looking for.'
                     : '',
@@ -102,7 +102,7 @@ void main() {
   testWidgets('a filled timed block lists its tasks in order', (tester) async {
     await tester.pumpWidget(wrapApp(_blocks(filled: true)));
 
-    expect(find.text('Vet appointment'), findsOneWidget);
+    expect(find.text('Dentist appointment'), findsOneWidget);
     expect(find.text('Nothing timed'), findsNothing);
   });
 
@@ -178,9 +178,9 @@ void main() {
       wrapApp(Scaffold(body: NoteBlock(text: '', onChanged: edits.add))),
     );
 
-    await tester.enterText(find.byType(TextField), 'Took Riley to the vet');
+    await tester.enterText(find.byType(TextField), 'Repotted the seedlings');
 
-    expect(edits.last, 'Took Riley to the vet');
+    expect(edits.last, 'Repotted the seedlings');
   });
 
   testWidgets('the note does not fight the cursor when a sync arrives',

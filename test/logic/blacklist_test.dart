@@ -35,38 +35,38 @@ void main() {
 
   test('hidden events are dropped from the day', () {
     final events = [
-      _event('Vet appointment', time: '09:00'),
+      _event('Dentist appointment', time: '09:00'),
       _event('Water the plants', time: '08:00', recurringId: 'plants'),
     ];
 
     expect(
       visibleEvents(events, {'plants'}).map((e) => e.title).toList(),
-      ['Vet appointment'],
+      ['Dentist appointment'],
     );
   });
 
   test('reveal brings the hidden ones back so a mistake can be undone', () {
     final events = [
-      _event('Vet appointment', time: '09:00'),
+      _event('Dentist appointment', time: '09:00'),
       _event('Water the plants', time: '08:00', recurringId: 'plants'),
     ];
 
     expect(
       visibleEvents(events, {'plants'}, reveal: true).map((e) => e.title),
-      ['Water the plants', 'Vet appointment'],
+      ['Water the plants', 'Dentist appointment'],
     );
   });
 
   test('all-day events come before timed ones, then it is by the clock', () {
     final events = [
       _event('Evening thing', time: '20:00'),
-      _event("Joan's birthday", allDay: true),
+      _event("Sam's birthday", allDay: true),
       _event('Morning thing', time: '08:00'),
     ];
 
     expect(
       visibleEvents(events, const {}).map((e) => e.title).toList(),
-      ["Joan's birthday", 'Morning thing', 'Evening thing'],
+      ["Sam's birthday", 'Morning thing', 'Evening thing'],
     );
   });
 
@@ -81,7 +81,7 @@ void main() {
   });
 
   test('nothing hidden means nothing dropped', () {
-    final events = [_event('Vet appointment', time: '09:00')];
+    final events = [_event('Dentist appointment', time: '09:00')];
 
     expect(visibleEvents(events, const {}), hasLength(1));
   });

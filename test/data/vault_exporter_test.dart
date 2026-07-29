@@ -71,11 +71,11 @@ void main() {
     };
 
     await exporter.writeSomeday(const [
-      SomedayItem(id: '1', title: 'YOLO 26', tagId: 'moxify', priority: 0),
+      SomedayItem(id: '1', title: 'Importer rewrite', tagId: 'moxify', priority: 0),
       SomedayItem(id: '2', title: 'Read that book', priority: 1),
     ], tags);
 
-    expect(read('someday/moxify.md'), contains('YOLO 26'));
+    expect(read('someday/moxify.md'), contains('Importer rewrite'));
     expect(read('someday/no-project.md'), contains('Read that book'));
   });
 

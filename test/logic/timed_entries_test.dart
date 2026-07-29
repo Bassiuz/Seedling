@@ -15,25 +15,25 @@ Task _task(String title, {String? time}) => Task(
 void main() {
   test('appointments and timed tasks are interleaved by the clock', () {
     final entries = timedEntries(
-      [_event('Vet appointment', time: '09:00'), _event('Standup', time: '17:00')],
-      [_task('Give Riley bath', time: '12:00'), _task('Early call', time: '08:00')],
+      [_event('Dentist appointment', time: '09:00'), _event('Standup', time: '17:00')],
+      [_task('Water the greenhouse', time: '12:00'), _task('Early call', time: '08:00')],
     );
 
     expect(entries.map((e) => e.title).toList(), [
       'Early call',
-      'Vet appointment',
-      'Give Riley bath',
+      'Dentist appointment',
+      'Water the greenhouse',
       'Standup',
     ]);
   });
 
   test('all-day events head the list', () {
     final entries = timedEntries(
-      [_event('Vet', time: '09:00'), _event("Joan's birthday", allDay: true)],
+      [_event('Vet', time: '09:00'), _event("Sam's birthday", allDay: true)],
       [_task('Early call', time: '07:00')],
     );
 
-    expect(entries.first.title, "Joan's birthday");
+    expect(entries.first.title, "Sam's birthday");
     expect(entries.first.allDay, isTrue);
   });
 

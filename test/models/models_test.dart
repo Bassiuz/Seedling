@@ -37,11 +37,11 @@ void main() {
 
     test('fromMap tolerates a document missing optional keys', () {
       final back = Task.fromMap('t3', {
-        'title': 'Vet appointment',
+        'title': 'Dentist appointment',
         'date': '2026-07-15',
         'createdDate': '2026-07-15',
       });
-      expect(back.title, 'Vet appointment');
+      expect(back.title, 'Dentist appointment');
       expect(back.tagId, isNull);
       expect(back.time, isNull);
       expect(back.completedOnDate, isNull);
