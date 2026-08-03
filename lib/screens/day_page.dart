@@ -472,9 +472,16 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
     final from = addDays(_today, -60);
     final to = addDays(_today, 60);
 
+    // Held onto across the await. `app.dart` builds a fresh calendar source
+    // on every rebuild, and whether the events came off this device is state
+    // on the instance that read them — so asking `widget.calendar` afterwards
+    // can ask an object that has read nothing, and the publish is skipped
+    // with nothing to show for it.
+    final source = widget.calendar;
+
     List<CalendarEvent> events;
     try {
-      events = await widget.calendar.eventsBetween(from, to);
+      events = await source.eventsBetween(from, to);
     } catch (error) {
       // No calendar on this platform, or permission refused. The day still
       // works; it just has no appointments on it.
@@ -484,9 +491,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
     // Only the device that reads a real calendar shares it. Publishing from a
     // device that cannot see iCloud would replace what the phone sent.
-    if (widget.publishesCalendar &&
-        widget.calendar.worthSharing &&
-        events.isNotEmpty) {
+    if (widget.publishesCalendar && source.worthSharing && events.isNotEmpty) {
       unawaited(
         _write(
           () => widget.repo.publishCalendarMirror(events, from: from, to: to),
