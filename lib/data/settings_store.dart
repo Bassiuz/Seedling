@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import '../logic/standup.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +17,7 @@ class SettingsStore extends ChangeNotifier {
   static const _mirrorKey = 'vault.mirror';
   static const _readsCalendarKey = 'calendar.readsDevice';
   static const _standupNameKey = 'standup.name';
+  static const _workingDaysKey = 'standup.workingDays';
 
   final SharedPreferences _prefs;
 
@@ -28,6 +31,20 @@ class SettingsStore extends ChangeNotifier {
 
   Future<void> setStandupName(String name) async {
     await _prefs.setString(_standupNameKey, name.trim());
+    notifyListeners();
+  }
+
+  /// The days you normally work, as weekday numbers. What the standup walks
+  /// back over to find your last working day.
+  Set<int> get workingDays {
+    final stored = _prefs.getStringList(_workingDaysKey);
+    if (stored == null) return defaultWorkingDays;
+    return {for (final day in stored) int.tryParse(day) ?? 0}..remove(0);
+  }
+
+  Future<void> setWorkingDays(Set<int> days) async {
+    await _prefs.setStringList(
+        _workingDaysKey, [for (final day in days) day.toString()]);
     notifyListeners();
   }
 

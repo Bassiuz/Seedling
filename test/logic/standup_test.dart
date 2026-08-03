@@ -17,8 +17,62 @@ Task _task(String title,
         completedOnDate: done);
 
 void main() {
-  test('yesterday is the day before, across a month boundary', () {
-    expect(standupFor(const [], '2026-08-01').previousDay, '2026-07-31');
+  group('which day it looks back at', () {
+    // 2026-07-27 is a Monday.
+    const monday = '2026-07-27';
+    const tuesday = '2026-07-28';
+    const wednesday = '2026-07-29';
+    const thursday = '2026-07-30';
+    const friday = '2026-07-31';
+
+    test('Monday looks back at Thursday, not the weekend', () {
+      expect(previousWorkingDay(monday), '2026-07-23');
+    });
+
+    test('Tuesday looks back at Monday', () {
+      expect(previousWorkingDay(tuesday), monday);
+    });
+
+    test('a Wednesday off makes Thursday look back at Tuesday', () {
+      expect(previousWorkingDay(thursday, daysOff: {wednesday}), tuesday);
+    });
+
+    test('two days off in a row are both stepped over', () {
+      expect(previousWorkingDay(thursday, daysOff: {wednesday, tuesday}),
+          monday);
+    });
+
+    test('someone who works Fridays says so, and Monday follows', () {
+      expect(
+        previousWorkingDay(monday, workingDays: {
+          DateTime.monday,
+          DateTime.tuesday,
+          DateTime.wednesday,
+          DateTime.thursday,
+          DateTime.friday,
+        }),
+        '2026-07-24',
+      );
+    });
+
+    test('a fortnight of nothing falls back on yesterday', () {
+      // Better a wrong day than an empty screen; the settings are the bug.
+      expect(previousWorkingDay(monday, workingDays: const {}), '2026-07-26');
+    });
+
+    test('it crosses a month boundary without trouble', () {
+      // Saturday 1 August looks back at Thursday 30 July.
+      expect(previousWorkingDay('2026-08-01'), thursday);
+    });
+
+    test('the standup takes the override when it is given one', () {
+      expect(standupFor(const [], monday, previousDay: friday).previousDay,
+          friday);
+    });
+
+    test('and works it out itself when it is not', () {
+      expect(standupFor(const [], monday).previousDay, '2026-07-23');
+    });
   });
 
   test('what was checked off yesterday is what you did', () {

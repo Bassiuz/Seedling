@@ -24,6 +24,7 @@ class StandupView extends StatelessWidget {
     required this.standup,
     this.tags = const {},
     this.name = '',
+    this.onShiftPrevious,
   });
 
   final Standup standup;
@@ -31,6 +32,10 @@ class StandupView extends StatelessWidget {
 
   /// Heads the copied text. Empty leaves it off.
   final String name;
+
+  /// Moves which day is being looked back at, by a day at a time. Most weeks
+  /// the guess is right; the weeks it is not are the ones you notice.
+  final void Function(int delta)? onShiftPrevious;
 
   static String _heading(String dayKey) =>
       DateFormat('EEEE', 'en_US').format(dateOfKey(dayKey));
@@ -57,6 +62,23 @@ class StandupView extends StatelessWidget {
             BlockFrame(
               title: '${_heading(standup.previousDay)} — done',
               icon: Icons.check_circle_outline,
+              trailing: onShiftPrevious == null
+                  ? null
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _Shift(
+                          tooltip: 'A day earlier',
+                          icon: Icons.chevron_left,
+                          onTap: () => onShiftPrevious!(-1),
+                        ),
+                        _Shift(
+                          tooltip: 'A day later',
+                          icon: Icons.chevron_right,
+                          onTap: () => onShiftPrevious!(1),
+                        ),
+                      ],
+                    ),
               child: _List(
                 tasks: standup.done,
                 events: standup.attended,
@@ -124,6 +146,33 @@ class _List extends StatelessWidget {
             struck: strikeDone && task.isCompleted,
           ),
       ],
+    );
+  }
+}
+
+/// Nudges which day the standup looks back at. Deliberately small: it is a
+/// correction, not a control you should notice most mornings.
+class _Shift extends StatelessWidget {
+  const _Shift({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    return IconButton(
+      tooltip: tooltip,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      onPressed: onTap,
+      icon: Icon(icon, size: 18, color: colors.faint),
     );
   }
 }
@@ -213,6 +262,66 @@ class _CopyButton extends StatelessWidget {
         );
       },
       icon: Icon(Icons.copy_all_outlined, color: colors.muted),
+    );
+  }
+}
+
+/// The live standup: works out which day to look back at, and lets you move
+/// it when the week did not go the usual way.
+class StandupScreen extends StatefulWidget {
+  const StandupScreen({
+    super.key,
+    required this.day,
+    required this.tasks,
+    required this.tags,
+    required this.eventsFor,
+    this.name = '',
+    this.workingDays = defaultWorkingDays,
+    this.daysOff = const {},
+  });
+
+  final String day;
+  final List<Task> tasks;
+  final Map<String, Tag> tags;
+
+  /// The appointments on a day, which the day page already has loaded.
+  final List<CalendarEvent> Function(String dayKey) eventsFor;
+
+  final String name;
+  final Set<int> workingDays;
+  final Set<String> daysOff;
+
+  @override
+  State<StandupScreen> createState() => _StandupScreenState();
+}
+
+class _StandupScreenState extends State<StandupScreen> {
+  late String _previous = previousWorkingDay(
+    widget.day,
+    workingDays: widget.workingDays,
+    daysOff: widget.daysOff,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return StandupView(
+      name: widget.name,
+      tags: widget.tags,
+      standup: standupFor(
+        widget.tasks,
+        widget.day,
+        previousDay: _previous,
+        events: widget.eventsFor(widget.day),
+        previousEvents: widget.eventsFor(_previous),
+      ),
+      onShiftPrevious: (delta) => setState(() {
+        final moved = addDays(_previous, delta);
+        // It has to stay in the past, and a fortnight back is already further
+        // than anyone means.
+        if (moved.compareTo(widget.day) >= 0) return;
+        if (moved.compareTo(addDays(widget.day, -14)) < 0) return;
+        _previous = moved;
+      }),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/seedling_repo.dart';
+import '../logic/standup.dart';
 
 import '../data/settings_store.dart';
 import '../theme/seedling_theme.dart';
@@ -28,6 +29,8 @@ class SettingsView extends StatelessWidget {
     this.calendarShare,
     this.standupName = '',
     this.onStandupNameChanged,
+    this.workingDays = defaultWorkingDays,
+    this.onWorkingDaysChanged,
     this.onOpenTimesheet,
     required this.onSignOut,
     this.signedInAs,
@@ -61,6 +64,10 @@ class SettingsView extends StatelessWidget {
   /// Heads the standup you copy for Slack. Null hides the field.
   final String standupName;
   final ValueChanged<String>? onStandupNameChanged;
+
+  /// Weekday numbers. Monday to Thursday by default.
+  final Set<int> workingDays;
+  final ValueChanged<Set<int>>? onWorkingDaysChanged;
 
   /// Sends the hours logged against a ticket to its Jira worklog.
   final VoidCallback? onOpenTimesheet;
@@ -176,9 +183,28 @@ class SettingsView extends StatelessWidget {
               BlockFrame(
                 title: 'Standup',
                 icon: Icons.groups_outlined,
-                child: _StandupName(
-                  initial: standupName,
-                  onChanged: onStandupNameChanged!,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _StandupName(
+                      initial: standupName,
+                      onChanged: onStandupNameChanged!,
+                    ),
+                    if (onWorkingDaysChanged != null) ...[
+                      const SizedBox(height: 20),
+                      Text('Days you work', style: text.labelMedium),
+                      const SizedBox(height: 8),
+                      _WorkingDays(
+                        days: workingDays,
+                        onChanged: onWorkingDaysChanged!,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                          'What the standup walks back over to find your last '
+                          'working day.',
+                          style: text.labelMedium),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -321,6 +347,8 @@ class SettingsScreen extends StatelessWidget {
         onOpenTimesheet: onOpenTimesheet,
         standupName: settings.standupName,
         onStandupNameChanged: settings.setStandupName,
+        workingDays: settings.workingDays,
+        onWorkingDaysChanged: settings.setWorkingDays,
         readsDeviceCalendar: settings.readsDeviceCalendar,
         onReadsCalendarChanged:
             canReadDeviceCalendar ? settings.setReadsDeviceCalendar : null,
@@ -385,6 +413,57 @@ class _StandupNameState extends State<_StandupName> {
         const SizedBox(height: 6),
         Text('Heads the standup you copy for Slack. Leave it empty to copy '
             'just the two lists.', style: text.labelMedium),
+      ],
+    );
+  }
+}
+
+/// Monday to Friday, as things you switch on and off.
+class _WorkingDays extends StatelessWidget {
+  const _WorkingDays({required this.days, required this.onChanged});
+
+  final Set<int> days;
+  final ValueChanged<Set<int>> onChanged;
+
+  static const _labels = ['Mo', 'Tu', 'We', 'Th', 'Fr'];
+
+  Set<int> _toggled(int day) {
+    final next = {...days};
+    if (!next.remove(day)) next.add(day);
+    return next;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = SeedlingColors.of(context);
+    return Wrap(
+      spacing: 8,
+      children: [
+        for (var i = 0; i < _labels.length; i++)
+          GestureDetector(
+            onTap: () => onChanged(_toggled(i + 1)),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 42,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: days.contains(i + 1) ? colors.ink : null,
+                border: Border.all(
+                  color: days.contains(i + 1) ? colors.ink : colors.rule,
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                _labels[i],
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: days.contains(i + 1) ? colors.paper : colors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ),
       ],
     );
   }

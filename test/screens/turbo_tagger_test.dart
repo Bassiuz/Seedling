@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -131,6 +132,32 @@ void main() {
         'Retry the autoclicker');
   });
 
+  testWidgets('a failed lookup shows the real error, not the connect hint',
+      (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+    await repo.rememberJiraSite(_site);
+
+    final jira = MockClient((_) async => http.Response('nope', 401));
+
+    await tester.pumpWidget(wrapApp(_screen(repo, jira: jira)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Paste in some tickets'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField),
+        'https://example.atlassian.net/browse/AT-4496 and MAF-4319');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    expect(
+        find.text('Added 2 without names — Jira would not accept the login. '
+            'Check the email and API token.'),
+        findsOneWidget);
+    // The paste is still kept, just unnamed.
+    expect((await repo.watchJiraTickets().first).length, 2);
+  });
+
   testWidgets('picking a ticket tags the task and logs the hour',
       (tester) async {
     configureSize(tester, GoldenSize.mac);
@@ -156,6 +183,32 @@ void main() {
     expect(task.jira?.key, 'AT-4496');
     expect(task.minutesOn(todayKey()), 60);
     expect(find.text('Needs one'), findsNothing, reason: 'it is tagged now');
+  });
+
+  testWidgets('the picker walks with arrow keys and picks with enter',
+      (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+    await repo.addTask('Needs one', date: todayKey());
+    await repo.rememberJiraTickets([
+      const JiraTicket(key: 'AT-1', site: _site, summary: 'Older'),
+      const JiraTicket(key: 'ZZ-9', site: _site, summary: 'Zebra'),
+    ]);
+
+    await tester.pumpWidget(wrapApp(_screen(repo)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Needs one'));
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('No time'));
+    await tester.pumpAndSettle();
+
+    final task = (await repo.watchTasks().first).single;
+    expect(task.jira?.key, 'ZZ-9', reason: 'one step down is the second row');
   });
 
   testWidgets('a ticket just used sorts to the top next time', (tester) async {

@@ -28,6 +28,7 @@ WidgetPayload _payload({
   Map<String, Tag> tags = const {},
   Set<String> doneEvents = const {},
   Set<String> pendingDone = const {},
+  String? now,
 }) =>
     buildWidgetPayload(
       dayKey: _today,
@@ -36,6 +37,7 @@ WidgetPayload _payload({
       tags: tags,
       doneEvents: doneEvents,
       pendingDone: pendingDone,
+      now: now,
     );
 
 void main() {
@@ -72,6 +74,47 @@ void main() {
 
     test('an empty day says so with a zero, not a negative', () {
       expect(_payload().moreEvents, 0);
+    });
+
+    test('when full, meetings already under way give up their row first', () {
+      // Ten meetings, room for eight: the two earliest started ones collapse
+      // into "+2 before" so the evening still fits.
+      final payload = _payload(
+        events: [
+          for (var h = 8; h < 18; h++)
+            _event('Meeting $h', time: '${h.toString().padLeft(2, '0')}:00'),
+        ],
+        now: '12:30',
+      );
+
+      expect(payload.beforeEvents, 2);
+      expect(payload.moreEvents, 0);
+      expect(payload.events.first.time, '10:00',
+          reason: '08:00 and 09:00 are the furthest gone');
+      expect(payload.events.last.time, '17:00');
+    });
+
+    test('a day that fits keeps its past meetings on show', () {
+      final payload = _payload(
+        events: [_event('Standup', time: '09:00')],
+        now: '16:00',
+      );
+
+      expect(payload.beforeEvents, 0);
+      expect(payload.events.single.title, 'Standup');
+    });
+
+    test('with nothing started yet the evening is trimmed, as before', () {
+      final payload = _payload(
+        events: [
+          for (var h = 9; h < 18; h++)
+            _event('Meeting $h', time: '${h.toString().padLeft(2, '0')}:00'),
+        ],
+        now: '07:00',
+      );
+
+      expect(payload.beforeEvents, 0);
+      expect(payload.moreEvents, 1);
     });
   });
 
@@ -139,6 +182,7 @@ void main() {
       'title': 'Water the greenhouse',
       'tag': null,
     });
+    expect(json['beforeEvents'], 0);
     expect(json['moreEvents'], 0);
     expect(json['moreTasks'], 0);
   });

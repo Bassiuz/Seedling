@@ -34,18 +34,54 @@ class Standup {
   final List<CalendarEvent> meetings;
 }
 
+/// The days of the week you normally work. Monday to Thursday, because a
+/// four-day week is the common case here and a wrong default you never
+/// noticed is worse than one you correct once.
+const defaultWorkingDays = <int>{
+  DateTime.monday,
+  DateTime.tuesday,
+  DateTime.wednesday,
+  DateTime.thursday,
+};
+
+/// The last day you actually worked before [day].
+///
+/// Walks back over the weekend, over the days you do not work, and over the
+/// ones you marked off — so a Monday standup covers Thursday, and a Thursday
+/// standup after a Wednesday off covers Tuesday. Yesterday is nearly never
+/// the answer, and a standup that opens on Sunday is one you have to fix
+/// every single week.
+String previousWorkingDay(
+  String day, {
+  Set<int> workingDays = defaultWorkingDays,
+  Set<String> daysOff = const {},
+}) {
+  for (var back = 1; back <= 14; back++) {
+    final candidate = addDays(day, -back);
+    if (daysOff.contains(candidate)) continue;
+    if (!workingDays.contains(dateOfKey(candidate).weekday)) continue;
+    return candidate;
+  }
+  // A fortnight of nothing means the settings are wrong, and yesterday is a
+  // better answer than an empty screen.
+  return addDays(day, -1);
+}
+
 /// Builds it from every task there is.
 ///
-/// [previousDay] is the calendar day before, not the last working day: a
-/// Monday standup covering only Sunday is a choice for the person reading it,
-/// not for Seedling.
+/// [previousDay] overrides the day it looks back at, for the weeks that do
+/// not go the usual way.
 Standup standupFor(
   List<Task> all,
   String day, {
   List<CalendarEvent> events = const [],
   List<CalendarEvent> previousEvents = const [],
+  String? previousDay,
+  Set<int> workingDays = defaultWorkingDays,
+  Set<String> daysOff = const {},
 }) {
-  final previous = addDays(day, -1);
+  final previous = previousDay ??
+      previousWorkingDay(day, workingDays: workingDays, daysOff: daysOff);
   return Standup(
     day: day,
     previousDay: previous,

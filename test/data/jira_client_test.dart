@@ -50,6 +50,51 @@ void main() {
     });
   });
 
+  group('summaries', () {
+    http.Response issues(List<List<String>> pairs) => http.Response(
+        jsonEncode({
+          'issues': [
+            for (final p in pairs)
+              {'key': p[0], 'fields': {'summary': p[1]}}
+          ]
+        }),
+        200);
+
+    test('asks the search/jql endpoint, not the retired /search', () async {
+      late http.Request sent;
+      final client = _client(MockClient((request) async {
+        sent = request;
+        return issues([['MAF-1', 'Fix the export']]);
+      }));
+
+      final found = await client.summaries(['MAF-1']);
+
+      expect(sent.url.path, '/rest/api/2/search/jql');
+      expect(sent.url.queryParameters['jql'], 'key in (MAF-1)');
+      expect(found, {'MAF-1': 'Fix the export'});
+    });
+
+    test('a rubbish key sinks the batch, so keys are retried one at a time',
+        () async {
+      final asked = <String>[];
+      final client = _client(MockClient((request) async {
+        final jql = request.url.queryParameters['jql']!;
+        asked.add(jql);
+        if (jql.contains('UTF-8')) return http.Response('bad jql', 400);
+        return issues([['MAF-1', 'Fix the export']]);
+      }));
+
+      final found = await client.summaries(['MAF-1', 'UTF-8']);
+
+      expect(found, {'MAF-1': 'Fix the export'});
+      expect(asked, [
+        'key in (MAF-1,UTF-8)',
+        'key in (MAF-1)',
+        'key in (UTF-8)',
+      ]);
+    });
+  });
+
   test('creating posts the minutes as seconds and returns the id', () async {
     late http.Request sent;
     final client = _client(MockClient((request) async {

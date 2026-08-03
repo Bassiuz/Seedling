@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seedling/logic/jira_ref.dart';
 import 'package:seedling/logic/timesheet.dart';
+import 'package:seedling/models/calendar_event.dart';
+import 'package:seedling/models/event_extras.dart';
 import 'package:seedling/models/task.dart';
 import 'package:seedling/models/topic.dart';
 
@@ -37,6 +39,83 @@ void main() {
 
     test('a Sunday belongs to the week it ends', () {
       expect(weekDays('2026-08-02').first, _monday);
+    });
+  });
+
+  group('event rows', () {
+    CalendarEvent event({String day = _wednesday, String title = 'AT'}) =>
+        CalendarEvent(
+            id: '$title@$day', title: title, dayKey: day, allDay: false);
+
+    test('a meeting with a ticket earns a row, hours or not', () {
+      final rows = eventRows(
+        [event(title: 'Acceptance test')],
+        {'Acceptance test': const EventExtras(jira: _maf)},
+        _monday,
+      );
+
+      expect(rows.single.title, 'Acceptance test');
+      expect(rows.single.isEvent, isTrue);
+      expect(rows.single.minutes, [0, 0, 0, 0, 0, 0, 0]);
+    });
+
+    test('hours already logged land in the right column', () {
+      final rows = eventRows(
+        [event(title: 'Acceptance test')],
+        {
+          'Acceptance test':
+              const EventExtras(jira: _maf, minutes: {_wednesday: 120}),
+        },
+        _monday,
+      );
+
+      expect(rows.single.minutes, [0, 0, 120, 0, 0, 0, 0]);
+    });
+
+    test('a meeting without a ticket stays off the sheet', () {
+      final rows = eventRows(
+        [event()],
+        {'AT': const EventExtras(tagId: 'medapp')},
+        _monday,
+      );
+
+      expect(rows, isEmpty);
+    });
+
+    test('a repeating meeting is one line, not one per day', () {
+      final rows = eventRows(
+        [event(day: _monday), event(day: _wednesday)],
+        {'AT': const EventExtras(jira: _maf)},
+        _monday,
+      );
+
+      expect(rows, hasLength(1));
+    });
+
+    test('hours in the week keep their line when the calendar is unreadable',
+        () {
+      // Those hours still go to Jira on send, so they must be visible.
+      final rows = eventRows(
+        const [],
+        {
+          'AT': const EventExtras(
+              jira: _maf, title: 'Acceptance test', minutes: {_monday: 60}),
+        },
+        _monday,
+      );
+
+      expect(rows.single.title, 'Acceptance test');
+      expect(rows.single.minutes.first, 60);
+    });
+
+    test('a meeting in another week is not this week´s business', () {
+      final rows = eventRows(
+        [event(day: '2026-08-05')],
+        {'AT': const EventExtras(jira: _maf)},
+        _monday,
+      );
+
+      expect(rows, isEmpty);
     });
   });
 

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/calendar_source.dart';
 import '../data/jira_account.dart';
 import '../data/jira_client.dart';
 import '../data/seedling_repo.dart';
+import '../logic/blacklist.dart';
 import '../logic/day_key.dart';
 import '../logic/duration_input.dart';
 import '../logic/jira_ref.dart';
 import '../logic/timesheet.dart';
 import '../logic/week_key.dart';
 import '../logic/worklog.dart';
+import '../models/calendar_event.dart';
 import '../models/event_extras.dart';
 import '../models/task.dart';
 import '../models/topic.dart';
@@ -30,6 +33,7 @@ class TimesheetView extends StatelessWidget {
     required this.anyDay,
     required this.taskLines,
     required this.topicLines,
+    this.eventLines = const [],
     this.onWeek,
     this.onEdit,
     this.daysOff = const {},
@@ -50,6 +54,10 @@ class TimesheetView extends StatelessWidget {
   final String anyDay;
   final List<TimesheetRow> taskLines;
   final List<TimesheetRow> topicLines;
+
+  /// This week's ticketed meetings. The section only appears when there are
+  /// any — you attach the tickets on the day page, not here.
+  final List<TimesheetRow> eventLines;
 
   /// Called with the number of weeks to move.
   final void Function(int delta)? onWeek;
@@ -90,7 +98,7 @@ class TimesheetView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    final all = [...taskLines, ...topicLines];
+    final all = [...taskLines, ...eventLines, ...topicLines];
     final columns = shownDays(all);
     final days = [for (final i in columns) weekDays(anyDay)[i]];
     final totals = [for (final i in columns) dayTotals(all)[i]];
@@ -103,79 +111,87 @@ class TimesheetView extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 780),
             child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Row(
+              padding: const EdgeInsets.all(24),
               children: [
-                const Expanded(child: BackLine()),
-                if (onTurboTag != null)
-                  TextButton.icon(
-                    onPressed: onTurboTag,
-                    icon: Icon(Icons.bolt, size: 18, color: colors.muted),
-                    label: const Text('Turbo tagger'),
-                  ),
-              ],
-            ),
-            Text('Timesheet', style: text.displaySmall),
-            const SizedBox(height: 12),
-            _WeekBar(anyDay: anyDay, onWeek: onWeek),
-            const SizedBox(height: 24),
-            _Grid(
-              days: days,
-              columns: columns,
-              daysOff: daysOff,
-              onToggleDayOff: onToggleDayOff,
-              blocks: [
-                (
-                  title: 'Tasks',
-                  icon: Icons.check_circle_outline,
-                  rows: taskLines,
-                  empty: 'No ticketed work this week',
-                  standing: false,
+                Row(
+                  children: [
+                    const Expanded(child: BackLine()),
+                    if (onTurboTag != null)
+                      TextButton.icon(
+                        onPressed: onTurboTag,
+                        icon: Icon(Icons.bolt, size: 18, color: colors.muted),
+                        label: const Text('Turbo tagger'),
+                      ),
+                  ],
                 ),
-                (
-                  title: 'Ongoing',
-                  icon: Icons.autorenew,
-                  rows: topicLines,
-                  empty: 'Nothing standing yet',
-                  standing: true,
+                Text('Timesheet', style: text.displaySmall),
+                const SizedBox(height: 12),
+                _WeekBar(anyDay: anyDay, onWeek: onWeek),
+                const SizedBox(height: 24),
+                _Grid(
+                  days: days,
+                  columns: columns,
+                  daysOff: daysOff,
+                  onToggleDayOff: onToggleDayOff,
+                  blocks: [
+                    (
+                      title: 'Tasks',
+                      icon: Icons.check_circle_outline,
+                      rows: taskLines,
+                      empty: 'No ticketed work this week',
+                      standing: false,
+                    ),
+                    if (eventLines.isNotEmpty)
+                      (
+                        title: 'Meetings',
+                        icon: Icons.event_outlined,
+                        rows: eventLines,
+                        empty: '',
+                        standing: false,
+                      ),
+                    (
+                      title: 'Ongoing',
+                      icon: Icons.autorenew,
+                      rows: topicLines,
+                      empty: 'Nothing standing yet',
+                      standing: true,
+                    ),
+                  ],
+                  totals: totals,
+                  onEdit: onEdit,
+                  onAddTopic: onAddTopic,
+                  onEditTopic: onEditTopic,
+                  onRemoveTopic: onRemoveTopic,
                 ),
-              ],
-              totals: totals,
-              onEdit: onEdit,
-              onAddTopic: onAddTopic,
-              onEditTopic: onEditTopic,
-              onRemoveTopic: onRemoveTopic,
-            ),
-            const SizedBox(height: 24),
-            if (signedInAs == null)
-              _Button(label: 'Connect Jira', onPressed: onSignIn)
-            else ...[
-              Text(
-                pending == 0
-                    ? 'Jira has this week already.'
-                    : pending == 1
+                const SizedBox(height: 24),
+                if (signedInAs == null)
+                  _Button(label: 'Connect Jira', onPressed: onSignIn)
+                else ...[
+                  Text(
+                    pending == 0
+                        ? 'Jira has this week already.'
+                        : pending == 1
                         ? '1 worklog to send, as $signedInAs.'
                         : '$pending worklogs to send, as $signedInAs.',
-                style: text.labelMedium?.copyWith(color: colors.muted),
-              ),
-              const SizedBox(height: 10),
-              _Button(
-                label: busy ? 'Sending…' : 'Send this week to Jira',
-                onPressed: busy || pending == 0 ? null : onSend,
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: onSignIn,
-                child: const Text('Use another account'),
-              ),
-            ],
-            if (status != null) ...[
-              const SizedBox(height: 12),
-              Text(status!, style: text.labelMedium),
-            ],
-          ],
-        ),
+                    style: text.labelMedium?.copyWith(color: colors.muted),
+                  ),
+                  const SizedBox(height: 10),
+                  _Button(
+                    label: busy ? 'Sending…' : 'Send this week to Jira',
+                    onPressed: busy || pending == 0 ? null : onSend,
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: onSignIn,
+                    child: const Text('Use another account'),
+                  ),
+                ],
+                if (status != null) ...[
+                  const SizedBox(height: 12),
+                  Text(status!, style: text.labelMedium),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -217,7 +233,8 @@ class _WeekBar extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final monday = weekStartOf(anyDay);
     final sunday = weekEndOf(anyDay);
-    final span = '${DateFormat('MMM d', 'en_US').format(dateOfKey(monday))} — '
+    final span =
+        '${DateFormat('MMM d', 'en_US').format(dateOfKey(monday))} — '
         '${DateFormat('MMM d', 'en_US').format(dateOfKey(sunday))}';
 
     return Row(
@@ -286,9 +303,8 @@ class _Grid extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
     final text = Theme.of(context).textTheme;
-    final width = TimesheetView._labelWidth +
-        TimesheetView._cellWidth * days.length +
-        68;
+    final width =
+        TimesheetView._labelWidth + TimesheetView._cellWidth * days.length + 68;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -355,8 +371,10 @@ class _Grid extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(width: 8),
-                  Text(_short(totals.fold(0, (a, b) => a + b)),
-                      style: text.titleMedium),
+                  Text(
+                    _short(totals.fold(0, (a, b) => a + b)),
+                    style: text.titleMedium,
+                  ),
                 ],
               ),
             ),
@@ -411,24 +429,26 @@ class _HeaderRow extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        DateFormat('EEE', 'en_US')
-                            .format(dateOfKey(day))
-                            .substring(0, 2),
+                        DateFormat(
+                          'EEE',
+                          'en_US',
+                        ).format(dateOfKey(day)).substring(0, 2),
                         style: text.labelSmall?.copyWith(
                           color: daysOff.contains(day)
                               ? colors.faint
                               : day == today
-                                  ? colors.ink
-                                  : colors.muted,
+                              ? colors.ink
+                              : colors.muted,
                           fontWeight: day == today ? FontWeight.w700 : null,
                           decoration: daysOff.contains(day)
                               ? TextDecoration.lineThrough
                               : null,
                         ),
                       ),
-                      Text('${dateOfKey(day).day}',
-                          style:
-                              text.labelSmall?.copyWith(color: colors.faint)),
+                      Text(
+                        '${dateOfKey(day).day}',
+                        style: text.labelSmall?.copyWith(color: colors.faint),
+                      ),
                     ],
                   ),
                 ),
@@ -479,10 +499,12 @@ class _Row extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(row.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.bodyMedium),
+                  Text(
+                    row.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.bodyMedium,
+                  ),
                   Text(
                     row.jira?.key ?? 'no ticket',
                     style: text.labelSmall?.copyWith(
@@ -567,9 +589,12 @@ class _Cell extends StatelessWidget {
           onChanged: (value) => entered = value,
           onFieldSubmitted: (value) => Navigator.pop(dialogContext, value),
           decoration: InputDecoration(
-            labelText:
-                DateFormat('EEEE d MMMM', 'en_US').format(dateOfKey(dayKey)),
-            helperText: 'Under 15 counts as hours, from 15 up as minutes. '
+            labelText: DateFormat(
+              'EEEE d MMMM',
+              'en_US',
+            ).format(dateOfKey(dayKey)),
+            helperText:
+                'Under 15 counts as hours, from 15 up as minutes. '
                 'Empty clears it.',
             helperMaxLines: 2,
           ),
@@ -633,11 +658,16 @@ class TimesheetScreen extends StatefulWidget {
   const TimesheetScreen({
     super.key,
     required this.repo,
+    this.calendar = const NoCalendar(),
     this.account,
     this.clientFor,
   });
 
   final SeedlingRepo repo;
+
+  /// Where the week's meetings come from. Without one the meeting lines are
+  /// simply absent, the way the timesheet always was.
+  final CalendarSource calendar;
 
   /// Overridable so tests never touch a keychain.
   final JiraAccount? account;
@@ -659,6 +689,7 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
   void initState() {
     super.initState();
     _loadAccount();
+    _loadEvents();
   }
 
   Future<void> _loadAccount() async {
@@ -688,7 +719,8 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'API token',
-                helperText: 'From id.atlassian.com → Security → API tokens. '
+                helperText:
+                    'From id.atlassian.com → Security → API tokens. '
                     'Kept in this device’s keychain, never in the cloud.',
                 helperMaxLines: 3,
               ),
@@ -728,15 +760,15 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
 
     final clients = <String, JiraClient>{};
     JiraClient clientFor(String site) => clients.putIfAbsent(
-          site,
-          () => widget.clientFor?.call(site, credentials.email,
-                  credentials.token) ??
-              JiraClient(
-                site: site,
-                email: credentials.email,
-                apiToken: credentials.token,
-              ),
-        );
+      site,
+      () =>
+          widget.clientFor?.call(site, credentials.email, credentials.token) ??
+          JiraClient(
+            site: site,
+            email: credentials.email,
+            apiToken: credentials.token,
+          ),
+    );
 
     var done = 0;
     String? failure;
@@ -747,11 +779,15 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
           case WorklogVerb.create:
             final id = await client.create(action);
             await widget.repo.recordSentWorklog(
-                action.key, SentWorklog(id: id, minutes: action.minutes));
+              action.key,
+              SentWorklog(id: id, minutes: action.minutes),
+            );
           case WorklogVerb.update:
             await client.update(action);
-            await widget.repo.recordSentWorklog(action.key,
-                SentWorklog(id: action.sentId!, minutes: action.minutes));
+            await widget.repo.recordSentWorklog(
+              action.key,
+              SentWorklog(id: action.sentId!, minutes: action.minutes),
+            );
           case WorklogVerb.delete:
             await client.delete(action);
             await widget.repo.forgetSentWorklog(action.key);
@@ -780,6 +816,26 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
 
   String get _anyDay => addDays(weekStartOf(todayKey()), _week * 7);
 
+  List<CalendarEvent> _weekEvents = const [];
+  String? _loadedWeek;
+
+  /// The viewed week's meetings. A calendar that cannot be read leaves the
+  /// meeting lines out, the way the timesheet always was.
+  Future<void> _loadEvents() async {
+    final days = weekDays(_anyDay);
+    final week = days.first;
+    if (_loadedWeek == week) return;
+    _loadedWeek = week;
+    List<CalendarEvent> events;
+    try {
+      events = await widget.calendar.eventsBetween(days.first, days.last);
+    } catch (_) {
+      events = const [];
+    }
+    // A fast week-flip can finish out of order; only the shown week lands.
+    if (mounted && _loadedWeek == week) setState(() => _weekEvents = events);
+  }
+
   Future<void> _addTopic() => _editTopic(null);
 
   /// Name and ticket together: a standing row without a ticket has nowhere to
@@ -802,7 +858,9 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
               autofocus: true,
               onChanged: (value) => name = value,
               decoration: const InputDecoration(
-                  labelText: 'Name', hintText: 'Meetings'),
+                labelText: 'Name',
+                hintText: 'Meetings',
+              ),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -839,14 +897,17 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
     if (ref != null && ref.site != site) {
       await widget.repo.rememberJiraSite(ref.site);
     }
-    await widget.repo.upsertTopic(Topic(
-      id: existing?.id ??
-          name.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-'),
-      title: name,
-      jira: ref ?? existing?.jira,
-      minutes: existing?.minutes ?? const {},
-      sortOrder: existing?.sortOrder ?? DateTime.now().millisecondsSinceEpoch,
-    ));
+    await widget.repo.upsertTopic(
+      Topic(
+        id:
+            existing?.id ??
+            name.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-'),
+        title: name,
+        jira: ref ?? existing?.jira,
+        minutes: existing?.minutes ?? const {},
+        sortOrder: existing?.sortOrder ?? DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
   }
 
   Future<void> _remove(Topic topic) async {
@@ -855,8 +916,9 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
       builder: (dialogContext) => AlertDialog(
         title: Text('Remove ${topic.title}?'),
         content: const Text(
-            'The hours already sent to Jira stay there. This only takes the '
-            'row off the timesheet.'),
+          'The hours already sent to Jira stay there. This only takes the '
+          'row off the timesheet.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -873,10 +935,24 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
   }
 
   Future<void> _setCell(
-      TimesheetRow row, String dayKey, int minutes, List<Task> tasks) async {
+    TimesheetRow row,
+    String dayKey,
+    int minutes,
+    List<Task> tasks,
+    Map<String, EventExtras> extras,
+  ) async {
     final topic = row.topic;
     if (topic != null) {
       await widget.repo.setTopicMinutes(topic, dayKey, minutes);
+      return;
+    }
+    if (row.isEvent) {
+      // Extras exist whenever the row does: a ticket is what earned the line.
+      final extra = extras[row.sourceId] ?? EventExtras(title: row.title);
+      await widget.repo.setEventExtras(
+        row.sourceId,
+        extra.withMinutes(dayKey, minutes),
+      );
       return;
     }
     final task = tasks.where((t) => t.id == row.sourceId).firstOrNull;
@@ -891,62 +967,80 @@ class _TimesheetScreenState extends State<TimesheetScreen> {
       stream: widget.repo.watchTasks(),
       builder: (context, taskSnap) => StreamBuilder<List<Topic>>(
         stream: widget.repo.watchTopics(),
-        builder: (context, topicSnap) =>
-            StreamBuilder<Map<String, EventExtras>>(
+        builder: (context, topicSnap) => StreamBuilder<Map<String, EventExtras>>(
           stream: widget.repo.watchEventExtras(),
           builder: (context, extraSnap) => StreamBuilder<Set<String>>(
-            stream: widget.repo.watchDaysOff(),
-            builder: (context, offSnap) =>
-                StreamBuilder<Map<String, SentWorklog>>(
-            stream: widget.repo.watchSentWorklogs(),
-            builder: (context, sentSnap) {
-              final tasks = taskSnap.data ?? const <Task>[];
-              final topics = topicSnap.data ?? const <Topic>[];
-              final lines = [
-                ...taskRows(tasks, _anyDay),
-                ...topicRows(topics, _anyDay),
-              ];
-              final all = weekDays(_anyDay);
-              final days = [for (final i in shownDays(lines)) all[i]];
-              // Only this week goes when you press send: the button says
-              // "this week", and a button that quietly does more than it says
-              // is a button you stop trusting.
-              final actions = worklogActions(
-                tasks: tasks,
-                topics: topics,
-                events: extraSnap.data ?? const {},
-                sent: sentSnap.data ?? const {},
-              ).where((a) => days.contains(a.dayKey)).toList();
+            stream: widget.repo.watchHiddenEvents(),
+            builder: (context, hiddenSnap) => StreamBuilder<Set<String>>(
+              stream: widget.repo.watchDaysOff(),
+              builder: (context, offSnap) => StreamBuilder<Map<String, SentWorklog>>(
+                stream: widget.repo.watchSentWorklogs(),
+                builder: (context, sentSnap) {
+                  final tasks = taskSnap.data ?? const <Task>[];
+                  final topics = topicSnap.data ?? const <Topic>[];
+                  final extras =
+                      extraSnap.data ?? const <String, EventExtras>{};
+                  final eventLines = eventRows(
+                    visibleEvents(
+                      _weekEvents,
+                      hiddenSnap.data ?? const <String>{},
+                    ),
+                    extras,
+                    _anyDay,
+                  );
+                  final lines = [
+                    ...taskRows(tasks, _anyDay),
+                    ...eventLines,
+                    ...topicRows(topics, _anyDay),
+                  ];
+                  final all = weekDays(_anyDay);
+                  final days = [for (final i in shownDays(lines)) all[i]];
+                  // Only this week goes when you press send: the button says
+                  // "this week", and a button that quietly does more than it says
+                  // is a button you stop trusting.
+                  final actions = worklogActions(
+                    tasks: tasks,
+                    topics: topics,
+                    events: extraSnap.data ?? const {},
+                    sent: sentSnap.data ?? const {},
+                  ).where((a) => days.contains(a.dayKey)).toList();
 
-              final daysOff = offSnap.data ?? const <String>{};
-              return TimesheetView(
-                anyDay: _anyDay,
-                daysOff: daysOff,
-                onToggleDayOff: (day) => widget.repo
-                    .setDayOff(day, !daysOff.contains(day)),
-                onTurboTag: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => TurboTaggerScreen(
-                        repo: widget.repo, today: todayKey()),
-                  ),
-                ),
-                taskLines: taskRows(tasks, _anyDay),
-                topicLines: topicRows(topics, _anyDay),
-                onWeek: (delta) => setState(() => _week += delta),
-                onEdit: (row, day, minutes) =>
-                    _setCell(row, day, minutes, tasks),
-                onAddTopic: _addTopic,
-                onEditTopic: _editTopic,
-                onRemoveTopic: _remove,
-                signedInAs: _credentials?.email,
-                pending: actions.length,
-                busy: _busy,
-                status: _status,
-                onSignIn: _connect,
-                onSend: () => _send(actions),
-              );
-            },
-          ),
+                  final daysOff = offSnap.data ?? const <String>{};
+                  return TimesheetView(
+                    anyDay: _anyDay,
+                    daysOff: daysOff,
+                    onToggleDayOff: (day) =>
+                        widget.repo.setDayOff(day, !daysOff.contains(day)),
+                    onTurboTag: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => TurboTaggerScreen(
+                          repo: widget.repo,
+                          today: todayKey(),
+                        ),
+                      ),
+                    ),
+                    taskLines: taskRows(tasks, _anyDay),
+                    eventLines: eventLines,
+                    topicLines: topicRows(topics, _anyDay),
+                    onWeek: (delta) {
+                      setState(() => _week += delta);
+                      _loadEvents();
+                    },
+                    onEdit: (row, day, minutes) =>
+                        _setCell(row, day, minutes, tasks, extras),
+                    onAddTopic: _addTopic,
+                    onEditTopic: _editTopic,
+                    onRemoveTopic: _remove,
+                    signedInAs: _credentials?.email,
+                    pending: actions.length,
+                    busy: _busy,
+                    status: _status,
+                    onSignIn: _connect,
+                    onSend: () => _send(actions),
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),

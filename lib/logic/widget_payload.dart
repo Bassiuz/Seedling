@@ -39,19 +39,24 @@ class WidgetPayload {
     required this.tasks,
     required this.moreEvents,
     required this.moreTasks,
+    this.beforeEvents = 0,
   });
 
   /// How many lines fit in one column of a four-by-two widget.
   ///
-  /// Six, packed tight. A widget is read at a glance and the thing that makes
-  /// a glance useful is how much of the day is on it — so the padding is down
-  /// to almost nothing and the rows are as close as they can be while staying
-  /// separate lines.
-  static const int lines = 6;
+  /// Eight, packed tight. A widget is read at a glance and the thing that
+  /// makes a glance useful is how much of the day is on it — so the padding
+  /// is down to almost nothing and the rows are as close as they can be while
+  /// staying separate lines.
+  static const int lines = 8;
 
   final String dayKey;
   final List<WidgetEvent> events;
   final List<WidgetTask> tasks;
+
+  /// Meetings already under way or over that gave up their row, so the
+  /// column can open with "+2 before" instead of cutting off the evening.
+  final int beforeEvents;
 
   /// What did not fit, so each column can say "+3 more".
   final int moreEvents;
@@ -61,6 +66,7 @@ class WidgetPayload {
         'dayKey': dayKey,
         'events': [for (final e in events) e.toMap()],
         'tasks': [for (final t in tasks) t.toMap()],
+        'beforeEvents': beforeEvents,
         'moreEvents': moreEvents,
         'moreTasks': moreTasks,
       };
@@ -72,6 +78,10 @@ class WidgetPayload {
 ///
 /// Anything checked off is left out: the widget is what is left of the day,
 /// and a glance should not have to skip past what is done.
+///
+/// [now] is `HH:mm`. When the column overflows, meetings that already started
+/// before [now] give up their row first — the glance is about what is still
+/// coming — and are counted in [WidgetPayload.beforeEvents] instead.
 WidgetPayload buildWidgetPayload({
   required String dayKey,
   required List<Task> tasks,
@@ -79,6 +89,7 @@ WidgetPayload buildWidgetPayload({
   Map<String, Tag> tags = const {},
   Set<String> doneEvents = const {},
   Set<String> pendingDone = const {},
+  String? now,
 }) {
   // All-day things first, then by the clock, the way the day is lived.
   final timed = [
@@ -94,16 +105,31 @@ WidgetPayload buildWidgetPayload({
       if (!task.isCompleted && !pendingDone.contains(task.id)) task,
   ];
 
+  var shown = timed;
+  var before = 0;
+  final overflow = timed.length - WidgetPayload.lines;
+  if (overflow > 0 && now != null) {
+    // Started is the best "done" we have: the calendar carries no end times.
+    final started = [
+      for (final event in timed)
+        if (!event.allDay && (event.time ?? '').compareTo(now) < 0) event,
+    ];
+    before = overflow < started.length ? overflow : started.length;
+    final dropped = {for (final event in started.take(before)) event.id};
+    shown = [for (final event in timed) if (!dropped.contains(event.id)) event];
+  }
+
   return WidgetPayload(
     dayKey: dayKey,
     events: [
-      for (final event in timed.take(WidgetPayload.lines))
+      for (final event in shown.take(WidgetPayload.lines))
         WidgetEvent(
           time: event.allDay ? 'all day' : event.time ?? '',
           title: event.title,
         ),
     ],
-    moreEvents: (timed.length - WidgetPayload.lines).clamp(0, 99),
+    beforeEvents: before,
+    moreEvents: (shown.length - WidgetPayload.lines).clamp(0, 99),
     tasks: [
       for (final task in open.take(WidgetPayload.lines))
         WidgetTask(

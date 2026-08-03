@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../data/jira_account.dart';
@@ -76,7 +77,7 @@ class TurboTaggerView extends StatelessWidget {
                 Text(
                   ticketCount == 0
                       ? 'No tickets to choose from yet — paste a few in with '
-                          'the button above.'
+                            'the button above.'
                       : '$ticketCount tickets, most recently used first.',
                   style: text.labelMedium,
                 ),
@@ -184,6 +185,36 @@ class TicketPicker extends StatefulWidget {
 
 class _TicketPickerState extends State<TicketPicker> {
   String _filter = '';
+  int _selected = 0;
+  final _selectedKey = GlobalKey();
+
+  /// Sits above the filter field in the focus tree, so the arrows and enter
+  /// arrive here before the text field can spend them on cursor movement.
+  KeyEventResult _onKey(KeyEvent event, List<JiraTicket> shown) {
+    if (event is KeyUpEvent || shown.isEmpty) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    final step = key == LogicalKeyboardKey.arrowDown
+        ? 1
+        : key == LogicalKeyboardKey.arrowUp
+        ? -1
+        : null;
+    if (step != null) {
+      setState(() => _selected = (_selected + step).clamp(0, shown.length - 1));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final selected = _selectedKey.currentContext;
+        if (selected != null) {
+          Scrollable.ensureVisible(selected, alignment: 0.5);
+        }
+      });
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.numpadEnter) {
+      Navigator.pop(context, shown[_selected.clamp(0, shown.length - 1)]);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -197,70 +228,87 @@ class _TicketPickerState extends State<TicketPicker> {
             (ticket.summary ?? '').toLowerCase().contains(needle))
           ticket,
     ];
+    final selected = _selected.clamp(0, shown.isEmpty ? 0 : shown.length - 1);
 
-    return Padding(
-      padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.title,
+    return Focus(
+      onKeyEvent: (node, event) => _onKey(event, shown),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: text.titleMedium),
-                  const SizedBox(height: 8),
-                  TextField(
-                    autofocus: true,
-                    onChanged: (value) => setState(() => _filter = value),
-                    decoration: InputDecoration.collapsed(
-                      hintText: 'Filter…',
-                      hintStyle:
-                          text.bodyLarge?.copyWith(color: colors.faint),
+                      style: text.titleMedium,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    TextField(
+                      autofocus: true,
+                      onChanged: (value) => setState(() {
+                        _filter = value;
+                        _selected = 0;
+                      }),
+                      decoration: InputDecoration.collapsed(
+                        hintText: 'Filter…',
+                        hintStyle: text.bodyLarge?.copyWith(
+                          color: colors.faint,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            Flexible(
-              child: shown.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: EmptyNote('Nothing matches'),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: shown.length,
-                      itemBuilder: (context, i) {
-                        final ticket = shown[i];
-                        return ListTile(
-                          dense: true,
-                          title: Text(ticket.summary ?? ticket.key,
+              const Divider(height: 1),
+              Flexible(
+                child: shown.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: EmptyNote('Nothing matches'),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: shown.length,
+                        itemBuilder: (context, i) {
+                          final ticket = shown[i];
+                          return ListTile(
+                            key: i == selected ? _selectedKey : null,
+                            selected: i == selected,
+                            selectedColor: colors.ink,
+                            selectedTileColor: colors.rule,
+                            dense: true,
+                            title: Text(
+                              ticket.summary ?? ticket.key,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: text.bodyMedium),
-                          leading: SizedBox(
-                            width: 72,
-                            child: Text(
-                              ticket.key,
-                              style: text.labelSmall?.copyWith(
-                                color: SeedlingPalette.azure,
-                                fontWeight: FontWeight.w600,
+                              style: text.bodyMedium,
+                            ),
+                            leading: SizedBox(
+                              width: 72,
+                              child: Text(
+                                ticket.key,
+                                style: text.labelSmall?.copyWith(
+                                  color: SeedlingPalette.azure,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          onTap: () => Navigator.pop(context, ticket),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                            onTap: () => Navigator.pop(context, ticket),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -348,7 +396,13 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
     var named = 0;
     for (final entry in bySite.entries) {
       for (final batch in inBatches([for (final t in entry.value) t.key])) {
-        final found = await _lookUp(entry.key, batch);
+        Map<String, String>? found;
+        try {
+          found = await _lookUp(entry.key, batch);
+        } catch (error) {
+          if (mounted) setState(() => _status = _saidNo(error));
+          return;
+        }
         if (found == null) return;
         final learned = [
           for (final key in batch)
@@ -381,7 +435,8 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
           onChanged: (value) => pasted = value,
           decoration: const InputDecoration(
             hintText: 'AT-1234, links, a whole standup note…',
-            helperText: 'Any format. Seedling picks the keys out and asks '
+            helperText:
+                'Any format. Seedling picks the keys out and asks '
                 'Jira what they are called.',
             helperMaxLines: 3,
           ),
@@ -408,9 +463,11 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
 
     final site = siteInText(pasted) ?? await widget.repo.watchJiraSite().first;
     if (site == null) {
-      setState(() => _status =
-          'Paste a full ticket link once, so Seedling learns your Jira '
-          'address.');
+      setState(
+        () => _status =
+            'Paste a full ticket link once, so Seedling learns your Jira '
+            'address.',
+      );
       return;
     }
     if (siteInText(pasted) != null) {
@@ -418,10 +475,16 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
     }
 
     setState(() => _status = 'Looking up ${keys.length}…');
-    final found = await _lookUp(site, keys);
+    Map<String, String>? found;
+    String? failure;
+    try {
+      found = await _lookUp(site, keys);
+    } catch (error) {
+      failure = _saidNo(error);
+    }
 
-    // Without an account we cannot check them, so take them at face value
-    // rather than losing the paste.
+    // Without an account (or with Jira down) we cannot check them, so take
+    // them at face value rather than losing the paste.
     final tickets = [
       for (final key in keys)
         if (found == null || found.containsKey(key))
@@ -430,30 +493,35 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
     await widget.repo.rememberJiraTickets(tickets);
 
     if (!mounted) return;
-    setState(() => _status = found == null
-        ? 'Added ${tickets.length} without names — connect Jira on the '
-            'timesheet to have them looked up.'
-        : 'Added ${tickets.length} of ${keys.length}.');
+    // A failed lookup is not a missing account: saying "connect Jira" to
+    // someone who has would send them chasing the wrong problem.
+    setState(
+      () => _status = found != null
+          ? 'Added ${tickets.length} of ${keys.length}.'
+          : failure != null
+          ? 'Added ${tickets.length} without names — $failure'
+          : 'Added ${tickets.length} without names — connect Jira on the '
+                'timesheet to have them looked up.',
+    );
   }
 
-  /// Null when there is no account to ask with.
+  String _saidNo(Object error) =>
+      error is JiraException ? error.message : 'Jira said no.';
+
+  /// Null when there is no account to ask with; throws when Jira cannot be
+  /// reached or refuses.
   Future<Map<String, String>?> _lookUp(String site, List<String> keys) async {
     final credentials = await _account.read();
     if (credentials == null) return null;
-    final client = widget.clientFor?.call(site, credentials.email,
-            credentials.token) ??
+    final client =
+        widget.clientFor?.call(site, credentials.email, credentials.token) ??
         JiraClient(
-            site: site,
-            email: credentials.email,
-            apiToken: credentials.token);
+          site: site,
+          email: credentials.email,
+          apiToken: credentials.token,
+        );
     try {
       return await client.summaries(keys);
-    } catch (error) {
-      if (mounted) {
-        setState(() => _status =
-            error is JiraException ? error.message : 'Jira said no.');
-      }
-      return null;
     } finally {
       client.close();
     }
@@ -529,8 +597,11 @@ class _TurboTaggerScreenState extends State<TurboTaggerScreen> {
           stream: widget.repo.watchTasks(),
           builder: (context, taskSnap) {
             final untagged = [
-              for (final task
-                  in tasksForDay(taskSnap.data ?? const [], _day, widget.today))
+              for (final task in tasksForDay(
+                taskSnap.data ?? const [],
+                _day,
+                widget.today,
+              ))
                 if (task.jira == null) task,
             ];
             return TurboTaggerView(

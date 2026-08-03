@@ -14,14 +14,14 @@ import org.json.JSONObject
 /**
  * Today at a glance: appointments on the left, what is left to do on the right.
  *
- * Four rows a side. RemoteViews cannot loop, so the rows exist in the layout
+ * Eight rows a side. RemoteViews cannot loop, so the rows exist in the layout
  * and the unused ones are hidden — which is the ordinary way to do this and
  * cheaper than a collection widget for a list that is never long.
  */
 class SeedlingWidgetProvider : HomeWidgetProvider() {
 
     /** Must match `WidgetPayload.lines` on the Dart side. */
-    private val ROWS = 6
+    private val ROWS = 8
 
 
     override fun onUpdate(
@@ -68,6 +68,7 @@ class SeedlingWidgetProvider : HomeWidgetProvider() {
 
         val nothing = events == null || events.length() == 0
         views.setViewVisibility(R.id.events_empty, if (nothing) View.VISIBLE else View.GONE)
+        before(views, data?.optInt("beforeEvents") ?: 0)
         more(views, R.id.events_more, data?.optInt("moreEvents") ?: 0)
     }
 
@@ -107,6 +108,15 @@ class SeedlingWidgetProvider : HomeWidgetProvider() {
             views.setTextViewText(id, "+$count more")
         } else {
             views.setViewVisibility(id, View.GONE)
+        }
+    }
+
+    private fun before(views: RemoteViews, count: Int) {
+        if (count > 0) {
+            views.setViewVisibility(R.id.events_before, View.VISIBLE)
+            views.setTextViewText(R.id.events_before, "+$count before")
+        } else {
+            views.setViewVisibility(R.id.events_before, View.GONE)
         }
     }
 }

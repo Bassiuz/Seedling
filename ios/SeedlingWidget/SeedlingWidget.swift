@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 // Today at a glance: appointments on the left, what is left to do on the
-// right. Four rows a side, which is what fits without the text shrinking to
+// right. Eight rows a side, which is what fits without the text shrinking to
 // something you would not read across a room.
 
 private let appGroup = "group.dev.bassiuz.seedling"
@@ -31,6 +31,10 @@ struct SeedlingDay: Decodable {
   let moreEvents: Int
   let moreTasks: Int
 
+  /// Meetings already under way that gave up their row. Optional so a payload
+  /// written by an older app still decodes.
+  let beforeEvents: Int?
+
   /// Shown in the widget gallery, before the app has ever written anything.
   static let placeholder = SeedlingDay(
     dayKey: "",
@@ -40,11 +44,13 @@ struct SeedlingDay: Decodable {
       SeedlingTask(id: "2", title: "Water the greenhouse", tag: nil),
     ],
     moreEvents: 0,
-    moreTasks: 0
+    moreTasks: 0,
+    beforeEvents: 0
   )
 
   static let empty = SeedlingDay(
-    dayKey: "", events: [], tasks: [], moreEvents: 0, moreTasks: 0)
+    dayKey: "", events: [], tasks: [], moreEvents: 0, moreTasks: 0,
+    beforeEvents: 0)
 
   static func read() -> SeedlingDay {
     guard
@@ -146,6 +152,7 @@ struct SeedlingWidgetView: View {
         if day.events.isEmpty {
           Text("Nothing scheduled").font(.system(size: 11)).foregroundStyle(faint)
         }
+        before(day.beforeEvents ?? 0)
         ForEach(day.events) { event in
           HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(event.time).font(.system(size: 9)).foregroundStyle(muted)
@@ -198,6 +205,13 @@ struct SeedlingWidgetView: View {
   private func more(_ count: Int) -> some View {
     if count > 0 {
       Text("+\(count) more").font(.system(size: 9)).foregroundStyle(faint)
+    }
+  }
+
+  @ViewBuilder
+  private func before(_ count: Int) -> some View {
+    if count > 0 {
+      Text("+\(count) before").font(.system(size: 9)).foregroundStyle(faint)
     }
   }
 

@@ -87,19 +87,31 @@ class JiraClient {
   /// absent from the result — which is how a loose paste gets filtered.
   Future<Map<String, String>> summaries(List<String> keys) async {
     if (keys.isEmpty) return {};
-    final jql = 'key in (${keys.join(',')})';
+    final batch = await _search(keys);
+    if (batch != null) return batch;
+
+    // One bad key fails the whole query — search/jql has no validateQuery,
+    // and a paste is expected to contain rubbish — so sort the good from the
+    // bad a key at a time.
+    final found = <String, String>{};
+    for (final key in keys) {
+      found.addAll(await _search([key]) ?? const {});
+    }
+    return found;
+  }
+
+  /// Null when Jira rejects the query itself: some key in it is not real.
+  Future<Map<String, String>?> _search(List<String> keys) async {
     final response = await _http.get(
-      Uri.parse('$site/rest/api/2/search').replace(queryParameters: {
-        'jql': jql,
+      // The plain /search endpoint is gone (410) since 2025.
+      Uri.parse('$site/rest/api/2/search/jql').replace(queryParameters: {
+        'jql': 'key in (${keys.join(',')})',
         'fields': 'summary',
         'maxResults': '${keys.length}',
-        // One bad key would otherwise fail the whole query, and a paste is
-        // expected to contain rubbish.
-        'validateQuery': 'none',
       }),
       headers: _headers,
     );
-    if (response.statusCode == 400) return {};
+    if (response.statusCode == 400) return null;
     _check(response, 'look those tickets up');
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;

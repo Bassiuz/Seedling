@@ -5,12 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:seedling/data/calendar_source.dart';
 import 'package:seedling/data/jira_account.dart';
 import 'package:seedling/data/jira_client.dart';
 import 'package:seedling/data/seedling_repo.dart';
 import 'package:seedling/logic/day_key.dart';
 import 'package:seedling/logic/jira_ref.dart';
 import 'package:seedling/logic/timesheet.dart';
+import 'package:seedling/models/calendar_event.dart';
+import 'package:seedling/models/event_extras.dart';
 import 'package:seedling/models/topic.dart';
 import 'package:seedling/screens/timesheet_screen.dart';
 
@@ -211,6 +214,65 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(edits, [('Retry', _monday, 195)]);
+  });
+
+  testWidgets('a ticketed meeting gets a row and takes hours', (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+    await repo.setEventExtras('Acceptance test',
+        const EventExtras(jira: JiraRef(key: 'MAF-4836', site: _site)));
+
+    await tester.pumpWidget(wrapApp(TimesheetScreen(
+      repo: repo,
+      account: _FakeAccount(),
+      calendar: FakeCalendar([
+        CalendarEvent(
+          id: 'at@${todayKey()}',
+          title: 'Acceptance test',
+          dayKey: todayKey(),
+          allDay: false,
+          time: '13:45',
+        ),
+      ]),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Meetings'), findsOneWidget);
+
+    await tester
+        .tap(find.byKey(ValueKey('cell:Acceptance test@${todayKey()}')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '2:00');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final extras = (await repo.watchEventExtras().first)['Acceptance test']!;
+    expect(extras.minutesOn(todayKey()), 120);
+    expect(extras.jira?.key, 'MAF-4836', reason: 'the ticket must survive');
+    expect(find.text('2:00'), findsWidgets);
+  });
+
+  testWidgets('a meeting with no ticket leaves the section out',
+      (tester) async {
+    configureSize(tester, GoldenSize.mac);
+    final repo = SeedlingRepo(FakeFirebaseFirestore(), 'bas');
+
+    await tester.pumpWidget(wrapApp(TimesheetScreen(
+      repo: repo,
+      account: _FakeAccount(),
+      calendar: FakeCalendar([
+        CalendarEvent(
+          id: 'lunch@${todayKey()}',
+          title: 'Lunch',
+          dayKey: todayKey(),
+          allDay: false,
+          time: '12:00',
+        ),
+      ]),
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Meetings'), findsNothing);
   });
 
   testWidgets('sending puts the week in Jira and remembers it', (tester) async {

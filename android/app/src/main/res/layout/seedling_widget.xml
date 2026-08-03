@@ -27,6 +27,13 @@
             android:textStyle="bold"
             android:textColor="@color/seedling_muted" />
 
+        <TextView
+            android:id="@+id/events_before"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="9sp"
+            android:textColor="@color/seedling_faint" />
+
                 <LinearLayout
                     android:id="@+id/event_0"
                     android:layout_width="match_parent"
@@ -140,6 +147,46 @@
                         android:textColor="@color/seedling_muted" />
                     <TextView
                         android:id="@+id/event_title_5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="11sp"
+                        android:textColor="@color/seedling_ink" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/event_6"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/event_time_6"
+                        android:layout_width="32dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="9sp"
+                        android:textColor="@color/seedling_muted" />
+                    <TextView
+                        android:id="@+id/event_title_6"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="11sp"
+                        android:textColor="@color/seedling_ink" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/event_7"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/event_time_7"
+                        android:layout_width="32dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="9sp"
+                        android:textColor="@color/seedling_muted" />
+                    <TextView
+                        android:id="@+id/event_title_7"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLines="1"
@@ -313,6 +360,52 @@
                         android:contentDescription="@string/seedling_widget_description" />
                     <TextView
                         android:id="@+id/task_title_5"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="11sp"
+                        android:textColor="@color/seedling_ink" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/task_6"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:id="@+id/task_box_6"
+                        android:layout_width="17dp"
+                        android:layout_height="17dp"
+                        android:padding="3dp"
+                        android:src="@drawable/seedling_checkbox"
+                        android:contentDescription="@string/seedling_widget_description" />
+                    <TextView
+                        android:id="@+id/task_title_6"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:maxLines="1"
+                        android:ellipsize="end"
+                        android:textSize="11sp"
+                        android:textColor="@color/seedling_ink" />
+                </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/task_7"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <ImageView
+                        android:id="@+id/task_box_7"
+                        android:layout_width="17dp"
+                        android:layout_height="17dp"
+                        android:padding="3dp"
+                        android:src="@drawable/seedling_checkbox"
+                        android:contentDescription="@string/seedling_widget_description" />
+                    <TextView
+                        android:id="@+id/task_title_7"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="3dp"

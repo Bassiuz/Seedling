@@ -5,6 +5,7 @@ import 'package:seedling/logic/standup.dart';
 import 'package:seedling/models/calendar_event.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
+import 'package:seedling/logic/day_key.dart';
 import 'package:seedling/screens/standup_screen.dart';
 
 import '../util/golden/golden_utils.dart';
@@ -144,5 +145,70 @@ void main() {
     expect(copied, contains('    - Retro'), reason: "yesterday's meeting");
     expect(copied, contains('    - Sprint planning'));
     expect(copied, contains('- Vandaag:'));
+  });
+
+  group('which day it looks back at', () {
+    // 2026-07-27 is a Monday.
+    const monday = '2026-07-27';
+
+    Widget screen({Set<String> daysOff = const {}}) => StandupScreen(
+          day: monday,
+          tasks: [
+            _task('Thursday work', date: '2026-07-23', done: '2026-07-23'),
+            _task('Tuesday work', date: '2026-07-21', done: '2026-07-21'),
+            _task('Friday work', date: '2026-07-24', done: '2026-07-24'),
+          ],
+          tags: _tags,
+          daysOff: daysOff,
+          eventsFor: (_) => const [],
+        );
+
+    testWidgets('Monday opens on Thursday, not on Sunday', (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      expect(find.text('Thursday — done'), findsOneWidget);
+      expect(find.text('Thursday work'), findsOneWidget);
+    });
+
+    testWidgets('one tap forward reaches the Friday you did work',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      await tester.tap(find.byTooltip('A day later'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Friday — done'), findsOneWidget);
+      expect(find.text('Friday work'), findsOneWidget);
+    });
+
+    testWidgets('and back over a Wednesday off to the Tuesday',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      await tester.tap(find.byTooltip('A day earlier'));
+      await tester.tap(find.byTooltip('A day earlier'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tuesday — done'), findsOneWidget);
+    });
+
+    testWidgets('a day marked off is skipped from the start', (tester) async {
+      await tester.pumpWidget(wrapApp(screen(daysOff: {'2026-07-23'})));
+
+      expect(find.text('Wednesday — done'), findsOneWidget);
+    });
+
+    testWidgets('it cannot be pushed onto the standup day itself',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      for (var i = 0; i < 6; i++) {
+        await tester.tap(find.byTooltip('A day later'));
+      }
+      await tester.pumpAndSettle();
+
+      // Sunday is as far forward as it goes; Monday is the day itself.
+      expect(find.text('Sunday — done'), findsOneWidget);
+    });
   });
 }
