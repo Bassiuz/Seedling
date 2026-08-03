@@ -5,7 +5,6 @@ import 'package:seedling/logic/standup.dart';
 import 'package:seedling/models/calendar_event.dart';
 import 'package:seedling/models/tag.dart';
 import 'package:seedling/models/task.dart';
-import 'package:seedling/logic/day_key.dart';
 import 'package:seedling/screens/standup_screen.dart';
 
 import '../util/golden/golden_utils.dart';
