@@ -1257,11 +1257,15 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
     builder: (sheetContext) => StreamBuilder<List<Task>>(
       stream: widget.repo.watchTasks(),
       builder: (context, snapshot) {
+        // Falls back to the task we already have rather than an empty frame:
+        // a sheet that appears blank and then fills in is a sheet whose
+        // autofocus lands on nothing.
         final latest = (snapshot.data ?? const <Task>[])
-            .where((t) => t.id == task.id)
-            .firstOrNull;
-        if (latest == null) return const SizedBox.shrink();
+                .where((t) => t.id == task.id)
+                .firstOrNull ??
+            task;
         return TimeSheet(
+          autofocus: autofocus,
           title: latest.title,
           minutes: latest.minutesOn(day),
           totalMinutes: latest.totalMinutes,

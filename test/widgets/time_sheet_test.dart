@@ -16,7 +16,9 @@ Task _task({Map<String, int> entries = const {}}) => Task(
     );
 
 Widget _sheet(Task task,
-        {void Function(int)? onChange, void Function(int)? onSet}) =>
+        {void Function(int)? onChange,
+        void Function(int)? onSet,
+        bool autofocus = false}) =>
     Scaffold(
       body: TimeSheet(
         title: task.title,
@@ -24,6 +26,7 @@ Widget _sheet(Task task,
         totalMinutes: task.totalMinutes,
         onChange: onChange ?? (_) {},
         onSet: onSet,
+        autofocus: autofocus,
       ),
     );
 
@@ -131,5 +134,45 @@ void main() {
     );
 
     expect(find.textContaining('across all days'), findsNothing);
+  });
+
+  group('opened by the keyboard', () {
+    testWidgets('the cursor is already in the box', (tester) async {
+      // Ctrl-T, "2", enter. Having to click the field first is the whole
+      // thing the shortcut exists to avoid.
+      await tester.pumpWidget(
+          wrapApp(_sheet(_task(), onSet: (_) {}, autofocus: true)));
+      await tester.pump();
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.autofocus, isTrue);
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<TextField>(),
+        isNotNull,
+      );
+    });
+
+    testWidgets('typing then enter logs it without touching the mouse',
+        (tester) async {
+      final set = <int>[];
+      await tester.pumpWidget(
+          wrapApp(_sheet(_task(), onSet: set.add, autofocus: true)));
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), '2');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+
+      expect(set, [120]);
+    });
+
+    testWidgets('opened by hand it does not steal the keyboard',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(_sheet(_task(), onSet: (_) {})));
+      await tester.pump();
+
+      expect(
+          tester.widget<TextField>(find.byType(TextField)).autofocus, isFalse);
+    });
   });
 }
