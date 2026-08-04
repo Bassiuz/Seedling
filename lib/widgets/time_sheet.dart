@@ -65,6 +65,10 @@ class _TimeSheetState extends State<TimeSheet> {
     if (minutes == null) return;
     widget.onSet!(minutes);
     _typed.clear();
+    // Typing a number is a whole answer, so the sheet has done its job. The
+    // steppers deliberately leave it open: those are tapped several times.
+    // maybePop, because the sheet is a plain widget in the golden tests.
+    Navigator.of(context).maybePop();
   }
 
   @override

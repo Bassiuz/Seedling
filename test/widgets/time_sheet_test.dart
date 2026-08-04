@@ -175,4 +175,65 @@ void main() {
           tester.widget<TextField>(find.byType(TextField)).autofocus, isFalse);
     });
   });
+
+  group('finishing', () {
+    Future<void> openSheet(WidgetTester tester, List<int> set) async {
+      await tester.pumpWidget(wrapApp(Scaffold(
+        body: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              builder: (_) => TimeSheet(
+                title: 'Fix the export',
+                minutes: 0,
+                totalMinutes: 0,
+                autofocus: true,
+                onChange: (_) {},
+                onSet: set.add,
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      )));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('enter logs the time and closes the sheet', (tester) async {
+      final set = <int>[];
+      await openSheet(tester, set);
+
+      await tester.enterText(find.byType(TextField), '2');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(set, [120]);
+      expect(find.byType(TimeSheet), findsNothing);
+    });
+
+    testWidgets('something unreadable leaves it open to try again',
+        (tester) async {
+      final set = <int>[];
+      await openSheet(tester, set);
+
+      await tester.enterText(find.byType(TextField), 'soon');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      expect(set, isEmpty);
+      expect(find.byType(TimeSheet), findsOneWidget);
+    });
+
+    testWidgets('the steppers keep it open, since they are tapped several '
+        'times', (tester) async {
+      final set = <int>[];
+      await openSheet(tester, set);
+
+      await tester.tap(find.byTooltip('Another 15 minutes'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TimeSheet), findsOneWidget);
+    });
+  });
 }
