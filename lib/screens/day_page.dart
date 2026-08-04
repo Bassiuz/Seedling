@@ -179,6 +179,8 @@ class DayContent extends StatelessWidget {
     onAdd: onAdd,
     onOpenJira: onOpenJira,
     onRename: onRename,
+    onHoverTask: onHoverTask,
+    onHoverEvent: onHoverEvent,
   );
 
   Widget _tasks(List<Task> untimed) => TasksBlock(
@@ -192,6 +194,7 @@ class DayContent extends StatelessWidget {
     onPullSomeday: onPullSomeday,
     onOpenJira: onOpenJira,
     onRename: onRename,
+    onHoverTask: onHoverTask,
   );
 
   Widget _note() => NoteBlock(text: note, onChanged: onNoteChanged);
@@ -1616,6 +1619,18 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
                                                             ),
                                                         onOpenJira: _openJira,
                                                         onRename: _rename,
+                                                        onHoverTask:
+                                                            (task, hovering) =>
+                                                                _hoveredTask =
+                                                                    hovering
+                                                                        ? task
+                                                                        : null,
+                                                        onHoverEvent:
+                                                            (event, hovering) =>
+                                                                _hoveredEvent =
+                                                                    hovering
+                                                                        ? event
+                                                                        : null,
                                                         onNoteChanged: (text) =>
                                                             _saveNote(
                                                               day,

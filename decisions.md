@@ -109,6 +109,7 @@
 ## Keyboard, and what the pointer is on
 
 - **The shortcuts act on whatever the pointer is over, so the row has to show it** — Ctrl-A fires at a task you did not point at otherwise. Rows wash faintly on hover, slow enough not to flicker as the mouse crosses a list, and absent entirely where there is no pointer.
+- **The hover callbacks are tested end to end, through `DayContent`** — they were declared on it and never passed to the blocks underneath, so hovering reported nothing and both shortcuts fired at a task that was always null. Nothing failed and nothing logged; it simply did nothing. Declaring a callback and forwarding it are two edits, and only the second one is the feature.
 - **Control, not command** — these fire with a hand still on the mouse, and the command versions belong to the text fields.
 - **A ticket you type that Seedling has never seen is offered as a row of its own** — a pasted link or an unfamiliar key should not mean going somewhere else to add it first.
 - **`todayKey()` reads an overridable clock** — an app left open overnight insisted it was still yesterday, and everything downstream believed it. The first test I wrote for the fix passed against the broken code, because it could not move the date; making the clock injectable is what made the bug expressible.
