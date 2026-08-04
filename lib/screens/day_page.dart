@@ -449,6 +449,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    HardwareKeyboard.instance.addHandler(_onKey);
     _loadEvents();
     _drainWidgetTaps();
     _extrasSub = widget.repo.watchEventExtras().listen(
@@ -555,6 +556,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    HardwareKeyboard.instance.removeHandler(_onKey);
     _noteDebounce?.cancel();
     _clock?.cancel();
     _extrasSub?.cancel();
@@ -659,6 +661,35 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   void _mirrorReview(WeekReview review) {
     if (widget.settings?.vaultMirroring == false) return;
     _mirror?.review(review);
+  }
+
+  /// Ctrl-A and Ctrl-T, taken straight off the keyboard.
+  ///
+  /// Not `CallbackShortcuts`, which only fires while focus is inside it —
+  /// after a click anywhere it often is not, and macOS beeps at a key nothing
+  /// handled. These act on what the pointer is over, so they cannot depend on
+  /// what happens to hold focus.
+  bool _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (!HardwareKeyboard.instance.isControlPressed) return false;
+    // Never taken out of a field being typed in: on macOS these are the
+    // beginning-of-line and transpose bindings, and they belong to the text.
+    if (_typing) return false;
+
+    if (event.logicalKey == LogicalKeyboardKey.keyA) {
+      _tagHovered();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.keyT) {
+      _timeHovered();
+      return true;
+    }
+    return false;
+  }
+
+  bool get _typing {
+    final focused = FocusManager.instance.primaryFocus?.context?.widget;
+    return focused is EditableText;
   }
 
   /// Ctrl-A: give whatever is under the pointer a ticket.
@@ -1443,12 +1474,6 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
           control: true,
           shift: true,
         ): _toggleReveal,
-        // Control rather than command: these fire while your hand is still on
-        // the mouse, and the command versions belong to the text fields.
-        const SingleActivator(LogicalKeyboardKey.keyA, control: true):
-            _tagHovered,
-        const SingleActivator(LogicalKeyboardKey.keyT, control: true):
-            _timeHovered,
       },
       child: Focus(
         autofocus: true,
