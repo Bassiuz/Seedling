@@ -11,4 +11,9 @@ String addDays(String key, int days) {
   return dayKeyOf(DateTime(d.year, d.month, d.day + days));
 }
 
-String todayKey() => dayKeyOf(DateTime.now());
+/// Overridable so a test can move the date without moving the machine's
+/// clock — which is the only way to check that an app left open overnight
+/// notices.
+DateTime Function() nowFor = DateTime.now;
+
+String todayKey() => dayKeyOf(nowFor());

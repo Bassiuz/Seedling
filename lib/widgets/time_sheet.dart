@@ -15,6 +15,7 @@ class TimeSheet extends StatefulWidget {
     required this.totalMinutes,
     required this.onChange,
     this.onSet,
+    this.autofocus = false,
   });
 
   final String title;
@@ -29,6 +30,10 @@ class TimeSheet extends StatefulWidget {
   /// Called with an absolute number of minutes for the day, from typing.
   /// Null leaves the sheet stepper-only.
   final void Function(int minutes)? onSet;
+
+  /// Puts the cursor in the box on the way in, for the keyboard shortcut that
+  /// opens this: Ctrl-T, "2", enter, and you are back where you were.
+  final bool autofocus;
 
   static const int step = 15;
 
@@ -103,6 +108,7 @@ class _TimeSheetState extends State<TimeSheet> {
               const SizedBox(height: 20),
               TextField(
                 controller: _typed,
+                autofocus: widget.autofocus,
                 onSubmitted: _submit,
                 textInputAction: TextInputAction.done,
                 textAlign: TextAlign.center,

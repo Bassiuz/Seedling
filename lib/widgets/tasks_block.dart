@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../logic/jira_ref.dart';
 import '../models/someday_item.dart';
+import '../models/calendar_event.dart';
 import '../models/tag.dart';
 import '../models/task.dart';
 import 'add_task_field.dart';
@@ -22,6 +23,8 @@ class TasksBlock extends StatelessWidget {
     this.onPullSomeday,
     this.onOpenJira,
     this.onRename,
+    this.onHoverTask,
+    this.onHoverEvent,
   });
 
   final List<Task> tasks;
@@ -36,6 +39,10 @@ class TasksBlock extends StatelessWidget {
 
   /// Tapping a title renames that task. Null leaves them read-only.
   final void Function(Task)? onRename;
+
+  /// Where the pointer is, for the keyboard shortcuts that act on it.
+  final void Function(Task, bool hovering)? onHoverTask;
+  final void Function(CalendarEvent, bool hovering)? onHoverEvent;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +61,9 @@ class TasksBlock extends StatelessWidget {
               onMenu: () => onMenu(task),
               onOpenJira: onOpenJira,
               onRename: onRename == null ? null : () => onRename!(task),
+              onHover: onHoverTask == null
+                  ? null
+                  : (hovering) => onHoverTask!(task, hovering),
             ),
           AddTaskField(
             onAdd: onAdd,

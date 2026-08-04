@@ -12,6 +12,7 @@ import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import 'add_task_field.dart';
 import 'block_frame.dart';
+import 'hover_highlight.dart';
 import 'tag_chip.dart';
 import 'task_tile.dart';
 import 'time_sheet.dart';
@@ -41,6 +42,8 @@ class TimedBlock extends StatelessWidget {
     this.onAdd,
     this.onOpenJira,
     this.onRename,
+    this.onHoverTask,
+    this.onHoverEvent,
   });
 
   final List<CalendarEvent> events;
@@ -71,6 +74,10 @@ class TimedBlock extends StatelessWidget {
 
   /// Tapping a title renames that task. Null leaves them read-only.
   final void Function(Task)? onRename;
+
+  /// Where the pointer is, for the keyboard shortcuts that act on it.
+  final void Function(Task, bool hovering)? onHoverTask;
+  final void Function(CalendarEvent, bool hovering)? onHoverEvent;
 
   final List<Task> tasks;
   final Map<String, Tag> tags;
@@ -125,6 +132,9 @@ class TimedBlock extends StatelessWidget {
                   onUnhide: onUnhideEvent == null
                       ? null
                       : () => onUnhideEvent!(entry.event!),
+                  onHover: onHoverEvent == null
+                      ? null
+                      : (hovering) => onHoverEvent!(entry.event!, hovering),
                 )
               else
                 TaskTile(
@@ -137,6 +147,9 @@ class TimedBlock extends StatelessWidget {
                   onOpenJira: onOpenJira,
                   onRename:
                       onRename == null ? null : () => onRename!(entry.task!),
+                  onHover: onHoverTask == null
+                      ? null
+                      : (hovering) => onHoverTask!(entry.task!, hovering),
                 ),
           ],
           if (onAdd != null)
@@ -169,6 +182,7 @@ class EventRow extends StatelessWidget {
     this.onToggle,
     this.onMenu,
     this.onUnhide,
+    this.onHover,
   });
 
   final CalendarEvent event;
@@ -191,6 +205,9 @@ class EventRow extends StatelessWidget {
   final VoidCallback? onMenu;
   final VoidCallback? onUnhide;
 
+  /// True as the pointer arrives, false as it leaves.
+  final void Function(bool hovering)? onHover;
+
   @override
   Widget build(BuildContext context) {
     final colors = SeedlingColors.of(context);
@@ -203,7 +220,9 @@ class EventRow extends StatelessWidget {
             ? colors.muted
             : colors.ink;
 
-    return GestureDetector(
+    return HoverHighlight(
+      onHover: onHover,
+      child: GestureDetector(
       onLongPress: onMenu,
       onSecondaryTap: onMenu,
       behavior: HitTestBehavior.opaque,
@@ -282,6 +301,7 @@ class EventRow extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }

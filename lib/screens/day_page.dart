@@ -24,6 +24,7 @@ import '../models/tag.dart';
 import '../models/calendar_event.dart';
 import '../models/daily_question.dart';
 import '../models/event_extras.dart';
+import '../models/jira_ticket.dart';
 import '../models/someday_item.dart';
 import '../models/task.dart';
 import '../models/week_review.dart';
@@ -35,6 +36,7 @@ import '../widgets/note_block.dart';
 import '../widgets/questions_block.dart';
 import '../widgets/tag_chip.dart';
 import '../widgets/tasks_block.dart';
+import '../widgets/ticket_picker.dart';
 import '../widgets/time_sheet.dart';
 import '../widgets/timed_block.dart';
 import 'goals_screen.dart';
@@ -74,6 +76,8 @@ class DayContent extends StatelessWidget {
     this.now,
     this.onOpenJira,
     this.onRename,
+    this.onHoverTask,
+    this.onHoverEvent,
   });
 
   /// Active questions for this day, and the answers given so far.
@@ -100,6 +104,10 @@ class DayContent extends StatelessWidget {
 
   /// Tapping a title renames that task.
   final void Function(Task)? onRename;
+
+  /// Where the pointer is, for the shortcuts that act on it.
+  final void Function(Task, bool hovering)? onHoverTask;
+  final void Function(CalendarEvent, bool hovering)? onHoverEvent;
 
   /// Already filtered and sorted for this day by `tasksForDay`.
   final List<Task> tasks;
@@ -383,7 +391,10 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   /// years in either direction without the page list having ends.
   static const int _anchor = 500000;
 
-  final String _today = todayKey();
+  /// Not final: an app left open overnight used to insist it was still
+  /// yesterday, and everything downstream — which tasks roll over, which
+  /// window of calendar gets published, what the widget says — believed it.
+  String _today = todayKey();
 
   /// Page zero is the Monday of this week; every eighth page is a review.
   late final String _anchorMonday = weekStartOf(_today);
@@ -398,6 +409,12 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
   /// Appointments for the days around today, keyed by day.
   Map<String, List<CalendarEvent>> _events = const {};
+
+  /// Whatever the pointer is over. The shortcuts act on it, which is why the
+  /// rows wash faintly as you cross them — otherwise Ctrl-A would fire at
+  /// something you could not see it had chosen.
+  Task? _hoveredTask;
+  CalendarEvent? _hoveredEvent;
 
   /// While true, hidden events are drawn greyed so a wrong hide can be undone.
   bool _revealing = false;
@@ -438,9 +455,30 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
       (days) => setState(() => _activeDays = days),
     );
     _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
       final next = clockOf(DateTime.now());
-      if (next != _now && mounted) setState(() => _now = next);
+      if (next != _now) setState(() => _now = next);
+      _rollOverIfNeeded();
     });
+  }
+
+  /// Midnight, for an app that was already open.
+  ///
+  /// The pager's anchor stays put — page indexes are offsets from a fixed
+  /// Monday, so yesterday's page is still yesterday's page. What moves is
+  /// what counts as today, which the rollover rule, the calendar window and
+  /// the widget all read — and the page itself, if today is what you were
+  /// looking at.
+  void _rollOverIfNeeded() {
+    final now = todayKey();
+    if (now == _today) return;
+
+    // Follow the date only if you were looking at today. Left on another day
+    // on purpose, being yanked to a new one at midnight would be rude.
+    final wasOnToday = _dayForPage(_index) == _today;
+    setState(() => _today = now);
+    if (wasOnToday) _jumpToDay(now);
+    _loadEvents();
   }
 
   /// Appointments are read once at startup, which is not often enough: a
@@ -451,6 +489,9 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      // Coming back to the app is the other moment the date can have moved
+      // on without anyone noticing.
+      _rollOverIfNeeded();
       _loadEvents();
       _drainWidgetTaps();
     }
@@ -615,6 +656,51 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
   void _mirrorReview(WeekReview review) {
     if (widget.settings?.vaultMirroring == false) return;
     _mirror?.review(review);
+  }
+
+  /// Ctrl-A: give whatever is under the pointer a ticket.
+  Future<void> _tagHovered() async {
+    final task = _hoveredTask;
+    final event = _hoveredEvent;
+    if (task == null && event == null) return;
+
+    final tickets = await widget.repo.watchJiraTickets().first;
+    final site = await widget.repo.watchJiraSite().first;
+    if (!mounted) return;
+
+    final picked = await showModalBottomSheet<JiraTicket>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => TicketPicker(
+        tickets: tickets,
+        defaultSite: site,
+        title: task?.title ?? event!.title,
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    if (task != null) {
+      await _write(() => widget.repo.setJira(task, picked.ref),
+          'link that ticket');
+    } else {
+      final extras = _eventExtras[event!.hideKey] ?? const EventExtras();
+      await _saveExtras(
+          event, extras.copyWith(jira: picked.ref), 'link that ticket');
+      await widget.repo.touchJiraTicket(picked.ref, DateTime.now());
+    }
+    // A ticket typed in rather than chosen is one Seedling has not seen.
+    await widget.repo.rememberJiraTickets([picked]);
+    if (picked.site != site) await widget.repo.rememberJiraSite(picked.site);
+  }
+
+  /// Ctrl-T: open the time sheet on whatever is under the pointer, with the
+  /// cursor already in the box. Ctrl-T, "2", enter.
+  Future<void> _timeHovered() async {
+    final task = _hoveredTask;
+    final event = _hoveredEvent;
+    final day = _dayForPage(_index);
+    if (task != null) return _logTime(task, day, autofocus: true);
+    if (event != null) return _logEventTime(event, day, autofocus: true);
   }
 
   /// Cmd-Shift-H on the Mac, the escape hatch from a hide you did not mean.
@@ -1007,7 +1093,8 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
   /// The same sheet tasks get. Reads back through [_eventExtras] so the
   /// stepper follows what has just been written.
-  Future<void> _logEventTime(CalendarEvent event, String day) =>
+  Future<void> _logEventTime(CalendarEvent event, String day,
+          {bool autofocus = false}) =>
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -1018,6 +1105,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
                 (snapshot.data ?? _eventExtras)[event.hideKey] ??
                 const EventExtras();
             return TimeSheet(
+              autofocus: autofocus,
               title: event.title,
               minutes: extras.minutesOn(day),
               totalMinutes: extras.totalMinutes,
@@ -1158,7 +1246,8 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
   /// Keeps the sheet open while you tap, so logging an hour is four taps
   /// rather than four round trips through the menu.
-  Future<void> _logTime(Task task, String day) => showModalBottomSheet<void>(
+  Future<void> _logTime(Task task, String day, {bool autofocus = false}) =>
+      showModalBottomSheet<void>(
     context: context,
     // So the sheet rides above the keyboard rather than under it.
     isScrollControlled: true,
@@ -1347,6 +1436,12 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
           control: true,
           shift: true,
         ): _toggleReveal,
+        // Control rather than command: these fire while your hand is still on
+        // the mouse, and the command versions belong to the text fields.
+        const SingleActivator(LogicalKeyboardKey.keyA, control: true):
+            _tagHovered,
+        const SingleActivator(LogicalKeyboardKey.keyT, control: true):
+            _timeHovered,
       },
       child: Focus(
         autofocus: true,

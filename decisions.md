@@ -105,3 +105,11 @@
 - **The ticket list is ordered by when you last used it** — the ticket you touched an hour ago is the one you are about to touch again. Imported-but-never-used ones sort last, alphabetically.
 - **An hour is offered by default** — it is the answer most of the time, and a wrong hour you can see beats a blank you have to remember to come back to.
 - **A ticket can be tagged without logging any time** — "No time" is a first-class answer, not a cancel.
+
+## Keyboard, and what the pointer is on
+
+- **The shortcuts act on whatever the pointer is over, so the row has to show it** — Ctrl-A fires at a task you did not point at otherwise. Rows wash faintly on hover, slow enough not to flicker as the mouse crosses a list, and absent entirely where there is no pointer.
+- **Control, not command** — these fire with a hand still on the mouse, and the command versions belong to the text fields.
+- **A ticket you type that Seedling has never seen is offered as a row of its own** — a pasted link or an unfamiliar key should not mean going somewhere else to add it first.
+- **`todayKey()` reads an overridable clock** — an app left open overnight insisted it was still yesterday, and everything downstream believed it. The first test I wrote for the fix passed against the broken code, because it could not move the date; making the clock injectable is what made the bug expressible.
+- **Midnight moves the page only if you were on today** — left on another day on purpose, being yanked forward at midnight would be rude.

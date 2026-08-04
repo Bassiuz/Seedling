@@ -8,6 +8,7 @@ import '../models/task.dart';
 import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import '../logic/jira_ref.dart';
+import 'hover_highlight.dart';
 import 'tag_chip.dart';
 import 'time_sheet.dart';
 
@@ -28,6 +29,7 @@ class TaskTile extends StatelessWidget {
     this.overdue = false,
     this.onOpenJira,
     this.onRename,
+    this.onHover,
   });
 
   final Task task;
@@ -45,6 +47,10 @@ class TaskTile extends StatelessWidget {
   /// the golden tests and the read-only views want.
   final VoidCallback? onRename;
 
+  /// True as the pointer arrives, false as it leaves. The keyboard shortcuts
+  /// act on whatever is under the pointer, so something has to know.
+  final void Function(bool hovering)? onHover;
+
   /// Its time has gone by today and it is still open, so it is drawn in red.
   final bool overdue;
 
@@ -56,7 +62,9 @@ class TaskTile extends StatelessWidget {
     final done = state != TaskCheckState.open;
     final interactive = state != TaskCheckState.doneLater;
 
-    return GestureDetector(
+    return HoverHighlight(
+      onHover: onHover,
+      child: GestureDetector(
       onLongPress: onMenu,
       // Right-click is the desktop gesture; long-press is the touch one. The
       // menu was effectively undiscoverable on the Mac without this.
@@ -110,6 +118,7 @@ class TaskTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

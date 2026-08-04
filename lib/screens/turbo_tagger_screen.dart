@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../data/jira_account.dart';
@@ -12,10 +11,10 @@ import '../logic/jira_usage.dart';
 import '../logic/rollover.dart';
 import '../models/jira_ticket.dart';
 import '../models/task.dart';
-import '../theme/seedling_palette.dart';
 import '../theme/seedling_theme.dart';
 import '../widgets/back_line.dart';
 import '../widgets/block_frame.dart';
+import '../widgets/ticket_picker.dart';
 import '../widgets/time_sheet.dart';
 
 /// One day's untagged work, and a ticket a tap away.
@@ -167,150 +166,6 @@ class _Row extends StatelessWidget {
           ? null
           : Text(TimeSheet.format(logged), style: text.labelSmall),
       trailing: Icon(Icons.add_link, color: colors.muted),
-    );
-  }
-}
-
-/// The list you pick from. Recency does the sorting, because the ticket you
-/// touched an hour ago is the one you are about to touch again.
-class TicketPicker extends StatefulWidget {
-  const TicketPicker({super.key, required this.tickets, required this.title});
-
-  final List<JiraTicket> tickets;
-  final String title;
-
-  @override
-  State<TicketPicker> createState() => _TicketPickerState();
-}
-
-class _TicketPickerState extends State<TicketPicker> {
-  String _filter = '';
-  int _selected = 0;
-  final _selectedKey = GlobalKey();
-
-  /// Sits above the filter field in the focus tree, so the arrows and enter
-  /// arrive here before the text field can spend them on cursor movement.
-  KeyEventResult _onKey(KeyEvent event, List<JiraTicket> shown) {
-    if (event is KeyUpEvent || shown.isEmpty) return KeyEventResult.ignored;
-    final key = event.logicalKey;
-    final step = key == LogicalKeyboardKey.arrowDown
-        ? 1
-        : key == LogicalKeyboardKey.arrowUp
-        ? -1
-        : null;
-    if (step != null) {
-      setState(() => _selected = (_selected + step).clamp(0, shown.length - 1));
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final selected = _selectedKey.currentContext;
-        if (selected != null) {
-          Scrollable.ensureVisible(selected, alignment: 0.5);
-        }
-      });
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.enter ||
-        key == LogicalKeyboardKey.numpadEnter) {
-      Navigator.pop(context, shown[_selected.clamp(0, shown.length - 1)]);
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = SeedlingColors.of(context);
-    final text = Theme.of(context).textTheme;
-    final needle = _filter.trim().toLowerCase();
-    final shown = [
-      for (final ticket in widget.tickets)
-        if (needle.isEmpty ||
-            ticket.key.toLowerCase().contains(needle) ||
-            (ticket.summary ?? '').toLowerCase().contains(needle))
-          ticket,
-    ];
-    final selected = _selected.clamp(0, shown.isEmpty ? 0 : shown.length - 1);
-
-    return Focus(
-      onKeyEvent: (node, event) => _onKey(event, shown),
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      autofocus: true,
-                      onChanged: (value) => setState(() {
-                        _filter = value;
-                        _selected = 0;
-                      }),
-                      decoration: InputDecoration.collapsed(
-                        hintText: 'Filter…',
-                        hintStyle: text.bodyLarge?.copyWith(
-                          color: colors.faint,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Flexible(
-                child: shown.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: EmptyNote('Nothing matches'),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: shown.length,
-                        itemBuilder: (context, i) {
-                          final ticket = shown[i];
-                          return ListTile(
-                            key: i == selected ? _selectedKey : null,
-                            selected: i == selected,
-                            selectedColor: colors.ink,
-                            selectedTileColor: colors.rule,
-                            dense: true,
-                            title: Text(
-                              ticket.summary ?? ticket.key,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: text.bodyMedium,
-                            ),
-                            leading: SizedBox(
-                              width: 72,
-                              child: Text(
-                                ticket.key,
-                                style: text.labelSmall?.copyWith(
-                                  color: SeedlingPalette.azure,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            onTap: () => Navigator.pop(context, ticket),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
