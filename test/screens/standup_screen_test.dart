@@ -159,7 +159,9 @@ void main() {
           ],
           tags: _tags,
           daysOff: daysOff,
-          eventsFor: (_) => const [],
+          // A distinct meeting per day, so the heading and the meetings under
+          // it can be caught disagreeing.
+          eventsFor: (key) => [_event('Meeting on $key', day: key)],
         );
 
     testWidgets('Monday opens on Thursday, not on Sunday', (tester) async {
@@ -167,6 +169,27 @@ void main() {
 
       expect(find.text('Thursday — done'), findsOneWidget);
       expect(find.text('Thursday work'), findsOneWidget);
+    });
+
+    testWidgets('the meetings under the heading are that same day\'s',
+        (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      // Thursday heads the block, so Thursday's meeting belongs under it —
+      // not literal yesterday's, which is the Sunday.
+      expect(find.text('Meeting on 2026-07-23'), findsOneWidget);
+      expect(find.text('Meeting on 2026-07-26'), findsNothing);
+    });
+
+    testWidgets('shifting the day moves the meetings with it', (tester) async {
+      await tester.pumpWidget(wrapApp(screen()));
+
+      await tester.tap(find.byTooltip('A day later'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Friday — done'), findsOneWidget);
+      expect(find.text('Meeting on 2026-07-24'), findsOneWidget);
+      expect(find.text('Meeting on 2026-07-23'), findsNothing);
     });
 
     testWidgets('one tap forward reaches the Friday you did work',
