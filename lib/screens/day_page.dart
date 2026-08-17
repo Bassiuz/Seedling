@@ -931,6 +931,7 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
     final tasks = await widget.repo.watchTasks().first;
     final tagList = await widget.repo.watchTags().first;
     final hidden = await widget.repo.watchHiddenEvents().first;
+    final daysOff = await widget.repo.watchDaysOff().first;
     if (!mounted) return;
 
     // Hidden appointments stay hidden here too — the ones you blacklisted are
@@ -940,15 +941,14 @@ class _DayPageState extends State<DayPage> with WidgetsBindingObserver {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => StandupView(
+        builder: (_) => StandupScreen(
+          day: day,
           name: widget.settings?.standupName ?? '',
-          standup: standupFor(
-            tasks,
-            day,
-            events: on(day),
-            previousEvents: on(addDays(day, -1)),
-          ),
+          tasks: tasks,
           tags: {for (final tag in tagList) tag.id: tag},
+          eventsFor: on,
+          workingDays: widget.settings?.workingDays ?? defaultWorkingDays,
+          daysOff: daysOff,
         ),
       ),
     );
